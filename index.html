@@ -92,9 +92,16 @@
             animation: outerWaveLoop 2.4s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
         }
 
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: var(--bg-retail); }
-        ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #bf953f, #aa771c); border-radius: 6px; }
+        /* Hide scrollbars completely on both mobile & desktop while allowing scrolling */
+        * {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        *::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+            width: 0;
+            height: 0;
+        }
     </style>
 </head>
 <body class="h-[100dvh] flex flex-col overflow-hidden pb-16 md:pb-0 select-none">
@@ -142,7 +149,7 @@
         <div id="sidebarSection" class="w-full md:w-[380px] bg-[#06060b] flex flex-col justify-between border-r border-white/[0.06] shrink-0 z-20 h-full">
             <div class="flex flex-col flex-1 overflow-hidden">
                 
-                <!-- Search Bar with Clickable Golden Search Icon -->
+                <!-- Search Bar -->
                 <div id="searchBarContainer" class="p-3 bg-[#030305] border-b border-white/[0.05] shrink-0">
                     <div class="flex items-center space-x-2 bg-[#0a0a12] px-3.5 py-2 rounded-xl border border-white/[0.08] focus-within:border-amber-400/50 transition">
                         <input type="text" id="searchInput" placeholder="Search..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-0.5" onkeypress="if(event.key === 'Enter') filterContent()">
@@ -212,7 +219,7 @@
                 </div>
             </div>
 
-            <!-- Messages Area -->
+            <!-- Messages Area (Centered Content Properly for both Mobile & Desktop) -->
             <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col justify-center items-center">
                 <div class="flex flex-col items-center space-y-3 max-w-xs text-center">
                     <div class="w-14 h-14 rounded-2xl bg-[#0a0a12] flex items-center justify-center shadow-lg">
@@ -225,20 +232,20 @@
                 </div>
             </div>
 
-            <!-- Input Bar with Telegram Style Inside Golden Send Arrow Icon -->
+            <!-- Input Bar with Perfectly Centered Telegram Style Luxury Golden Send Arrow Icon -->
             <div id="chatInputBar" class="bg-[#06060b] px-3 py-2.5 hidden items-center border-t border-white/[0.06] shrink-0 sticky bottom-0 z-20">
                 <div class="flex-1 flex items-center bg-[#0a0a12] rounded-2xl px-3.5 py-2 space-x-2.5 border border-white/[0.08] focus-within:border-amber-400/50 transition">
-                    <label class="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center shrink-0" title="Attach File">
+                    <label class="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center shrink-0" title="Attach Files (Multiple)">
                         <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
                         </svg>
-                        <input type="file" accept="image/*,video/*,application/pdf,.doc,.docx,.zip" class="hidden" onchange="sendUniversalFile(this)">
+                        <input type="file" id="universalFileInput" accept="image/*,video/*,application/pdf,.doc,.docx,.zip" multiple class="hidden" onchange="sendUniversalFile(this)">
                     </label>
                     <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1 min-w-0" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
                     
-                    <!-- Telegram Style Inside Golden Send Arrow Icon -->
-                    <button id="sendBtn" onclick="sendTextMessage()" class="hidden cursor-pointer hover:scale-110 transition-transform p-1 shrink-0" title="Send">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <!-- Telegram Style Luxury Golden Send Arrow Icon (Centered vertically in input bar) -->
+                    <button id="sendBtn" onclick="sendTextMessage()" class="hidden cursor-pointer hover:scale-110 transition-transform p-1 shrink-0 flex items-center justify-center" title="Send">
+                        <svg class="w-5 h-5 -rotate-45" viewBox="0 0 24 24" fill="none">
                             <defs>
                                 <linearGradient id="telegramSendGrad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
                                     <stop offset="0%" stop-color="#bf953f"/>
@@ -289,6 +296,17 @@
         </button>
     </nav>
 
+    <!-- Custom Confirmation Modal -->
+    <div id="customConfirmModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-[#0b0b14] border border-white/10 p-6 rounded-3xl max-w-xs w-full text-center space-y-4 shadow-2xl">
+            <p id="confirmModalText" class="text-xs text-white font-medium">Are you sure you want to clear all messages?</p>
+            <div class="flex space-x-2">
+                <button onclick="closeConfirmModal(false)" class="flex-1 py-2 bg-[#141420] text-xs rounded-xl text-gray-300 hover:bg-[#1c1c2e] cursor-pointer">Cancel</button>
+                <button id="confirmModalYesBtn" onclick="closeConfirmModal(true)" class="flex-1 py-2 pink-btn text-xs rounded-xl cursor-pointer">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 bg-[#0d0d16] text-white text-xs px-4 py-2 rounded-full border border-white/15 shadow-2xl z-50 hidden items-center space-x-2">
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span>
@@ -302,6 +320,7 @@
         let activeCallType = null;
         let localMessageStore = {};
         let deferredPrompt = null;
+        let confirmCallback = null;
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -332,6 +351,22 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').catch(() => {});
             });
+        }
+
+        function showCustomConfirm(text, callback) {
+            document.getElementById('confirmModalText').innerText = text;
+            confirmCallback = callback;
+            const modal = document.getElementById('customConfirmModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeConfirmModal(result) {
+            const modal = document.getElementById('customConfirmModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            if(confirmCallback) confirmCallback(result);
+            confirmCallback = null;
         }
 
         const RESERVED_USERNAMES = [
@@ -480,7 +515,7 @@
                     </div>
 
                     <div class="space-y-2 pt-1">
-                        <button onclick="showToast('Add account opened')" class="w-full py-2.5 bg-[#090910] text-xs rounded-xl text-white hover:bg-[#11111a] flex items-center justify-center space-x-2 transition cursor-pointer">
+                        <button onclick="addNewProfileModal()" class="w-full py-2.5 bg-[#090910] text-xs rounded-xl text-white hover:bg-[#11111a] flex items-center justify-center space-x-2 transition cursor-pointer">
                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -497,6 +532,24 @@
                         </button>
                     </div>
                 </div>`;
+        }
+
+        function addNewProfileModal() {
+            showCustomConfirm("Switch or add another profile session?", (confirmed) => {
+                if(confirmed) {
+                    userProfile = {
+                        name: "New User Account",
+                        phone: "+8801600000000",
+                        username: "user_" + Math.floor(Math.random()*1000),
+                        dob: "2000-01-01",
+                        avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg",
+                        status: "Online",
+                        isOfficialFounder: false
+                    };
+                    showToast('Switched to new profile!');
+                    renderProfileView();
+                }
+            });
         }
 
         function shareProfileLink(url) {
@@ -682,11 +735,21 @@
             const sendBtn = document.getElementById('sendBtn');
             if(text.length > 0) {
                 sendBtn.classList.remove('hidden');
-                sendBtn.classList.add('block');
+                sendBtn.classList.add('flex');
             } else {
                 sendBtn.classList.add('hidden');
-                sendBtn.classList.remove('block');
+                sendBtn.classList.remove('flex');
             }
+        }
+
+        function formatMessageText(text) {
+            if (!text) return '';
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            let formatted = text.replace(urlRegex, '<a href="$1" target="_blank" class="text-amber-300 underline break-all">$1</a>');
+            if (/^\+?[0-9\-\(\)\s]{7,15}$/.test(text.trim())) {
+                return `<a href="tel:${text.trim()}" class="text-amber-300 underline font-semibold">${text}</a>`;
+            }
+            return formatted;
         }
 
         async function sendTextMessage() {
@@ -700,7 +763,7 @@
 
             const key = currentActiveRecipient.phone;
             if(!localMessageStore[key]) localMessageStore[key] = [];
-            const msgId = 'msg_' + Date.now();
+            const msgId = 'msg_' + Date.now() + '_' + Math.random();
             localMessageStore[key].push({ id: msgId, phone_number: userProfile.phone, message_text: text, type: 'text' });
 
             const contactObj = deviceContacts.find(c => c.phone === key);
@@ -718,48 +781,94 @@
         }
 
         async function sendUniversalFile(inputElement) {
-            if(!currentActiveRecipient || !inputElement.files[0]) return;
-            const file = inputElement.files[0];
+            if(!currentActiveRecipient || !inputElement.files || inputElement.files.length === 0) return;
+            const files = Array.from(inputElement.files);
             const key = currentActiveRecipient.phone;
             if(!localMessageStore[key]) localMessageStore[key] = [];
-            
-            let fileType = 'file';
-            if(file.type.startsWith('image/')) fileType = 'image';
-            else if(file.type.startsWith('video/')) fileType = 'video';
 
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const fileDataUrl = e.target.result;
-                const msgId = 'msg_' + Date.now();
-                localMessageStore[key].push({ 
-                    id: msgId, 
-                    phone_number: userProfile.phone, 
-                    message_text: file.name, 
-                    media_url: fileDataUrl, 
-                    type: fileType 
-                });
+            for (const file of files) {
+                let fileType = 'file';
+                if(file.type.startsWith('image/')) fileType = 'image';
+                else if(file.type.startsWith('video/')) fileType = 'video';
 
-                const contactObj = deviceContacts.find(c => c.phone === key);
-                if(contactObj) contactObj.lastMsg = fileType === 'image' ? 'Photo' : (fileType === 'video' ? 'Video' : `${file.name}`);
-                if(currentTab === 'chat') renderChatStories();
-                loadMessages();
-
-                try {
-                    await fetch('/api/chat?action=send_message', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            sender_phone: userProfile.phone, 
-                            recipient_phone: currentActiveRecipient.phone, 
+                await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = async function(e) {
+                        const fileDataUrl = e.target.result;
+                        const msgId = 'msg_' + Date.now() + '_' + Math.random();
+                        localMessageStore[key].push({ 
+                            id: msgId, 
+                            phone_number: userProfile.phone, 
                             message_text: file.name, 
                             media_url: fileDataUrl, 
-                            file_type: fileType 
-                        })
-                    });
-                } catch (err) {}
-            };
-            reader.readAsDataURL(file);
+                            type: fileType 
+                        });
+
+                        const contactObj = deviceContacts.find(c => c.phone === key);
+                        if(contactObj) contactObj.lastMsg = fileType === 'image' ? 'Photo' : (fileType === 'video' ? 'Video' : `${file.name}`);
+                        
+                        try {
+                            await fetch('/api/chat?action=send_message', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    sender_phone: userProfile.phone, 
+                                    recipient_phone: currentActiveRecipient.phone, 
+                                    message_text: file.name, 
+                                    media_url: fileDataUrl, 
+                                    file_type: fileType 
+                                })
+                            });
+                        } catch (err) {}
+                        resolve();
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
             inputElement.value = '';
+            if(currentTab === 'chat') renderChatStories();
+            loadMessages();
+        }
+
+        // Delete any message from either side with custom confirmation
+        function deleteSingleMessage(recipientPhone, messageIndex) {
+            showCustomConfirm("Are you sure you want to delete this message?", (confirmed) => {
+                if(confirmed) {
+                    if(localMessageStore[recipientPhone]) {
+                        localMessageStore[recipientPhone].splice(messageIndex, 1);
+                        showToast('Message deleted successfully');
+                        loadMessages();
+                    }
+                }
+            });
+        }
+
+        function clearChatHistory() {
+            if(!currentActiveRecipient) return;
+            showCustomConfirm("Are you sure you want to clear all messages?", (confirmed) => {
+                if(confirmed) {
+                    localMessageStore[currentActiveRecipient.phone] = [];
+                    showToast('Chat cleared');
+                    loadMessages();
+                }
+            });
+        }
+
+        // Share message or content using Web Share API or fallback to Clipboard
+        function shareMessageContent(text, mediaUrl) {
+            const shareData = {
+                title: 'SALAAM Chat Share',
+                text: text || 'Check out this media from SALAAM Chat',
+                url: mediaUrl || window.location.href
+            };
+            if (navigator.share) {
+                navigator.share(shareData).catch(() => {});
+            } else {
+                navigator.clipboard.writeText((text || '') + ' ' + (mediaUrl || '')).then(() => {
+                    showToast('Copied to clipboard for sharing!');
+                });
+            }
         }
 
         async function loadMessages() {
@@ -783,10 +892,10 @@
                 messages.forEach((msg, idx) => {
                     const isMe = msg.phone_number === userProfile.phone;
                     const div = document.createElement('div');
-                    div.className = `max-w-[82%] md:max-w-sm p-2.5 rounded-2xl text-xs leading-relaxed shadow-xl relative group transition ${
+                    div.className = `max-w-[90%] md:max-w-md p-2.5 rounded-2xl text-xs leading-relaxed shadow-xl relative group transition ${
                         isMe 
-                        ? 'bg-gradient-to-br from-[#0e2218] to-[#08150f] border border-[#2ed573]/25 self-end text-white rounded-br-sm' 
-                        : 'bg-[#0b0b14] border border-white/[0.08] self-start text-white rounded-bl-sm'
+                        ? 'bg-gradient-to-br from-[#0e2218] to-[#08150f] border border-[#2ed573]/25 self-end text-white rounded-br-sm ml-auto' 
+                        : 'bg-[#0b0b14] border border-white/[0.08] self-start text-white rounded-bl-sm mr-auto'
                     }`;
 
                     const mediaSrc = msg.media_url || msg.avatar_url;
@@ -794,105 +903,93 @@
                     const isVid = msg.type === 'video' || (mediaSrc && (mediaSrc.startsWith('data:video') || /\.(mp4|webm|mov)$/i.test(msg.message_text || '')));
 
                     let contentHtml = '';
+                    
+                    // Pure Pink Delete Icon with NO dark circular background container
+                    const deleteIconSvg = `<svg class="w-4 h-4 text-[#ff2a85] hover:scale-110 transition cursor-pointer drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+                    
+                    // Golden Gradient Share icon
+                    const gradId = `shareGoldGrad_${idx}`;
+                    const shareIconSvg = `<svg class="w-4 h-4 hover:scale-110 transition cursor-pointer" viewBox="0 0 24 24" fill="none">
+                        <defs>
+                            <linearGradient id="${gradId}" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#bf953f"/>
+                                <stop offset="50%" stop-color="#fcf6ba"/>
+                                <stop offset="100%" stop-color="#aa771c"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="18" cy="5" r="3" stroke="url(#${gradId})" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></circle>
+                        <circle cx="6" cy="12" r="3" stroke="url(#${gradId})" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></circle>
+                        <circle cx="18" cy="19" r="3" stroke="url(#${gradId})" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></circle>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" stroke="url(#${gradId})" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></line>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" stroke="url(#${gradId})" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></line>
+                    </svg>`;
+
                     if (isImg && mediaSrc) {
                         contentHtml = `
-                            <div class="space-y-2">
-                                <div class="overflow-hidden rounded-xl bg-black/40">
-                                    <img src="${mediaSrc}" alt="${msg.message_text}" class="max-h-60 w-full object-cover hover:scale-[1.02] transition-transform duration-300 cursor-pointer" onclick="window.open('${mediaSrc}', '_blank')">
+                            <div class="space-y-1 relative">
+                                <div class="absolute top-1.5 right-1.5 z-20">
+                                    <button onclick="deleteSingleMessage('${currentActiveRecipient.phone}', ${idx})" class="cursor-pointer flex items-center justify-center bg-transparent border-0 p-1" title="Delete">${deleteIconSvg}</button>
                                 </div>
-                                <div class="flex items-center justify-between px-1">
-                                    <span class="text-[10px] text-gray-300 truncate max-w-[150px]">${msg.message_text}</span>
-                                    <div class="flex items-center space-x-2">
-                                        <a href="${mediaSrc}" download="${msg.message_text}" class="text-[10px] gold-gradient-text font-semibold hover:underline" title="Download">Save</a>
-                                        <button onclick="shareMediaLink('${mediaSrc}')" class="text-[10px] text-amber-300 hover:underline cursor-pointer" title="Share">Share</button>
-                                    </div>
+                                <div class="overflow-hidden rounded-xl bg-black/40 flex justify-center items-center">
+                                    <img src="${mediaSrc}" alt="Image" class="max-h-72 w-full object-cover">
+                                </div>
+                                <div class="flex items-center justify-between pt-1 px-1">
+                                    <a href="${mediaSrc}" download="salaam_image.jpg" class="text-[11px] pink-gradient-text font-semibold hover:underline cursor-pointer">Download</a>
+                                    <button onclick="shareMessageContent('${msg.message_text || ''}', '${mediaSrc}')" class="p-1 cursor-pointer" title="Share">${shareIconSvg}</button>
                                 </div>
                             </div>`;
                     } else if (isVid && mediaSrc) {
                         contentHtml = `
-                            <div class="space-y-2">
-                                <div class="overflow-hidden rounded-xl bg-black">
-                                    <video src="${mediaSrc}" controls playsinline class="max-h-60 w-full object-contain"></video>
+                            <div class="space-y-1 relative">
+                                <div class="absolute top-1.5 right-1.5 z-20">
+                                    <button onclick="deleteSingleMessage('${currentActiveRecipient.phone}', ${idx})" class="cursor-pointer flex items-center justify-center bg-transparent border-0 p-1" title="Delete">${deleteIconSvg}</button>
                                 </div>
-                                <div class="flex items-center justify-between px-1">
-                                    <span class="text-[10px] text-gray-300 truncate max-w-[150px]">${msg.message_text}</span>
-                                    <div class="flex items-center space-x-2">
-                                        <a href="${mediaSrc}" download="${msg.message_text}" class="text-[10px] gold-gradient-text font-semibold hover:underline" title="Download">Save</a>
-                                        <button onclick="shareMediaLink('${mediaSrc}')" class="text-[10px] text-amber-300 hover:underline cursor-pointer" title="Share">Share</button>
-                                    </div>
+                                <div class="overflow-hidden rounded-xl bg-black/40">
+                                    <video src="${mediaSrc}" controls class="max-h-72 w-full object-cover"></video>
                                 </div>
-                            </div>`;
-                    } else if (mediaSrc) {
-                        contentHtml = `
-                            <div class="flex items-center space-x-2.5 bg-black/30 p-2.5 rounded-xl">
-                                <div class="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
-                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-[11px] font-medium text-white truncate">${msg.message_text}</p>
-                                    <div class="flex items-center space-x-3 mt-1">
-                                        <a href="${mediaSrc}" download="${msg.message_text}" class="text-[10px] gold-gradient-text font-semibold hover:underline">Download</a>
-                                        <button onclick="shareMediaLink('${mediaSrc}')" class="text-[10px] text-amber-300 hover:underline cursor-pointer">Share</button>
-                                    </div>
+                                <div class="flex items-center justify-between pt-1 px-1">
+                                    <a href="${mediaSrc}" download="salaam_video.mp4" class="text-[11px] pink-gradient-text font-semibold hover:underline cursor-pointer">Download</a>
+                                    <button onclick="shareMessageContent('${msg.message_text || ''}', '${mediaSrc}')" class="p-1 cursor-pointer" title="Share">${shareIconSvg}</button>
                                 </div>
                             </div>`;
                     } else {
-                        contentHtml = `<p class="px-1 py-0.5">${msg.message_text}</p>`;
+                        // Text messages: completely clean (no share or delete buttons visible), selectable text, delete via double-click or long press
+                        div.classList.add('select-text');
+                        div.setAttribute('ondblclick', `deleteSingleMessage('${currentActiveRecipient.phone}', ${idx})`);
+                        
+                        let pressTimer;
+                        div.addEventListener('touchstart', () => {
+                            pressTimer = setTimeout(() => {
+                                deleteSingleMessage(currentActiveRecipient.phone, idx);
+                            }, 650);
+                        }, { passive: true });
+                        div.addEventListener('touchend', () => clearTimeout(pressTimer));
+                        div.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+                        contentHtml = `
+                            <div class="px-1 py-0.5 select-text">
+                                <p class="whitespace-pre-wrap break-words text-xs select-text">${formatMessageText(msg.message_text)}</p>
+                            </div>`;
                     }
 
-                    div.innerHTML = `
-                        ${contentHtml}
-                        <div class="absolute -top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onclick="deleteSingleMessage('${currentActiveRecipient.phone}', ${idx})" class="text-[9px] text-pink-400 hover:text-pink-300 bg-[#0d0d16] border border-white/10 px-2 py-0.5 rounded-full shadow-md cursor-pointer">Delete</button>
-                        </div>
-                    `;
+                    div.innerHTML = contentHtml;
                     container.appendChild(div);
                 });
                 container.scrollTop = container.scrollHeight;
             } else {
                 container.className = "flex-1 overflow-y-auto p-4 space-y-3 flex flex-col justify-center items-center";
-                container.innerHTML = `<div class="bg-[#090910] px-5 py-3.5 rounded-2xl text-center"><p class="text-xs text-white/75">No message yet</p></div>`;
+                container.innerHTML = `
+                    <div class="flex flex-col items-center space-y-3 max-w-xs text-center">
+                        <div class="w-14 h-14 rounded-2xl bg-[#0a0a12] flex items-center justify-center shadow-lg">
+                            <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-sm font-bold gold-gradient-text tracking-wide">Start Conversation</p>
+                        <p class="text-[11px] text-[var(--text-gray)]">Send a message or attach files below.</p>
+                    </div>`;
             }
         }
-
-        function shareMediaLink(url) {
-            if (navigator.share) {
-                navigator.share({ title: 'SALAAM Media', url: url }).catch(() => {});
-            } else {
-                navigator.clipboard.writeText(url).then(() => showToast('Media link copied to clipboard!'));
-            }
-        }
-
-        function deleteSingleMessage(phone, index) {
-            if(localMessageStore[phone]) {
-                localMessageStore[phone].splice(index, 1);
-                loadMessages();
-                showToast('Message deleted');
-            }
-        }
-
-        async function clearChatHistory() {
-            if(!currentActiveRecipient) return;
-            if(confirm('Clear all messages?')) {
-                const key = currentActiveRecipient.phone;
-                delete localMessageStore[key];
-                const contactObj = deviceContacts.find(c => c.phone === key);
-                if(contactObj) contactObj.lastMsg = "";
-                if(currentTab === 'chat') renderChatStories();
-
-                try {
-                    await fetch('/api/chat?action=clear_chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phone_number: userProfile.phone, recipient_phone: currentActiveRecipient.phone })
-                    });
-                } catch (e) {}
-                showToast('Chat cleared');
-                loadMessages();
-            }
-        }
-
-        window.onload = () => { switchTab('contact'); };
     </script>
 </body>
 </html>
