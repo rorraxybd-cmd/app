@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SALAAM - rorraxy.com</title>
+    <title>SALAAM - chat.rorraxy.com</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,10 +40,6 @@
             background: var(--pink-solid);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-        }
-
-        .gold-border {
-            border: 1px solid rgba(212, 175, 55, 0.22);
         }
 
         .gold-btn { 
@@ -146,14 +142,15 @@
         <div id="sidebarSection" class="w-full md:w-[380px] bg-[#06060b] flex flex-col justify-between border-r border-white/[0.06] shrink-0 z-20 h-full">
             <div class="flex flex-col flex-1 overflow-hidden">
                 
-                <!-- Search Bar -->
+                <!-- Search Bar with Search Button -->
                 <div id="searchBarContainer" class="p-3 bg-[#030305] border-b border-white/[0.05] shrink-0">
-                    <div class="flex items-center space-x-2.5 bg-[#0a0a12] px-3.5 py-2 rounded-xl border border-white/[0.08] focus-within:border-amber-400/50 transition">
-                        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="flex items-center space-x-2 bg-[#0a0a12] px-3 py-1.5 rounded-xl border border-white/[0.08] focus-within:border-amber-400/50 transition">
+                        <svg class="w-4 h-4 shrink-0 text-amber-400 ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="11" cy="11" r="7.5"></circle>
                             <line x1="20.5" y1="20.5" x2="16.35" y2="16.35"></line>
                         </svg>
-                        <input type="text" id="searchInput" placeholder="Search..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="filterContent()">
+                        <input type="text" id="searchInput" placeholder="Search..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1" onkeypress="if(event.key === 'Enter') filterContent()">
+                        <button onclick="filterContent()" class="gold-btn px-3 py-1.5 text-[11px] rounded-lg shrink-0 cursor-pointer">Search</button>
                     </div>
                 </div>
 
@@ -220,30 +217,26 @@
                 </div>
             </div>
 
-            <!-- Input Bar -->
-            <div id="chatInputBar" class="bg-[#06060b] px-4 py-3 hidden items-center space-x-2.5 border-t border-white/[0.06] shrink-0 relative">
-                <div class="flex-1 flex items-center bg-[#0a0a12] rounded-2xl px-3.5 py-2.5 space-x-3 border border-white/[0.08] focus-within:border-amber-400/50 transition">
-                    <label class="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center" title="Attach Photo, Video or File">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Fully Fixed Mobile Input Bar -->
+            <div id="chatInputBar" class="bg-[#06060b] px-3 py-2.5 hidden items-center space-x-2 border-t border-white/[0.06] shrink-0 sticky bottom-0 z-20">
+                <div class="flex-1 flex items-center bg-[#0a0a12] rounded-2xl px-3 py-2 space-x-2.5 border border-white/[0.08] focus-within:border-amber-400/50 transition">
+                    <label class="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center shrink-0" title="Attach File">
+                        <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
                         </svg>
                         <input type="file" accept="image/*,video/*,application/pdf,.doc,.docx,.zip" class="hidden" onchange="sendUniversalFile(this)">
                     </label>
-                    <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
+                    <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1 min-w-0" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
                 </div>
-                <button id="sendBtn" onclick="sendTextMessage()" class="gold-btn px-4 py-2.5 text-xs rounded-2xl transition hidden items-center space-x-1.5 shrink-0 cursor-pointer">
+                <button id="sendBtn" onclick="sendTextMessage()" class="gold-btn px-3.5 py-2 text-xs rounded-xl transition hidden items-center space-x-1 shrink-0 cursor-pointer">
                     <span>Send</span>
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="#030305" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="22" y1="2" x2="11" y2="13"></line>
-                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                    </svg>
                 </button>
             </div>
         </div>
 
     </div>
 
-    <!-- Fixed Bottom 3 Navigation Menu Bar (Profile | Contact | Chat) -->
+    <!-- Fixed Bottom 3 Navigation Menu Bar -->
     <nav class="fixed bottom-0 left-0 right-0 md:w-[380px] bg-[#06060b]/95 backdrop-blur-md grid grid-cols-3 py-2 text-center border-t border-white/[0.08] shrink-0 z-50 shadow-[0_-8px_25px_rgba(0,0,0,0.85)]">
         <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 transition group cursor-pointer">
             <div class="nav-icon-wrap transition-transform duration-200">
@@ -290,7 +283,6 @@
         let localMessageStore = {};
         let deferredPrompt = null;
 
-        // PWA Install Prompt Listener
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -312,11 +304,10 @@
                     document.getElementById('installAppBtn').classList.add('hidden');
                 });
             } else {
-                showToast('App is already installed or not supported by browser.');
+                showToast('App is already installed or check HTTPS domain.');
             }
         }
 
-        // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').catch(() => {});
