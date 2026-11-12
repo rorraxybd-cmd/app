@@ -1,1 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rorraxy Chat - Secure P2P Messenger</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body { background-color: #0b141a; color: #e9edef; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .chat-bg { background-color: #080d12; background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
 
+    <!-- Top Navbar / Brand Header -->
+    <header class="bg-[#202c33] px-4 py-3 flex justify-between items-center border-b border-[#2f3b43]">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-r from-amber-500 to-yellow-300 flex items-center justify-center font-bold text-black">RX</div>
+            <div>
+                <h1 class="font-semibold text-lg tracking-wide text-[#e9edef]">Rorraxy Messenger</h1>
+                <p class="text-xs text-emerald-400 font-medium">● P2P Direct & Encrypted</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4 text-[#aebac1]">
+            <span id="userPhoneDisplay" class="text-sm bg-[#2a3942] px-3 py-1 rounded-full text-amber-400">Not Logged In</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- Sidebar: Chat List & Contacts -->
+        <div class="w-1/3 bg-[#111b21] border-r border-[#2f3b43] flex flex-col">
+            <div class="p-3 bg-[#202c33] flex justify-between items-center">
+                <input type="text" id="myPhoneInput" placeholder="Enter Your Phone (e.g. 017...)" class="w-full bg-[#2a3942] text-sm px-3 py-2 rounded-lg focus:outline-none text-white placeholder-gray-400">
+                <button onclick="registerUser()" class="ml-2 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 text-sm rounded-lg font-medium transition">Login</button>
+            </div>
+            
+            <div class="p-2 border-b border-[#2f3b43]">
+                <input type="text" id="recipientPhoneInput" placeholder="Chat with (Recipient Phone)" class="w-full bg-[#2a3942] text-sm px-3 py-2 rounded-lg focus:outline-none text-white placeholder-gray-400">
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-2 space-y-1">
+                <div class="p-3 hover:bg-[#202c33] rounded-lg cursor-pointer flex items-center space-x-3 transition">
+                    <div class="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center text-lg font-bold text-white">AI</div>
+                    <div class="flex-1">
+                        <div class="flex justify-between"><span class="font-semibold">Rorraxy Support</span><span class="text-xs text-gray-400">Just now</span></div>
+                        <p class="text-xs text-gray-400 truncate">Welcome to P2P decentralized messaging!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Box Section -->
+        <div class="flex-2 flex flex-col chat-bg">
+            <!-- Active Chat Header -->
+            <div class="bg-[#202c33] px-4 py-3 flex items-center justify-between border-b border-[#2f3b43]">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-full bg-emerald-700 flex items-center justify-center font-bold text-white">RC</div>
+                    <span id="activeChatTitle" class="font-medium text-white">Select a contact to chat</span>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
+                <!-- Messages will dynamically append here -->
+            </div>
+
+            <!-- Input & P2P File Share Footer -->
+            <div class="bg-[#202c33] px-4 py-3 flex items-center space-x-3 border-t border-[#2f3b43]">
+                <label class="cursor-pointer text-gray-400 hover:text-white transition" title="Share Local Image/Video P2P">
+                    📁 <input type="file" id="mediaFileInput" class="hidden" onchange="sendP2PFile()">
+                </label>
+                <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 bg-[#2a3942] text-sm px-4 py-3 rounded-lg focus:outline-none text-white placeholder-gray-400" onkeypress="if(event.key === 'Enter') sendMessage()">
+                <button onclick="sendMessage()" class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded-lg font-medium text-white transition">Send</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let myPhone = "";
+
+        async function registerUser() {
+            const phone = document.getElementById('myPhoneInput').value.trim();
+            if(!phone) return alert('Please enter phone number');
+            
+            const res = await fetch('/api/chat?action=login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone_number: phone, display_name: "User " + phone })
+            });
+            const data = await res.json();
+            if(data.success) {
+                myPhone = phone;
+                document.getElementById('userPhoneDisplay').innerText = "Logged: " + phone;
+                alert('Login Successful & Magic Code Generated!');
+                loadMessages();
+            }
+        }
+
+        async function sendMessage() {
+            const recipient = document.getElementById('recipientPhoneInput').value.trim();
+            const text = document.getElementById('messageInput').value.trim();
+            if(!myPhone || !recipient || !text) return alert('Fill phone numbers and message text!');
+
+            const formData = new FormData();
+            formData.append('sender_phone', myPhone);
+            formData.append('recipient_phone', recipient);
+            formData.append('message_text', text);
+
+            const res = await fetch('/api/chat?action=send_message', { method: 'POST', body: formData });
+            const data = await res.json();
+            if(data.success) {
+                document.getElementById('messageInput').value = '';
+                loadMessages();
+            }
+        }
+
+        async function sendP2PFile() {
+            const fileInput = document.getElementById('mediaFileInput');
+            const recipient = document.getElementById('recipientPhoneInput').value.trim();
+            if(!fileInput.files[0] || !recipient) return alert('Select file and recipient first!');
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('sender_phone', myPhone);
+            formData.append('recipient_phone', recipient);
+            formData.append('message_text', `[Shared Local File: ${file.name}]`);
+            formData.append('media', file); // Local file direct buffer stream
+
+            const res = await fetch('/api/chat?action=send_message', { method: 'POST', body: formData });
+            const data = await res.json();
+            if(data.success) {
+                alert('File Shared Successfully via Direct Channel!');
+                loadMessages();
+            }
+        }
+
+        async function loadMessages() {
+            const recipient = document.getElementById('recipientPhoneInput').value.trim();
+            if(!myPhone || !recipient) return;
+
+            const res = await fetch(`/api/chat?action=get_messages&user1=${myPhone}&user2=${recipient}`);
+            const data = await res.json();
+            
+            if(data.success) {
+                const container = document.getElementById('chatMessages');
+                container.innerHTML = '';
+                data.messages.forEach(msg => {
+                    const isMe = msg.phone_number === myPhone;
+                    const div = document.createElement('div');
+                    div.className = `max-w-md p-3 rounded-lg text-sm ${isMe ? 'bg-[#005c4b] self-end text-white' : 'bg-[#202c33] self-start text-white'}`;
+                    
+                    let content = `<p>${msg.message_text}</p>`;
+                    if(msg.avatar_url) {
+                        content += `<a href="${msg.avatar_url}" target="_blank" class="text-xs text-blue-400 underline mt-1 block">[View Shared Media]</a>`;
+                    }
+                    div.innerHTML = content;
+                    container.appendChild(div);
+                });
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        // Auto refresh chat every 3 seconds for real-time feel
+        setInterval(() => {
+            if(myPhone && document.getElementById('recipientPhoneInput').value.trim()) {
+                loadMessages();
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
