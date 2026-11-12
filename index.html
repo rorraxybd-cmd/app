@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SALAAM - rorraxy.com</title>
+    <title>SALAAM - chat.rorraxy.com</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -93,12 +93,12 @@
                         <path d="M8.5 12.2L10.8 14.5L15.5 9.5" stroke="#030305" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
-                <a href="https://rorraxy.com" target="_blank" class="text-[11px] text-white/90 hover:text-amber-300 transition block tracking-wide">rorraxy.com</a>
+                <a href="https://chat.rorraxy.com" target="_blank" class="text-[11px] text-white/90 hover:text-amber-300 transition block tracking-wide">chat.rorraxy.com</a>
             </div>
         </div>
         <div class="flex items-center space-x-2 bg-[#0b0b12] px-3.5 py-1.5 rounded-full border border-emerald-500/30 shadow-inner">
             <span class="w-2 h-2 rounded-full bg-[#2ed573] inline-block animate-pulse shadow-[0_0_8px_#2ed573]"></span>
-            <span class="text-[11px] text-white font-medium tracking-wide">Online</span>
+            <span class="text-[11px] text-white font-medium tracking-wide">VIP Online</span>
         </div>
     </header>
 
@@ -178,19 +178,19 @@
                             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
                         </svg>
                     </div>
-                    <p class="text-xs font-semibold gold-gradient-text tracking-wide">SALAAM</p>
-                    <p class="text-[11px] text-[var(--text-gray)] leading-relaxed">Select a contact from the Contact menu to start messaging.</p>
+                    <p class="text-xs font-semibold gold-gradient-text tracking-wide">SALAAM VIP Chat</p>
+                    <p class="text-[11px] text-[var(--text-gray)] leading-relaxed">Select a contact from the Contact menu to start VIP messaging.</p>
                 </div>
             </div>
 
             <!-- Input Bar -->
             <div id="chatInputBar" class="bg-[#06060b] px-4 py-3 hidden items-center space-x-2.5 border-t border-amber-500/15 shrink-0 relative">
                 <div class="flex-1 flex items-center bg-[#0a0a12] rounded-2xl px-3.5 py-2.5 space-x-3 border border-amber-500/20 focus-within:border-amber-400/60 transition">
-                    <label class="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center" title="Attach File">
+                    <label class="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center" title="Attach Media or File">
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
                         </svg>
-                        <input type="file" class="hidden" onchange="sendUniversalFile(this)">
+                        <input type="file" accept="image/*,video/*,application/pdf,.doc,.docx" class="hidden" onchange="sendUniversalFile(this)">
                     </label>
                     <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
                 </div>
@@ -206,7 +206,7 @@
 
     </div>
 
-    <!-- Fixed Bottom 3 Navigation Menu Bar -->
+    <!-- Fixed Bottom 3 Navigation Menu Bar (Profile | Contact | Chat) -->
     <nav class="fixed bottom-0 left-0 right-0 md:w-[380px] bg-[#06060b]/95 backdrop-blur-md grid grid-cols-3 py-2 text-center border-t border-amber-500/20 shrink-0 z-50 shadow-[0_-8px_25px_rgba(0,0,0,0.85)]">
         <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 transition group cursor-pointer">
             <div class="nav-icon-wrap transition-transform duration-200">
@@ -247,7 +247,7 @@
 
     <!-- Script Logic -->
     <script>
-        let currentTab = 'contact';
+        let currentTab = 'chat';
         let currentActiveRecipient = null;
         let activeCallType = null;
         let localMessageStore = {};
@@ -343,7 +343,7 @@
         }
 
         function renderProfileView() {
-            const shareUrl = `https://rorraxy.com/${userProfile.username}`;
+            const shareUrl = `https://chat.rorraxy.com/${userProfile.username}`;
             document.getElementById('sidebarContentList').innerHTML = `
                 <div class="p-4 space-y-4 text-xs">
                     <div class="flex flex-col items-center space-y-2.5 pb-4 border-b border-amber-500/15 bg-[#090910] p-4 rounded-2xl gold-border">
@@ -359,11 +359,11 @@
                         </div>
                         <div class="text-center">
                             <p class="font-bold text-sm gold-gradient-text tracking-wide">${userProfile.name}</p>
-                            <p class="text-[11px] text-white/85 mt-0.5">rorraxy.com/<span class="text-amber-300 font-semibold">${userProfile.username}</span></p>
+                            <p class="text-[11px] text-white/85 mt-0.5">chat.rorraxy.com/<span class="text-amber-300 font-semibold">${userProfile.username}</span></p>
                         </div>
 
-                        <div class="w-full pt-2 flex items-center space-x-2">
-                            <button onclick="shareProfileLink('${shareUrl}')" class="flex-1 pink-btn py-2 px-3 rounded-xl text-[11px] flex items-center justify-center space-x-1.5 transition cursor-pointer">
+                        <div class="w-full pt-2">
+                            <button onclick="shareProfileLink('${shareUrl}')" class="w-full pink-btn py-2 px-3 rounded-xl text-[11px] flex items-center justify-center space-x-1.5 transition cursor-pointer">
                                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="18" cy="5" r="3"></circle>
                                     <circle cx="6" cy="12" r="3"></circle>
@@ -372,13 +372,6 @@
                                     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
                                 </svg>
                                 <span>Share Profile</span>
-                            </button>
-                            <button onclick="copyProfileLink('${shareUrl}')" class="py-2 px-3 bg-[#030305] hover:bg-[#12121c] rounded-xl border border-amber-500/30 text-amber-300 text-[11px] flex items-center space-x-1 transition cursor-pointer" title="Copy URL">
-                                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                </svg>
-                                <span>Copy</span>
                             </button>
                         </div>
                     </div>
@@ -420,12 +413,8 @@
             if (navigator.share) {
                 navigator.share({ title: userProfile.name, url: url }).catch(() => {});
             } else {
-                copyProfileLink(url);
+                navigator.clipboard.writeText(url).then(() => showToast('Profile link copied!'));
             }
-        }
-
-        function copyProfileLink(url) {
-            navigator.clipboard.writeText(url).then(() => showToast('Profile link copied!'));
         }
 
         function toggleProfileEdit() {
@@ -457,6 +446,7 @@
         }
 
         function renderDeviceContacts() {
+            // Auto-sync or load contacts list
             const sortedContacts = [...deviceContacts].sort((a, b) => b.appUser - a.appUser);
             document.getElementById('sidebarContentList').innerHTML = sortedContacts.map(c => `
                 <div onclick="openChatWithContact('${c.phone}', '${c.name}')" class="flex justify-between items-center px-4 py-3.5 hover:bg-[#0d0d16] cursor-pointer transition">
@@ -584,7 +574,8 @@
 
             const key = currentActiveRecipient.phone;
             if(!localMessageStore[key]) localMessageStore[key] = [];
-            localMessageStore[key].push({ phone_number: userProfile.phone, message_text: text });
+            const msgId = 'msg_' + Date.now();
+            localMessageStore[key].push({ id: msgId, phone_number: userProfile.phone, message_text: text, type: 'text' });
 
             const contactObj = deviceContacts.find(c => c.phone === key);
             if(contactObj) contactObj.lastMsg = text;
@@ -606,17 +597,29 @@
             const fileUrl = URL.createObjectURL(file);
             const key = currentActiveRecipient.phone;
             if(!localMessageStore[key]) localMessageStore[key] = [];
-            localMessageStore[key].push({ phone_number: userProfile.phone, message_text: file.name, avatar_url: fileUrl });
+            
+            let fileType = 'file';
+            if(file.type.startsWith('image/')) fileType = 'image';
+            else if(file.type.startsWith('video/')) fileType = 'video';
+
+            const msgId = 'msg_' + Date.now();
+            localMessageStore[key].push({ 
+                id: msgId, 
+                phone_number: userProfile.phone, 
+                message_text: file.name, 
+                media_url: fileUrl, 
+                type: fileType 
+            });
 
             const contactObj = deviceContacts.find(c => c.phone === key);
-            if(contactObj) contactObj.lastMsg = `[File] ${file.name}`;
+            if(contactObj) contactObj.lastMsg = `[${fileType.toUpperCase()}] ${file.name}`;
             if(currentTab === 'chat') renderChatStories();
 
             try {
                 await fetch('/api/chat?action=send_message', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sender_phone: userProfile.phone, recipient_phone: currentActiveRecipient.phone, message_text: `[File: ${file.name}]`, media_url: fileUrl })
+                    body: JSON.stringify({ sender_phone: userProfile.phone, recipient_phone: currentActiveRecipient.phone, message_text: `[File: ${file.name}]`, media_url: fileUrl, file_type: fileType })
                 });
             } catch (e) {}
             inputElement.value = '';
@@ -640,22 +643,47 @@
 
             container.innerHTML = '';
             if(messages.length > 0) {
-                container.className = "flex-1 overflow-y-auto p-4 space-y-2.5 flex flex-col";
-                messages.forEach(msg => {
+                container.className = "flex-1 overflow-y-auto p-4 space-y-3 flex flex-col";
+                messages.forEach((msg, idx) => {
                     const isMe = msg.phone_number === userProfile.phone;
                     const div = document.createElement('div');
-                    div.className = `max-w-[78%] md:max-w-sm px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed shadow-md ${
+                    div.className = `max-w-[80%] md:max-w-sm px-4 py-3 rounded-2xl text-xs leading-relaxed shadow-lg relative group ${
                         isMe 
                         ? 'bg-gradient-to-br from-[#0f2419] to-[#0a1811] border border-[#2ed573]/30 self-end text-white rounded-br-sm' 
                         : 'bg-[#0b0b14] border border-amber-500/20 self-start text-white rounded-bl-sm'
                     }`;
-                    div.innerHTML = `<p>${msg.message_text}</p>` + (msg.avatar_url ? `<a href="${msg.avatar_url}" target="_blank" class="text-amber-300 underline block mt-1 text-[11px]">Open File</a>` : '');
+
+                    let contentHtml = '';
+                    if (msg.type === 'image' || (msg.media_url && msg.message_text && (msg.message_text.endsWith('.png') || msg.message_text.endsWith('.jpg') || msg.message_text.endsWith('.jpeg')))) {
+                        contentHtml = `<div class="space-y-1.5"><img src="${msg.media_url || msg.avatar_url}" class="rounded-xl max-h-48 w-full object-cover border border-amber-500/20"><p class="text-[10px] text-gray-300">${msg.message_text}</p></div>`;
+                    } else if (msg.type === 'video') {
+                        contentHtml = `<div class="space-y-1.5"><video src="${msg.media_url || msg.avatar_url}" controls class="rounded-xl max-h-48 w-full object-cover border border-amber-500/20"></video><p class="text-[10px] text-gray-300">${msg.message_text}</p></div>`;
+                    } else if (msg.media_url || msg.avatar_url) {
+                        contentHtml = `<a href="${msg.media_url || msg.avatar_url}" target="_blank" class="text-amber-300 underline block text-[11px]">📎 ${msg.message_text}</a>`;
+                    } else {
+                        contentHtml = `<p>${msg.message_text}</p>`;
+                    }
+
+                    div.innerHTML = `
+                        ${contentHtml}
+                        <div class="absolute top-1 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="deleteSingleMessage('${currentActiveRecipient.phone}', ${idx})" class="text-[9px] text-red-400 hover:text-red-300 bg-black/60 px-1.5 py-0.5 rounded">Delete</button>
+                        </div>
+                    `;
                     container.appendChild(div);
                 });
                 container.scrollTop = container.scrollHeight;
             } else {
                 container.className = "flex-1 overflow-y-auto p-4 space-y-3 flex flex-col justify-center items-center";
                 container.innerHTML = `<div class="bg-[#090910] px-5 py-3.5 rounded-2xl border border-amber-500/20 text-center"><p class="text-xs text-white/75">No message yet</p></div>`;
+            }
+        }
+
+        function deleteSingleMessage(phone, index) {
+            if(localMessageStore[phone]) {
+                localMessageStore[phone].splice(index, 1);
+                loadMessages();
+                showToast('Message deleted');
             }
         }
 
