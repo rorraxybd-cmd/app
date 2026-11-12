@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>salaam - rorraxy.com</title>
+    <title>SALAAM - rorraxy.com</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         :root {
@@ -47,18 +47,18 @@
 </head>
 <body class="h-[100dvh] flex flex-col overflow-hidden pb-16 md:pb-0">
 
-    <!-- Top Header Bar -->
-    <header class="bg-[#06060a] px-4 py-3 flex justify-between items-center border-b border-gray-900/60 shrink-0 z-20">
+    <!-- Top Header Bar (Matching SALAAM and White rorraxy.com URL) -->
+    <header class="bg-[#06060a] px-4 py-3 flex justify-between items-center border-b border-gray-900 shrink-0 z-30">
         <div class="flex items-center space-x-3">
-            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" alt="logo" class="w-9 h-9 rounded-full object-cover">
+            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" alt="logo" class="w-10 h-10 rounded-full object-cover border border-amber-500/40">
             <div>
-                <h1 class="font-bold text-sm tracking-wide gold-gradient-text">salaam</h1>
-                <p class="text-[9px] text-[var(--text-gray)]">rorraxy.com</p>
+                <h1 class="font-extrabold text-base tracking-wider gold-gradient-text">SALAAM</h1>
+                <a href="https://rorraxy.com" target="_blank" class="text-[10px] text-white hover:underline block opacity-90">rorraxy.com</a>
             </div>
         </div>
-        <div class="flex items-center space-x-2 bg-[#030305] px-3 py-1 rounded-full border border-gray-800">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-            <span class="text-[10px] text-gray-300">Online</span>
+        <div class="flex items-center space-x-2 bg-[#030305] px-3.5 py-1.5 rounded-full border border-gray-800">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+            <span class="text-[11px] text-white font-medium">Online</span>
         </div>
     </header>
 
@@ -66,26 +66,24 @@
     <div class="flex flex-1 overflow-hidden relative">
         
         <!-- Sidebar: Content Lists -->
-        <div id="sidebarSection" class="w-full md:w-[380px] bg-[#06060a] flex flex-col justify-between border-r border-gray-900/60 shrink-0 z-10 h-full">
-            
+        <div id="sidebarSection" class="w-full md:w-[380px] bg-[#06060a] flex flex-col justify-between border-r border-gray-900 shrink-0 z-20 h-full">
             <div class="flex flex-col flex-1 overflow-hidden">
-                <!-- Search Bar -->
-                <div id="searchBarContainer" class="p-3 bg-[#030305] border-b border-gray-900/60 flex items-center space-x-2 shrink-0">
-                    <span class="text-sm gold-gradient-text">🔍</span>
-                    <input type="text" id="searchInput" placeholder="Search contact or chat..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="filterContent()">
+                <!-- Search Bar with Magnifying Glass Icon -->
+                <div id="searchBarContainer" class="p-3 bg-[#030305] border-b border-gray-900 flex items-center space-x-2 shrink-0">
+                    <span class="text-sm gold-gradient-text px-1">🔍</span>
+                    <input type="text" id="searchInput" placeholder="Search..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="filterContent()">
                 </div>
 
                 <!-- Dynamic Content Area -->
-                <div id="sidebarContentList" class="flex-1 overflow-y-auto divide-y divide-[#111118] pb-10">
+                <div id="sidebarContentList" class="flex-1 overflow-y-auto divide-y divide-[#111118] pb-16">
                     <!-- Populated dynamically -->
                 </div>
             </div>
         </div>
 
         <!-- Active Chat & Interaction Box Section -->
-        <div id="workspaceSection" class="hidden md:flex flex-col bg-[#030305] flex-1 overflow-hidden h-full">
-            
-            <div id="activeChatHeader" class="bg-[#06060a] px-4 py-3 hidden items-center justify-between border-b border-gray-900/60 shrink-0">
+        <div id="workspaceSection" class="hidden md:flex flex-col bg-[#030305] flex-1 overflow-hidden h-full z-10">
+            <div id="activeChatHeader" class="bg-[#06060a] px-4 py-3 hidden items-center justify-between border-b border-gray-900 shrink-0">
                 <div class="flex items-center space-x-3">
                     <button onclick="backToSidebarMobile()" class="md:hidden text-amber-400 text-lg mr-1">⬅️</button>
                     <img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-9 h-9 rounded-full object-cover">
@@ -94,10 +92,11 @@
                         <p id="activeChatStatus" class="text-[9px] text-[var(--success-green)]">Online</p>
                     </div>
                 </div>
+                <!-- Call & Action Icons in Center/Right Header -->
                 <div class="flex items-center space-x-2">
-                    <button onclick="triggerCall('audio')" class="text-xs px-3 py-1.5 bg-[#030305] rounded-md hover:bg-[#1a1a24] gold-gradient-text" title="Audio Call">📞</button>
-                    <button onclick="triggerCall('video')" class="text-xs px-3 py-1.5 bg-[#030305] rounded-md hover:bg-[#1a1a24] gold-gradient-text" title="Video Call">📹</button>
-                    <button onclick="clearChatHistory()" class="text-[11px] text-red-400 bg-[#030305] px-3 py-1.5 rounded-md" title="Clear Chat">🗑️</button>
+                    <button onclick="triggerCall('audio')" class="text-sm px-3.5 py-1.5 bg-[#030305] rounded-md hover:bg-[#1a1a24] gold-gradient-text border border-amber-500/20" title="Audio Call">📞</button>
+                    <button onclick="triggerCall('video')" class="text-sm px-3.5 py-1.5 bg-[#030305] rounded-md hover:bg-[#1a1a24] gold-gradient-text border border-amber-500/20" title="Video Call">📹</button>
+                    <button onclick="clearChatHistory()" class="text-xs text-red-400 bg-[#030305] px-3 py-1.5 rounded-md border border-red-900/30" title="Clear Chat">🗑️</button>
                 </div>
             </div>
 
@@ -107,7 +106,7 @@
             </div>
 
             <!-- Clean Input Bar -->
-            <div id="chatInputBar" class="bg-[#06060a] px-4 py-3 hidden items-center space-x-2 border-t border-gray-900/60 shrink-0 relative">
+            <div id="chatInputBar" class="bg-[#06060a] px-4 py-3 hidden items-center space-x-2 border-t border-gray-900 shrink-0 relative">
                 <div class="flex-1 flex items-center bg-[#030305] rounded-xl px-3 py-2 space-x-3 border border-gray-800">
                     <label class="cursor-pointer text-xl gold-gradient-text hover:opacity-80 transition" title="Attach File">
                         📎
@@ -121,11 +120,20 @@
 
     </div>
 
-    <!-- Fixed Bottom 3 Navigation Menu Bar (Always Visible on Mobile & Desktop) -->
-    <div class="fixed bottom-0 left-0 right-0 bg-[#030305] grid grid-cols-3 py-3 text-center border-t border-gray-800 shrink-0 z-50 shadow-2xl">
-        <button onclick="switchTab('chat')" id="tabChat" class="text-2xl gold-gradient-text hover:opacity-80 flex items-center justify-center transition">💬</button>
-        <button onclick="switchTab('contact')" id="tabContact" class="text-2xl pink-gradient-text flex items-center justify-center transition">📇</button>
-        <button onclick="switchTab('profile')" id="tabProfile" class="text-2xl gold-gradient-text hover:opacity-80 flex items-center justify-center transition">👤</button>
+    <!-- Fixed Bottom 3 Navigation Menu Bar (Modern Luxury Geometric Icons) -->
+    <div class="fixed bottom-0 left-0 right-0 bg-[#030305] grid grid-cols-3 py-2 text-center border-t border-gray-800 shrink-0 z-50 shadow-2xl">
+        <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-0.5 transition">
+            <span class="text-xl gold-gradient-text">🛡️</span>
+            <span class="text-[10px] text-gray-400 font-medium">Profile</span>
+        </button>
+        <button onclick="switchTab('contact')" id="tabContact" class="flex flex-col items-center justify-center space-y-0.5 transition">
+            <span class="text-xl gold-gradient-text">📇</span>
+            <span class="text-[10px] text-gray-400 font-medium">Contact</span>
+        </button>
+        <button onclick="switchTab('chat')" id="tabChat" class="flex flex-col items-center justify-center space-y-0.5 transition">
+            <span class="text-xl gold-gradient-text">✉️</span>
+            <span class="text-[10px] text-gray-400 font-medium">Chat</span>
+        </button>
     </div>
 
     <!-- Script Logic -->
@@ -137,27 +145,33 @@
         let userProfile = {
             name: "Masudar Rahman",
             phone: "+8801700000000",
-            username: "@masudar",
+            username: "masudar",
             dob: "1995-01-01",
             avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg",
             status: "Online"
         };
 
         let deviceContacts = [
-            { name: "Rorraxy Support", phone: "+8801700000000", username: "@rorraxy", appUser: true, status: "Online" },
-            { name: "Mamun Rashid", phone: "+8801800000000", username: "@mamun", appUser: true, status: "Online" },
-            { name: "Local Friend", phone: "+8801900000000", username: "@friend", appUser: false, status: "Offline" }
+            { name: "rorraxy", phone: "support", appUser: true, status: "Admin Support" },
+            { name: "Mamun Rashid", phone: "+8801800000000", appUser: true, status: "Online" },
+            { name: "Local Friend", phone: "+8801900000000", appUser: false, status: "Offline" }
         ];
 
         function switchTab(tab) {
             currentTab = tab;
-            ['chat', 'contact', 'profile'].forEach(t => {
+            ['profile', 'contact', 'chat'].forEach(t => {
                 const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
-                if(btn) btn.className = "text-2xl gold-gradient-text hover:opacity-80 flex items-center justify-center transition";
+                if(btn) {
+                    btn.children[0].className = "text-xl gold-gradient-text";
+                    btn.children[1].className = "text-[10px] text-gray-400 font-medium";
+                }
             });
 
             const activeBtn = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
-            if(activeBtn) activeBtn.className = "text-3xl pink-gradient-text flex items-center justify-center transition";
+            if(activeBtn) {
+                activeBtn.children[0].className = "text-2xl pink-gradient-text";
+                activeBtn.children[1].className = "text-[10px] text-amber-300 font-bold";
+            }
 
             const searchBar = document.getElementById('searchBarContainer');
             if(tab === 'profile') {
@@ -181,13 +195,13 @@
                     <div class="flex flex-col items-center space-y-2 pb-3 border-b border-gray-800">
                         <div class="relative">
                             <img id="profileAvatarImg" src="${userProfile.avatar}" class="w-20 h-20 rounded-full object-cover border-2 border-amber-500">
-                            <label class="absolute bottom-0 right-0 bg-[#030305] p-1.5 rounded-full border border-amber-500 cursor-pointer text-xs" title="Change Photo">
+                            <label class="absolute bottom-0 right-0 bg-[#030305] p-1.5 rounded-full border border-amber-500 cursor-pointer text-xs shadow-lg" title="Change Photo">
                                 📷
                                 <input type="file" accept="image/*" class="hidden" onchange="updateProfileAvatar(this)">
                             </label>
                         </div>
                         <p class="font-bold text-sm gold-gradient-text">${userProfile.name}</p>
-                        <p class="text-[10px] text-gray-400">Username: <span class="text-amber-300">salaam.me/${userProfile.username}</span></p>
+                        <p class="text-[10px] text-white opacity-80">URL: <span class="text-amber-300">rorraxy.com/${userProfile.username}</span></p>
                     </div>
 
                     <div class="space-y-2 bg-[#030305] p-3 rounded-xl border border-gray-800">
@@ -195,10 +209,10 @@
                             <span class="font-bold gold-gradient-text text-xs">Profile Details</span>
                             <button onclick="toggleProfileEdit()" class="text-[10px] text-amber-400 underline">Edit Info</button>
                         </div>
-                        <p class="text-gray-300"><b>Name:</b> ${userProfile.name}</p>
-                        <p class="text-gray-300"><b>Phone:</b> ${userProfile.phone}</p>
-                        <p class="text-gray-300"><b>Username:</b> ${userProfile.username}</p>
-                        <p class="text-gray-300"><b>Birth Date:</b> ${userProfile.dob}</p>
+                        <p class="text-white"><b>Name:</b> ${userProfile.name}</p>
+                        <p class="text-white"><b>Phone:</b> ${userProfile.phone}</p>
+                        <p class="text-white"><b>Username:</b> ${userProfile.username}</p>
+                        <p class="text-white"><b>Birth Date:</b> ${userProfile.dob}</p>
                     </div>
 
                     <div id="profileEditForm" class="space-y-2 bg-[#030305] p-3 rounded-xl border border-gray-800 hidden">
@@ -211,7 +225,7 @@
                     </div>
 
                     <div class="space-y-2 pt-2">
-                        <button onclick="alert('Add account feature activated')" class="w-full py-2 bg-[#030305] text-xs rounded border border-gray-800 text-gray-300 hover:text-white">➕ Add Account</button>
+                        <button onclick="alert('Add account modal opened')" class="w-full py-2 bg-[#030305] text-xs rounded border border-gray-800 text-white hover:bg-gray-900">➕ Add Account</button>
                         <button onclick="alert('Logged out successfully')" class="w-full py-2 bg-red-950/40 text-xs rounded border border-red-900/50 text-red-400">🚪 Log Out</button>
                     </div>
                 </div>`;
@@ -246,7 +260,7 @@
                         <div class="w-9 h-9 rounded-full bg-gray-800 flex items-center justify-center text-xs font-bold gold-gradient-text">${c.name.charAt(0)}</div>
                         <div>
                             <p class="text-xs font-medium gold-gradient-text">${c.name}</p>
-                            <p class="text-[9px] text-[var(--text-gray)]">${c.username} • ${c.phone}</p>
+                            <p class="text-[9px] text-[var(--success-green)]">${c.status}</p>
                         </div>
                     </div>
                     <div>
@@ -261,7 +275,7 @@
                 <div onclick="openChatWithContact('${c.phone}', '${c.name}')" class="p-3 hover:bg-[#030305] cursor-pointer flex items-center space-x-3 transition">
                     <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-9 h-9 rounded-full object-cover">
                     <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-baseline"><span class="font-medium text-xs gold-gradient-text truncate">${c.name}</span><span class="text-[9px] text-gray-400">${c.username}</span></div>
+                        <div class="flex justify-between items-baseline"><span class="font-medium text-xs gold-gradient-text truncate">${c.name}</span><span class="text-[9px] text-white opacity-80">salaam</span></div>
                         <p class="text-[10px] text-[var(--success-green)] truncate">Tap to open messages...</p>
                     </div>
                 </div>
@@ -305,18 +319,18 @@
             const container = document.getElementById('chatMessages');
             container.innerHTML = `
                 <div class="flex flex-col items-center justify-center h-full space-y-4 bg-[#030305] p-6 rounded-2xl border border-amber-500/20">
-                    <div class="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center text-3xl border-2 border-amber-500 animate-pulse">
+                    <div class="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center text-3xl border-2 border-amber-500 animate-pulse gold-gradient-text">
                         ${activeCallType === 'audio' ? '📞' : '📹'}
                     </div>
-                    <p class="text-sm font-bold gold-gradient-text">Connected P2P ${activeCallType.toUpperCase()} Call</p>
-                    <p class="text-xs text-gray-400">Talking with ${currentActiveRecipient.name}</p>
+                    <p class="text-sm font-bold gold-gradient-text">Connected</p>
+                    <p class="text-xs text-white opacity-80">Talking with ${currentActiveRecipient.name}</p>
                     
-                    <div class="flex space-x-3 pt-4">
-                        <button onclick="switchCallMode()" class="px-4 py-2 bg-gray-800 text-xs rounded-lg text-amber-300 border border-amber-500/30">
-                            Switch to ${activeCallType === 'audio' ? 'Video 📹' : 'Audio 📞'}
+                    <div class="flex space-x-3 pt-4 items-center">
+                        <button onclick="switchCallMode()" class="px-4 py-2 bg-gray-800 text-xs rounded-lg text-amber-300 border border-amber-500/30 flex items-center space-x-1">
+                            <span>Switch to ${activeCallType === 'audio' ? 'Video 📹' : 'Audio 📞'}</span>
                         </button>
-                        <button onclick="endCallSession()" class="px-4 py-2 bg-red-600 text-xs rounded-lg text-white font-bold" title="End Call">
-                            ❌
+                        <button onclick="endCallSession()" class="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center text-white text-base shadow-lg hover:bg-red-500 transition" title="End Call">
+                            📞
                         </button>
                     </div>
                 </div>`;
@@ -383,7 +397,7 @@
                 container.scrollTop = container.scrollHeight;
             } else {
                 container.className = "flex-1 overflow-y-auto p-4 space-y-3 flex flex-col justify-center items-center";
-                container.innerHTML = `<div class="text-[var(--text-gray)] text-xs text-center">No messages yet. Say salaam!</div>`;
+                container.innerHTML = `<div class="text-white opacity-70 text-xs text-center">No messages yet. Say salaam!</div>`;
             }
         }
 
