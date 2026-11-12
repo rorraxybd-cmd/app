@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>salaam - rorraxy.com</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
@@ -22,6 +22,7 @@
             background-color: var(--bg-retail); 
             color: var(--text-white); 
             font-family: var(--font-main); 
+            -webkit-tap-highlight-color: transparent;
         }
 
         .gold-gradient-text {
@@ -39,15 +40,15 @@
         .gold-btn { background: var(--gold-gradient); color: #000; font-weight: 600; }
         .gold-btn:hover { opacity: 0.9; }
         
-        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar { width: 3px; height: 3px; }
         ::-webkit-scrollbar-track { background: var(--bg-retail); }
         ::-webkit-scrollbar-thumb { background: #b38728; border-radius: 4px; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
+<body class="h-[100dvh] flex flex-col overflow-hidden pb-16 md:pb-0">
 
-    <!-- Top Header Bar for Chat View -->
-    <header id="topHeader" class="bg-[#06060a] px-4 py-3 flex justify-between items-center border-b border-gray-900">
+    <!-- Top Header Bar -->
+    <header class="bg-[#06060a] px-4 py-3 flex justify-between items-center border-b border-gray-900/60 shrink-0 z-20">
         <div class="flex items-center space-x-3">
             <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" alt="logo" class="w-9 h-9 rounded-full object-cover">
             <div>
@@ -55,43 +56,38 @@
                 <p class="text-[9px] text-[var(--text-gray)]">rorraxy.com</p>
             </div>
         </div>
-        <div class="flex items-center space-x-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
-            <span class="text-xs text-gray-300">Online</span>
+        <div class="flex items-center space-x-2 bg-[#030305] px-3 py-1 rounded-full border border-gray-800">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+            <span class="text-[10px] text-gray-300">Online</span>
         </div>
     </header>
 
-    <!-- Main Workspace Container (3 Menus: Chat, Contact, Profile) -->
-    <div class="flex flex-1 overflow-hidden">
+    <!-- Main Workspace Container -->
+    <div class="flex flex-1 overflow-hidden relative">
         
-        <!-- Sidebar: Content Lists & 3 Bottom Navigation Icons -->
-        <div class="w-full md:w-[380px] bg-[#06060a] flex flex-col justify-between border-r border-gray-900">
+        <!-- Sidebar: Content Lists -->
+        <div id="sidebarSection" class="w-full md:w-[380px] bg-[#06060a] flex flex-col justify-between border-r border-gray-900/60 shrink-0 z-10 h-full">
             
             <div class="flex flex-col flex-1 overflow-hidden">
-                <!-- Search Bar (Active in Chat & Contact tabs) -->
-                <div id="searchBarContainer" class="p-3 bg-[#030305] border-b border-gray-900">
-                    <input type="text" id="searchInput" placeholder="Search chat or contact..." class="w-full bg-[#06060a] text-xs px-3 py-2 rounded-lg focus:outline-none text-white placeholder-gray-500" oninput="filterContent()">
+                <!-- Search Bar -->
+                <div id="searchBarContainer" class="p-3 bg-[#030305] border-b border-gray-900/60 flex items-center space-x-2 shrink-0">
+                    <span class="text-sm gold-gradient-text">🔍</span>
+                    <input type="text" id="searchInput" placeholder="Search contact or chat..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="filterContent()">
                 </div>
 
                 <!-- Dynamic Content Area -->
-                <div id="sidebarContentList" class="flex-1 overflow-y-auto divide-y divide-[#111118]">
-                    <!-- Populated dynamically based on tab -->
+                <div id="sidebarContentList" class="flex-1 overflow-y-auto divide-y divide-[#111118] pb-10">
+                    <!-- Populated dynamically -->
                 </div>
-            </div>
-
-            <!-- Bottom 3 Navigation Menu Bar (Equal Width, Big Golden/Pink Icons) -->
-            <div class="bg-[#030305] grid grid-cols-3 py-3 text-center border-t border-gray-900">
-                <button onclick="switchTab('chat')" id="tabChat" class="text-2xl gold-gradient-text hover:opacity-80 flex items-center justify-center transition">💬</button>
-                <button onclick="switchTab('contact')" id="tabContact" class="text-2xl gold-gradient-text hover:opacity-80 flex items-center justify-center transition">📇</button>
-                <button onclick="switchTab('profile')" id="tabProfile" class="text-2xl gold-gradient-text hover:opacity-80 flex items-center justify-center transition">👤</button>
             </div>
         </div>
 
         <!-- Active Chat & Interaction Box Section -->
-        <div id="workspaceSection" class="flex-1 hidden md:flex flex-col bg-[#030305] flex-2">
+        <div id="workspaceSection" class="hidden md:flex flex-col bg-[#030305] flex-1 overflow-hidden h-full">
             
-            <div id="activeChatHeader" class="bg-[#06060a] px-4 py-3 hidden items-center justify-between border-b border-gray-900">
+            <div id="activeChatHeader" class="bg-[#06060a] px-4 py-3 hidden items-center justify-between border-b border-gray-900/60 shrink-0">
                 <div class="flex items-center space-x-3">
+                    <button onclick="backToSidebarMobile()" class="md:hidden text-amber-400 text-lg mr-1">⬅️</button>
                     <img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-9 h-9 rounded-full object-cover">
                     <div>
                         <span id="activeChatTitle" class="font-medium text-white text-xs">Select a contact</span>
@@ -107,12 +103,12 @@
 
             <!-- Messages Area -->
             <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col justify-center items-center">
-                <div class="text-[var(--text-gray)] text-xs text-center">Select a chat from the Chat menu to start messaging.</div>
+                <div class="text-[var(--text-gray)] text-xs text-center">Select a contact from the Contact menu to start messaging.</div>
             </div>
 
-            <!-- Clean Input Bar (Appears only when active chat is open) -->
-            <div id="chatInputBar" class="bg-[#06060a] px-4 py-3 hidden items-center space-x-2 border-t border-gray-900 relative">
-                <div class="flex-1 flex items-center bg-[#030305] rounded-xl px-3 py-2 space-x-3">
+            <!-- Clean Input Bar -->
+            <div id="chatInputBar" class="bg-[#06060a] px-4 py-3 hidden items-center space-x-2 border-t border-gray-900/60 shrink-0 relative">
+                <div class="flex-1 flex items-center bg-[#030305] rounded-xl px-3 py-2 space-x-3 border border-gray-800">
                     <label class="cursor-pointer text-xl gold-gradient-text hover:opacity-80 transition" title="Attach File">
                         📎
                         <input type="file" class="hidden" onchange="sendUniversalFile(this)">
@@ -125,11 +121,18 @@
 
     </div>
 
+    <!-- Fixed Bottom 3 Navigation Menu Bar (Always Visible on Mobile & Desktop) -->
+    <div class="fixed bottom-0 left-0 right-0 bg-[#030305] grid grid-cols-3 py-3 text-center border-t border-gray-800 shrink-0 z-50 shadow-2xl">
+        <button onclick="switchTab('chat')" id="tabChat" class="text-2xl gold-gradient-text hover:opacity-80 flex items-center justify-center transition">💬</button>
+        <button onclick="switchTab('contact')" id="tabContact" class="text-2xl pink-gradient-text flex items-center justify-center transition">📇</button>
+        <button onclick="switchTab('profile')" id="tabProfile" class="text-2xl gold-gradient-text hover:opacity-80 flex items-center justify-center transition">👤</button>
+    </div>
+
     <!-- Script Logic -->
     <script>
-        let currentTab = 'chat';
+        let currentTab = 'contact';
         let currentActiveRecipient = null;
-        let activeCallType = null; // 'audio' or 'video'
+        let activeCallType = null;
 
         let userProfile = {
             name: "Masudar Rahman",
@@ -161,13 +164,17 @@
                 searchBar.style.display = 'none';
                 renderProfileView();
             } else {
-                searchBar.style.display = 'block';
+                searchBar.style.display = 'flex';
                 if(tab === 'chat') renderChatStories();
                 else if(tab === 'contact') renderDeviceContacts();
             }
+
+            if(window.innerWidth < 768) {
+                document.getElementById('sidebarSection').style.display = 'flex';
+                document.getElementById('workspaceSection').style.display = 'none';
+            }
         }
 
-        // 1. Profile Tab Logic
         function renderProfileView() {
             document.getElementById('sidebarContentList').innerHTML = `
                 <div class="p-4 space-y-4 text-xs">
@@ -180,28 +187,27 @@
                             </label>
                         </div>
                         <p class="font-bold text-sm gold-gradient-text">${userProfile.name}</p>
-                        <p class="text-[10px] text-gray-400">Status: <span class="text-emerald-400">${userProfile.status}</span></p>
+                        <p class="text-[10px] text-gray-400">Username: <span class="text-amber-300">salaam.me/${userProfile.username}</span></p>
                     </div>
 
-                    <div class="space-y-3 bg-[#030305] p-3 rounded-xl border border-gray-800">
-                        <p class="font-bold gold-gradient-text text-xs">Edit Profile Information</p>
-                        <div>
-                            <label class="text-[10px] text-gray-400">Full Name</label>
-                            <input type="text" id="inputFullName" value="${userProfile.name}" class="w-full bg-[#06060a] text-xs px-2.5 py-1.5 rounded mt-1 text-white border border-gray-800">
+                    <div class="space-y-2 bg-[#030305] p-3 rounded-xl border border-gray-800">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold gold-gradient-text text-xs">Profile Details</span>
+                            <button onclick="toggleProfileEdit()" class="text-[10px] text-amber-400 underline">Edit Info</button>
                         </div>
-                        <div>
-                            <label class="text-[10px] text-gray-400">Mobile Number</label>
-                            <input type="text" id="inputPhone" value="${userProfile.phone}" class="w-full bg-[#06060a] text-xs px-2.5 py-1.5 rounded mt-1 text-white border border-gray-800">
-                        </div>
-                        <div>
-                            <label class="text-[10px] text-gray-400">Username (Shareable URL format)</label>
-                            <input type="text" id="inputUsername" value="${userProfile.username}" class="w-full bg-[#06060a] text-xs px-2.5 py-1.5 rounded mt-1 text-white border border-gray-800">
-                        </div>
-                        <div>
-                            <label class="text-[10px] text-gray-400">Date of Birth</label>
-                            <input type="date" id="inputDob" value="${userProfile.dob}" class="w-full bg-[#06060a] text-xs px-2.5 py-1.5 rounded mt-1 text-white border border-gray-800">
-                        </div>
-                        <button onclick="saveProfileChanges()" class="gold-btn w-full py-2 rounded text-xs mt-2">Save Profile</button>
+                        <p class="text-gray-300"><b>Name:</b> ${userProfile.name}</p>
+                        <p class="text-gray-300"><b>Phone:</b> ${userProfile.phone}</p>
+                        <p class="text-gray-300"><b>Username:</b> ${userProfile.username}</p>
+                        <p class="text-gray-300"><b>Birth Date:</b> ${userProfile.dob}</p>
+                    </div>
+
+                    <div id="profileEditForm" class="space-y-2 bg-[#030305] p-3 rounded-xl border border-gray-800 hidden">
+                        <p class="font-bold gold-gradient-text text-xs">Edit Information</p>
+                        <input type="text" id="inputFullName" value="${userProfile.name}" class="w-full bg-[#06060a] text-xs px-2.5 py-1.5 rounded text-white border border-gray-800">
+                        <input type="text" id="inputPhone" value="${userProfile.phone}" class="w-full bg-[#06060a] text-xs px-2.5 py-1.5 rounded text-white border border-gray-800">
+                        <input type="text" id="inputUsername" value="${userProfile.username}" class="w-full bg-[#06060a] text-xs px-2.5 py-1.5 rounded text-white border border-gray-800">
+                        <input type="date" id="inputDob" value="${userProfile.dob}" class="w-full bg-[#06060a] text-xs px-2.5 py-1.5 rounded text-white border border-gray-800">
+                        <button onclick="saveProfileChanges()" class="gold-btn w-full py-2 rounded text-xs mt-1">Save Profile</button>
                     </div>
 
                     <div class="space-y-2 pt-2">
@@ -209,11 +215,11 @@
                         <button onclick="alert('Logged out successfully')" class="w-full py-2 bg-red-950/40 text-xs rounded border border-red-900/50 text-red-400">🚪 Log Out</button>
                     </div>
                 </div>`;
-            
-            // Hide workspace chat view when in profile
-            document.getElementById('activeChatHeader').style.display = 'none';
-            document.getElementById('chatMessages').innerHTML = `<div class="text-[var(--text-gray)] text-xs text-center">Profile Settings Mode</div>`;
-            document.getElementById('chatInputBar').style.display = 'none';
+        }
+
+        function toggleProfileEdit() {
+            const form = document.getElementById('profileEditForm');
+            form.style.display = form.style.display === 'block' ? 'none' : 'block';
         }
 
         function updateProfileAvatar(input) {
@@ -229,11 +235,10 @@
             userProfile.username = document.getElementById('inputUsername').value;
             userProfile.dob = document.getElementById('inputDob').value;
             alert('Profile updated successfully!');
+            renderProfileView();
         }
 
-        // 2. Contact Tab Logic
         function renderDeviceContacts() {
-            // App users on top, default contacts below with checkmark status
             const sortedContacts = [...deviceContacts].sort((a, b) => b.appUser - a.appUser);
             document.getElementById('sidebarContentList').innerHTML = sortedContacts.map(c => `
                 <div onclick="openChatWithContact('${c.phone}', '${c.name}')" class="flex justify-between items-center p-3 hover:bg-[#030305] cursor-pointer transition">
@@ -244,15 +249,13 @@
                             <p class="text-[9px] text-[var(--text-gray)]">${c.username} • ${c.phone}</p>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-xs ${c.appUser ? 'text-emerald-400' : 'text-gray-500'}">✓</span>
-                        <span class="text-[10px] text-gray-300">${c.appUser ? 'On salaam' : 'Invite'}</span>
+                    <div>
+                        ${c.appUser ? '<span class="text-emerald-400 font-bold text-sm">✓</span>' : '<button onclick="event.stopPropagation(); alert(\'Invite sent!\')" class="text-[10px] px-2 py-1 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">Invite</button>'}
                     </div>
                 </div>
             `).join('');
         }
 
-        // 3. Chat Tab Logic (Chat Stories & Search)
         function renderChatStories() {
             document.getElementById('sidebarContentList').innerHTML = deviceContacts.filter(c => c.appUser).map(c => `
                 <div onclick="openChatWithContact('${c.phone}', '${c.name}')" class="p-3 hover:bg-[#030305] cursor-pointer flex items-center space-x-3 transition">
@@ -278,14 +281,22 @@
             currentActiveRecipient = { phone, name };
             document.getElementById('activeChatHeader').style.display = 'flex';
             document.getElementById('chatInputBar').style.display = 'flex';
-            document.getElementById('activeChatTitle.innerText', name + " (" + phone + ")");
             document.getElementById('activeChatTitle').innerText = name;
+
+            if(window.innerWidth < 768) {
+                document.getElementById('sidebarSection').style.display = 'none';
+                document.getElementById('workspaceSection').style.display = 'flex';
+            }
             loadMessages();
         }
 
-        // 4. Calling & Switching Logic (Audio <-> Video)
+        function backToSidebarMobile() {
+            document.getElementById('sidebarSection').style.display = 'flex';
+            document.getElementById('workspaceSection').style.display = 'none';
+        }
+
         function triggerCall(type) {
-            if(!currentActiveRecipient) return alert('Select a contact first!');
+            if(!currentActiveRecipient) return;
             activeCallType = type;
             renderActiveCallScreen();
         }
@@ -301,11 +312,11 @@
                     <p class="text-xs text-gray-400">Talking with ${currentActiveRecipient.name}</p>
                     
                     <div class="flex space-x-3 pt-4">
-                        <button onclick="switchCallMode()" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-xs rounded-lg text-amber-300 border border-amber-500/30">
+                        <button onclick="switchCallMode()" class="px-4 py-2 bg-gray-800 text-xs rounded-lg text-amber-300 border border-amber-500/30">
                             Switch to ${activeCallType === 'audio' ? 'Video 📹' : 'Audio 📞'}
                         </button>
-                        <button onclick="endCallSession()" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-xs rounded-lg text-white font-bold">
-                            End Call ❌
+                        <button onclick="endCallSession()" class="px-4 py-2 bg-red-600 text-xs rounded-lg text-white font-bold" title="End Call">
+                            ❌
                         </button>
                     </div>
                 </div>`;
@@ -318,10 +329,8 @@
 
         function endCallSession() {
             loadMessages();
-            alert('Call ended.');
         }
 
-        // 5. Messaging Logic
         function toggleSendButton() {
             const text = document.getElementById('messageInput').value.trim();
             const sendBtn = document.getElementById('sendBtn');
@@ -390,7 +399,6 @@
             }
         }
 
-        // Initialize with Contact view on load
         window.onload = () => { switchTab('contact'); };
     </script>
 </body>
