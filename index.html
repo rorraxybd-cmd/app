@@ -5,10 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SALAAM - rorraxy.com</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-retail: #030305;
-            --card-retail: #06060a;
+            --card-retail: #08080e;
             --gold-gradient: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
             --pink-solid: linear-gradient(135deg, #ff2a85 0%, #ff479b 100%);
             --gold-solid: #d4af37;
@@ -37,28 +40,67 @@
             -webkit-text-fill-color: transparent;
         }
 
-        .gold-btn { background: var(--gold-gradient); color: #000; font-weight: 600; }
-        .gold-btn:hover { opacity: 0.9; }
-        
-        ::-webkit-scrollbar { width: 3px; height: 3px; }
+        .gold-border {
+            border: 1px solid rgba(212, 175, 55, 0.25);
+        }
+
+        .gold-border-glow {
+            border: 1px solid rgba(212, 175, 55, 0.45);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.12);
+        }
+
+        .gold-btn { 
+            background: var(--gold-gradient); 
+            color: #030305; 
+            font-weight: 600; 
+            box-shadow: 0 4px 14px rgba(212, 175, 55, 0.25);
+        }
+        .gold-btn:hover { opacity: 0.92; transform: translateY(-0.5px); }
+
+        .pink-btn {
+            background: var(--pink-solid);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 4px 14px rgba(255, 42, 133, 0.3);
+        }
+        .pink-btn:hover { opacity: 0.92; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: var(--bg-retail); }
-        ::-webkit-scrollbar-thumb { background: #b38728; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #bf953f, #aa771c); border-radius: 6px; }
     </style>
 </head>
-<body class="h-[100dvh] flex flex-col overflow-hidden pb-16 md:pb-0">
+<body class="h-[100dvh] flex flex-col overflow-hidden pb-16 md:pb-0 select-none">
 
-    <!-- Top Header Bar (Matching SALAAM and White rorraxy.com URL) -->
-    <header class="bg-[#06060a] px-4 py-3 flex justify-between items-center border-b border-gray-900 shrink-0 z-30">
+    <!-- Top Header Bar -->
+    <header class="bg-[#06060b] px-4 py-3 flex justify-between items-center border-b border-amber-500/15 shrink-0 z-30 shadow-lg">
         <div class="flex items-center space-x-3">
-            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" alt="logo" class="w-10 h-10 rounded-full object-cover border border-amber-500/40">
+            <div class="relative p-[2px] rounded-full" style="background: var(--gold-gradient);">
+                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" alt="SALAAM Logo" class="w-10 h-10 rounded-full object-cover bg-[#030305]">
+            </div>
             <div>
-                <h1 class="font-extrabold text-base tracking-wider gold-gradient-text">SALAAM</h1>
-                <a href="https://rorraxy.com" target="_blank" class="text-[10px] text-white hover:underline block opacity-90">rorraxy.com</a>
+                <div class="flex items-center space-x-1.5">
+                    <h1 class="font-extrabold text-base tracking-widest gold-gradient-text">SALAAM</h1>
+                    <!-- Verified Gold Badge SVG (Self-contained) -->
+                    <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
+                        <defs>
+                            <linearGradient id="badgeGold" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#bf953f"/>
+                                <stop offset="50%" stop-color="#fcf6ba"/>
+                                <stop offset="100%" stop-color="#aa771c"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="12" cy="12" r="10" fill="url(#badgeGold)"/>
+                        <path d="M8.5 12.2L10.8 14.5L15.5 9.5" stroke="#030305" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <a href="https://rorraxy.com" target="_blank" class="text-[11px] text-white/90 hover:text-amber-300 transition block tracking-wide">rorraxy.com</a>
             </div>
         </div>
-        <div class="flex items-center space-x-2 bg-[#030305] px-3.5 py-1.5 rounded-full border border-gray-800">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-            <span class="text-[11px] text-white font-medium">Online</span>
+        <div class="flex items-center space-x-2 bg-[#0b0b12] px-3.5 py-1.5 rounded-full border border-emerald-500/30 shadow-inner">
+            <span class="w-2 h-2 rounded-full bg-[#2ed573] inline-block animate-pulse shadow-[0_0_8px_#2ed573]"></span>
+            <span class="text-[11px] text-white font-medium tracking-wide">Online</span>
         </div>
     </header>
 
@@ -66,111 +108,240 @@
     <div class="flex flex-1 overflow-hidden relative">
         
         <!-- Sidebar: Content Lists -->
-        <div id="sidebarSection" class="w-full md:w-[380px] bg-[#06060a] flex flex-col justify-between border-r border-gray-900 shrink-0 z-20 h-full">
+        <div id="sidebarSection" class="w-full md:w-[380px] bg-[#06060b] flex flex-col justify-between border-r border-amber-500/15 shrink-0 z-20 h-full">
             <div class="flex flex-col flex-1 overflow-hidden">
-                <!-- Search Bar with Magnifying Glass Icon -->
-                <div id="searchBarContainer" class="p-3 bg-[#030305] border-b border-gray-900 flex items-center space-x-2 shrink-0">
-                    <span class="text-sm gold-gradient-text px-1">🔍</span>
-                    <input type="text" id="searchInput" placeholder="Search..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="filterContent()">
+                
+                <!-- Search Bar with Direct Gold SVG -->
+                <div id="searchBarContainer" class="p-3 bg-[#030305] border-b border-amber-500/10 shrink-0">
+                    <div class="flex items-center space-x-2.5 bg-[#0a0a12] px-3.5 py-2 rounded-xl border border-amber-500/20 focus-within:border-amber-400/60 transition">
+                        <svg class="w-4 h-4 shrink-0 text-[#d4af37]" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="7.5"></circle>
+                            <line x1="20.5" y1="20.5" x2="16.35" y2="16.35"></line>
+                        </svg>
+                        <input type="text" id="searchInput" placeholder="Search..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="filterContent()">
+                    </div>
                 </div>
 
                 <!-- Dynamic Content Area -->
-                <div id="sidebarContentList" class="flex-1 overflow-y-auto divide-y divide-[#111118] pb-16">
+                <div id="sidebarContentList" class="flex-1 overflow-y-auto divide-y divide-white/[0.04] pb-20 md:pb-4">
                     <!-- Populated dynamically -->
                 </div>
             </div>
         </div>
 
         <!-- Active Chat & Interaction Box Section -->
-        <div id="workspaceSection" class="hidden md:flex flex-col bg-[#030305] flex-1 overflow-hidden h-full z-10">
-            <div id="activeChatHeader" class="bg-[#06060a] px-4 py-3 hidden items-center justify-between border-b border-gray-900 shrink-0">
+        <div id="workspaceSection" class="hidden md:flex flex-col bg-[#030305] flex-1 overflow-hidden h-full z-10 relative">
+            
+            <!-- Active Chat Header -->
+            <div id="activeChatHeader" class="bg-[#06060b] px-4 py-3 hidden items-center justify-between border-b border-amber-500/15 shrink-0 shadow-md">
                 <div class="flex items-center space-x-3">
-                    <button onclick="backToSidebarMobile()" class="md:hidden text-amber-400 text-lg mr-1">⬅️</button>
-                    <img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-9 h-9 rounded-full object-cover">
+                    <!-- Luxury Back Button for Mobile -->
+                    <button onclick="backToSidebarMobile()" class="md:hidden p-1.5 rounded-lg bg-[#0d0d15] border border-amber-500/25 hover:border-amber-400 transition cursor-pointer" title="Back">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                    <div class="relative">
+                        <img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-9 h-9 rounded-full object-cover border border-amber-500/40">
+                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#2ed573] rounded-full border-2 border-[#06060b]"></span>
+                    </div>
                     <div>
-                        <span id="activeChatTitle" class="font-medium text-white text-xs">Select a contact</span>
-                        <p id="activeChatStatus" class="text-[9px] text-[var(--success-green)]">Online</p>
+                        <span id="activeChatTitle" class="font-semibold text-white text-xs tracking-wide block">Select a contact</span>
+                        <p id="activeChatStatus" class="text-[10px] text-[#2ed573] font-medium">Online</p>
                     </div>
                 </div>
-                <!-- Call & Action Icons in Center/Right Header -->
+
+                <!-- Luxury Call & Action Icons -->
                 <div class="flex items-center space-x-2">
-                    <button onclick="triggerCall('audio')" class="text-sm px-3.5 py-1.5 bg-[#030305] rounded-md hover:bg-[#1a1a24] gold-gradient-text border border-amber-500/20" title="Audio Call">📞</button>
-                    <button onclick="triggerCall('video')" class="text-sm px-3.5 py-1.5 bg-[#030305] rounded-md hover:bg-[#1a1a24] gold-gradient-text border border-amber-500/20" title="Video Call">📹</button>
-                    <button onclick="clearChatHistory()" class="text-xs text-red-400 bg-[#030305] px-3 py-1.5 rounded-md border border-red-900/30" title="Clear Chat">🗑️</button>
+                    <!-- Audio Call Button -->
+                    <button onclick="triggerCall('audio')" class="p-2 bg-[#0b0b12] rounded-xl hover:bg-[#141420] border border-amber-500/25 hover:border-amber-400/60 transition group cursor-pointer" title="Audio Call">
+                        <svg class="w-4 h-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                    </button>
+                    <!-- Video Call Button -->
+                    <button onclick="triggerCall('video')" class="p-2 bg-[#0b0b12] rounded-xl hover:bg-[#141420] border border-amber-500/25 hover:border-amber-400/60 transition group cursor-pointer" title="Video Call">
+                        <svg class="w-4 h-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                            <rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect>
+                        </svg>
+                    </button>
+                    <!-- Clear Chat Button -->
+                    <button onclick="clearChatHistory()" class="p-2 bg-[#0b0b12] rounded-xl hover:bg-pink-950/30 border border-pink-500/25 hover:border-pink-500/60 transition group cursor-pointer" title="Clear Chat">
+                        <svg class="w-4 h-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="#ff3b93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
 
             <!-- Messages Area -->
             <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col justify-center items-center">
-                <div class="text-[var(--text-gray)] text-xs text-center">Select a contact from the Contact menu to start messaging.</div>
+                <div class="flex flex-col items-center space-y-3 max-w-xs text-center">
+                    <div class="w-14 h-14 rounded-2xl bg-[#0a0a12] border border-amber-500/25 flex items-center justify-center shadow-lg">
+                        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-xs font-semibold gold-gradient-text tracking-wide">SALAAM</p>
+                    <p class="text-[11px] text-[var(--text-gray)] leading-relaxed">Select a contact to start messaging.</p>
+                </div>
             </div>
 
-            <!-- Clean Input Bar -->
-            <div id="chatInputBar" class="bg-[#06060a] px-4 py-3 hidden items-center space-x-2 border-t border-gray-900 shrink-0 relative">
-                <div class="flex-1 flex items-center bg-[#030305] rounded-xl px-3 py-2 space-x-3 border border-gray-800">
-                    <label class="cursor-pointer text-xl gold-gradient-text hover:opacity-80 transition" title="Attach File">
-                        📎
+            <!-- Clean Luxury Input Bar -->
+            <div id="chatInputBar" class="bg-[#06060b] px-4 py-3 hidden items-center space-x-2.5 border-t border-amber-500/15 shrink-0 relative">
+                <div class="flex-1 flex items-center bg-[#0a0a12] rounded-2xl px-3.5 py-2.5 space-x-3 border border-amber-500/20 focus-within:border-amber-400/60 transition">
+                    <!-- Attachment Icon -->
+                    <label class="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center" title="Attach File">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                        </svg>
                         <input type="file" class="hidden" onchange="sendUniversalFile(this)">
                     </label>
-                    <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
+                    <input type="text" id="messageInput" placeholder="Write a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
                 </div>
-                <button id="sendBtn" onclick="sendTextMessage()" class="gold-btn px-5 py-2.5 text-xs rounded-xl transition hidden">Send</button>
+                <!-- Send Button -->
+                <button id="sendBtn" onclick="sendTextMessage()" class="gold-btn px-4 py-2.5 text-xs rounded-2xl transition hidden items-center space-x-1.5 shrink-0 cursor-pointer">
+                    <span>Send</span>
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="#030305" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
             </div>
         </div>
 
     </div>
 
-    <!-- Fixed Bottom 3 Navigation Menu Bar (Modern Luxury Geometric Icons) -->
-    <div class="fixed bottom-0 left-0 right-0 bg-[#030305] grid grid-cols-3 py-2 text-center border-t border-gray-800 shrink-0 z-50 shadow-2xl">
-        <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-0.5 transition">
-            <span class="text-xl gold-gradient-text">🛡️</span>
-            <span class="text-[10px] text-gray-400 font-medium">Profile</span>
+    <!-- Fixed Bottom 3 Navigation Menu Bar (1. Chat | 2. Contact | 3. Profile) -->
+    <nav class="fixed bottom-0 left-0 right-0 md:w-[380px] bg-[#06060b]/95 backdrop-blur-md grid grid-cols-3 py-2 text-center border-t border-amber-500/20 shrink-0 z-50 shadow-[0_-8px_25px_rgba(0,0,0,0.85)]">
+        
+        <!-- 1. Chat Tab -->
+        <button onclick="switchTab('chat')" id="tabChat" class="flex flex-col items-center justify-center space-y-1 py-0.5 transition group cursor-pointer">
+            <div class="nav-icon-wrap transition-transform duration-200">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                </svg>
+            </div>
+            <span class="nav-label text-[10px] text-gray-400 font-medium tracking-wide">Chat</span>
         </button>
-        <button onclick="switchTab('contact')" id="tabContact" class="flex flex-col items-center justify-center space-y-0.5 transition">
-            <span class="text-xl gold-gradient-text">📇</span>
-            <span class="text-[10px] text-gray-400 font-medium">Contact</span>
+
+        <!-- 2. Contact Tab -->
+        <button onclick="switchTab('contact')" id="tabContact" class="flex flex-col items-center justify-center space-y-1 py-0.5 transition group cursor-pointer">
+            <div class="nav-icon-wrap transition-transform duration-200">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+            </div>
+            <span class="nav-label text-[10px] text-gray-400 font-medium tracking-wide">Contact</span>
         </button>
-        <button onclick="switchTab('chat')" id="tabChat" class="flex flex-col items-center justify-center space-y-0.5 transition">
-            <span class="text-xl gold-gradient-text">✉️</span>
-            <span class="text-[10px] text-gray-400 font-medium">Chat</span>
+
+        <!-- 3. Profile (You) Tab -->
+        <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 transition group cursor-pointer">
+            <div class="nav-icon-wrap transition-transform duration-200">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="8" r="4"></circle>
+                    <path d="M20 21a8 8 0 0 0-16 0"></path>
+                    <circle cx="12" cy="12" r="10" stroke-opacity="0.4"></circle>
+                </svg>
+            </div>
+            <span class="nav-label text-[10px] text-gray-400 font-medium tracking-wide">Profile</span>
         </button>
+
+    </nav>
+
+    <!-- Toast Notification Banner -->
+    <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 bg-[#0d0d16] text-white text-xs px-4 py-2 rounded-full border border-amber-400/50 shadow-2xl z-50 hidden items-center space-x-2">
+        <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span>
+        <span id="toastText">Action completed</span>
     </div>
 
     <!-- Script Logic -->
     <script>
-        let currentTab = 'contact';
+        let currentTab = 'chat';
         let currentActiveRecipient = null;
         let activeCallType = null;
+        let localMessageStore = {};
 
+        // Reserved Brand & Founder Usernames (Protected from public registration/editing)
+        const RESERVED_USERNAMES = [
+            'mrmasudar', 'masudar', 'masudarrahman', 'mrmasudarenterprise',
+            'rorraxy', 'rorraxyofficial', 'rorraxyadmin', 'rorraxysupport',
+            'salaam', 'salaamchat', 'admin', 'administrator', 'support',
+            'ceo', 'founder', 'official', 'system', 'root', 'help', 'moderator'
+        ];
+
+        // Current User Profile (isOfficialFounder = true allows keeping founder username)
         let userProfile = {
             name: "Masudar Rahman",
             phone: "+8801700000000",
-            username: "masudar",
+            username: "mrmasudar",
             dob: "1995-01-01",
             avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg",
-            status: "Online"
+            status: "Online",
+            isOfficialFounder: true
         };
 
         let deviceContacts = [
-            { name: "rorraxy", phone: "support", appUser: true, status: "Admin Support" },
-            { name: "Mamun Rashid", phone: "+8801800000000", appUser: true, status: "Online" },
-            { name: "Local Friend", phone: "+8801900000000", appUser: false, status: "Offline" }
+            { name: "rorraxy", phone: "support", appUser: true, status: "Admin Support", lastMsg: "" },
+            { name: "Mamun Rashid", phone: "+8801800000000", appUser: true, status: "Online", lastMsg: "" },
+            { name: "Local Friend", phone: "+8801900000000", appUser: false, status: "Offline", lastMsg: "" }
         ];
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toastBanner');
+            const dot = document.getElementById('toastDot');
+            document.getElementById('toastText').innerText = msg;
+            dot.className = isError ? "w-2 h-2 rounded-full bg-[#ff2a85]" : "w-2 h-2 rounded-full bg-[#2ed573]";
+            toast.classList.remove('hidden');
+            toast.classList.add('flex');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+                toast.classList.remove('flex');
+            }, 2800);
+        }
+
+        function isUsernameAllowed(rawUsername) {
+            const cleaned = rawUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (cleaned.length < 3) {
+                return { valid: false, reason: "Username must be at least 3 characters." };
+            }
+            // Block any variation containing brand or founder names for regular users
+            const isRestricted = RESERVED_USERNAMES.some(reserved => 
+                cleaned === reserved || cleaned.includes('rorraxy') || cleaned.includes('mrmasudar') || cleaned.includes('salaam')
+            );
+            if (isRestricted && !userProfile.isOfficialFounder) {
+                return { valid: false, reason: "This username is reserved and cannot be used." };
+            }
+            return { valid: true, formatted: rawUsername.toLowerCase().replace(/[^a-z0-9._]/g, '') };
+        }
 
         function switchTab(tab) {
             currentTab = tab;
-            ['profile', 'contact', 'chat'].forEach(t => {
+            ['chat', 'contact', 'profile'].forEach(t => {
                 const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
                 if(btn) {
-                    btn.children[0].className = "text-xl gold-gradient-text";
-                    btn.children[1].className = "text-[10px] text-gray-400 font-medium";
+                    const svg = btn.querySelector('svg');
+                    const wrap = btn.querySelector('.nav-icon-wrap');
+                    const label = btn.querySelector('.nav-label');
+                    svg.setAttribute('stroke', '#e5c158');
+                    wrap.classList.remove('scale-110');
+                    label.className = "nav-label text-[10px] text-gray-400 font-medium tracking-wide";
                 }
             });
 
             const activeBtn = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
             if(activeBtn) {
-                activeBtn.children[0].className = "text-2xl pink-gradient-text";
-                activeBtn.children[1].className = "text-[10px] text-amber-300 font-bold";
+                const svg = activeBtn.querySelector('svg');
+                const wrap = activeBtn.querySelector('.nav-icon-wrap');
+                const label = activeBtn.querySelector('.nav-label');
+                svg.setAttribute('stroke', '#ff2a85');
+                wrap.classList.add('scale-110');
+                label.className = "nav-label text-[10px] pink-gradient-text font-bold tracking-wide";
             }
 
             const searchBar = document.getElementById('searchBarContainer');
@@ -178,7 +349,7 @@
                 searchBar.style.display = 'none';
                 renderProfileView();
             } else {
-                searchBar.style.display = 'flex';
+                searchBar.style.display = 'block';
                 if(tab === 'chat') renderChatStories();
                 else if(tab === 'contact') renderDeviceContacts();
             }
@@ -190,45 +361,115 @@
         }
 
         function renderProfileView() {
+            const shareUrl = `https://rorraxy.com/${userProfile.username}`;
             document.getElementById('sidebarContentList').innerHTML = `
                 <div class="p-4 space-y-4 text-xs">
-                    <div class="flex flex-col items-center space-y-2 pb-3 border-b border-gray-800">
-                        <div class="relative">
-                            <img id="profileAvatarImg" src="${userProfile.avatar}" class="w-20 h-20 rounded-full object-cover border-2 border-amber-500">
-                            <label class="absolute bottom-0 right-0 bg-[#030305] p-1.5 rounded-full border border-amber-500 cursor-pointer text-xs shadow-lg" title="Change Photo">
-                                📷
+                    <!-- Avatar & Identity Card -->
+                    <div class="flex flex-col items-center space-y-2.5 pb-4 border-b border-amber-500/15 bg-[#090910] p-4 rounded-2xl gold-border">
+                        <div class="relative p-[2px] rounded-full" style="background: var(--gold-gradient);">
+                            <img id="profileAvatarImg" src="${userProfile.avatar}" class="w-20 h-20 rounded-full object-cover bg-[#030305]">
+                            <label class="absolute bottom-0 right-0 bg-[#08080e] p-1.5 rounded-full border border-amber-400 cursor-pointer shadow-lg hover:scale-110 transition" title="Change Profile Photo">
+                                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                    <circle cx="12" cy="13" r="4"></circle>
+                                </svg>
                                 <input type="file" accept="image/*" class="hidden" onchange="updateProfileAvatar(this)">
                             </label>
                         </div>
-                        <p class="font-bold text-sm gold-gradient-text">${userProfile.name}</p>
-                        <p class="text-[10px] text-white opacity-80">URL: <span class="text-amber-300">rorraxy.com/${userProfile.username}</span></p>
-                    </div>
-
-                    <div class="space-y-2 bg-[#030305] p-3 rounded-xl border border-gray-800">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="font-bold gold-gradient-text text-xs">Profile Details</span>
-                            <button onclick="toggleProfileEdit()" class="text-[10px] text-amber-400 underline">Edit Info</button>
+                        <div class="text-center">
+                            <p class="font-bold text-sm gold-gradient-text tracking-wide">${userProfile.name}</p>
+                            <p class="text-[11px] text-white/85 mt-0.5">rorraxy.com/<span class="text-amber-300 font-semibold">${userProfile.username}</span></p>
                         </div>
-                        <p class="text-white"><b>Name:</b> ${userProfile.name}</p>
-                        <p class="text-white"><b>Phone:</b> ${userProfile.phone}</p>
-                        <p class="text-white"><b>Username:</b> ${userProfile.username}</p>
-                        <p class="text-white"><b>Birth Date:</b> ${userProfile.dob}</p>
+
+                        <!-- Luxury Share Profile Bar -->
+                        <div class="w-full pt-2 flex items-center space-x-2">
+                            <button onclick="shareProfileLink('${shareUrl}')" class="flex-1 pink-btn py-2 px-3 rounded-xl text-[11px] flex items-center justify-center space-x-1.5 transition cursor-pointer">
+                                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="18" cy="5" r="3"></circle>
+                                    <circle cx="6" cy="12" r="3"></circle>
+                                    <circle cx="18" cy="19" r="3"></circle>
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                                </svg>
+                                <span>Share Profile</span>
+                            </button>
+                            <button onclick="copyProfileLink('${shareUrl}')" class="py-2 px-3 bg-[#030305] hover:bg-[#12121c] rounded-xl border border-amber-500/30 text-amber-300 text-[11px] flex items-center space-x-1 transition cursor-pointer" title="Copy URL">
+                                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                <span>Copy</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <div id="profileEditForm" class="space-y-2 bg-[#030305] p-3 rounded-xl border border-gray-800 hidden">
-                        <p class="font-bold gold-gradient-text text-xs">Edit Information</p>
-                        <input type="text" id="inputFullName" value="${userProfile.name}" class="w-full bg-[#06060a] text-xs px-2.5 py-1.5 rounded text-white border border-gray-800">
-                        <input type="text" id="inputPhone" value="${userProfile.phone}" class="w-full bg-[#06060a] text-xs px-2.5 py-1.5 rounded text-white border border-gray-800">
-                        <input type="text" id="inputUsername" value="${userProfile.username}" class="w-full bg-[#06060a] text-xs px-2.5 py-1.5 rounded text-white border border-gray-800">
-                        <input type="date" id="inputDob" value="${userProfile.dob}" class="w-full bg-[#06060a] text-xs px-2.5 py-1.5 rounded text-white border border-gray-800">
-                        <button onclick="saveProfileChanges()" class="gold-btn w-full py-2 rounded text-xs mt-1">Save Profile</button>
+                    <!-- Profile Details Card -->
+                    <div class="space-y-2.5 bg-[#090910] p-3.5 rounded-2xl gold-border">
+                        <div class="flex justify-between items-center pb-1 border-b border-white/5">
+                            <span class="font-bold gold-gradient-text text-xs tracking-wide">Account Information</span>
+                            <button onclick="toggleProfileEdit()" class="text-[11px] pink-gradient-text font-semibold hover:underline cursor-pointer">Edit Info</button>
+                        </div>
+                        <div class="space-y-1.5 text-[11px]">
+                            <p class="flex justify-between"><span class="text-gray-400">Full Name:</span> <span class="text-white font-medium">${userProfile.name}</span></p>
+                            <p class="flex justify-between"><span class="text-gray-400">Phone:</span> <span class="text-white font-medium">${userProfile.phone}</span></p>
+                            <p class="flex justify-between"><span class="text-gray-400">Username:</span> <span class="text-amber-300 font-medium">@${userProfile.username}</span></p>
+                            <p class="flex justify-between"><span class="text-gray-400">Birth Date:</span> <span class="text-white font-medium">${userProfile.dob}</span></p>
+                            <p class="flex justify-between"><span class="text-gray-400">Status:</span> <span class="text-[#2ed573] font-semibold">● Active</span></p>
+                        </div>
                     </div>
 
-                    <div class="space-y-2 pt-2">
-                        <button onclick="alert('Add account modal opened')" class="w-full py-2 bg-[#030305] text-xs rounded border border-gray-800 text-white hover:bg-gray-900">➕ Add Account</button>
-                        <button onclick="alert('Logged out successfully')" class="w-full py-2 bg-red-950/40 text-xs rounded border border-red-900/50 text-red-400">🚪 Log Out</button>
+                    <!-- Edit Form -->
+                    <div id="profileEditForm" class="space-y-2.5 bg-[#090910] p-3.5 rounded-2xl gold-border-glow hidden">
+                        <p class="font-bold gold-gradient-text text-xs">Update Profile</p>
+                        <input type="text" id="inputFullName" value="${userProfile.name}" placeholder="Full Name" class="w-full bg-[#030305] text-xs px-3 py-2 rounded-xl text-white border border-amber-500/25 focus:border-amber-400 focus:outline-none">
+                        <input type="text" id="inputPhone" value="${userProfile.phone}" placeholder="Phone Number" class="w-full bg-[#030305] text-xs px-3 py-2 rounded-xl text-white border border-amber-500/25 focus:border-amber-400 focus:outline-none">
+                        <div>
+                            <input type="text" id="inputUsername" value="${userProfile.username}" placeholder="Username" class="w-full bg-[#030305] text-xs px-3 py-2 rounded-xl text-white border border-amber-500/25 focus:border-amber-400 focus:outline-none">
+                            <p class="text-[9px] text-gray-400 mt-1 px-1">Brand & founder usernames are protected.</p>
+                        </div>
+                        <input type="date" id="inputDob" value="${userProfile.dob}" class="w-full bg-[#030305] text-xs px-3 py-2 rounded-xl text-white border border-amber-500/25 focus:border-amber-400 focus:outline-none">
+                        <button onclick="saveProfileChanges()" class="gold-btn w-full py-2.5 rounded-xl text-xs mt-1 cursor-pointer">Save Changes</button>
+                    </div>
+
+                    <!-- Account Actions -->
+                    <div class="space-y-2 pt-1">
+                        <button onclick="showToast('Add account opened')" class="w-full py-2.5 bg-[#090910] text-xs rounded-xl border border-amber-500/25 text-white hover:bg-[#11111a] flex items-center justify-center space-x-2 transition cursor-pointer">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            <span>Add Account</span>
+                        </button>
+                        <button onclick="showToast('Logged out safely')" class="w-full py-2.5 bg-pink-950/20 text-xs rounded-xl border border-pink-500/30 text-pink-400 hover:bg-pink-950/35 flex items-center justify-center space-x-2 transition cursor-pointer">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#ff3b93" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            <span>Log Out</span>
+                        </button>
                     </div>
                 </div>`;
+        }
+
+        function shareProfileLink(url) {
+            if (navigator.share) {
+                navigator.share({
+                    title: `${userProfile.name} - SALAAM (rorraxy.com)`,
+                    text: `Connect with ${userProfile.name} on SALAAM:`,
+                    url: url
+                }).catch(() => {});
+            } else {
+                copyProfileLink(url);
+            }
+        }
+
+        function copyProfileLink(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('Profile link copied!');
+            }).catch(() => {
+                showToast('Link: ' + url);
+            });
         }
 
         function toggleProfileEdit() {
@@ -240,31 +481,47 @@
             if(input.files && input.files[0]) {
                 userProfile.avatar = URL.createObjectURL(input.files[0]);
                 document.getElementById('profileAvatarImg').src = userProfile.avatar;
+                showToast('Profile photo updated!');
             }
         }
 
         function saveProfileChanges() {
-            userProfile.name = document.getElementById('inputFullName').value;
-            userProfile.phone = document.getElementById('inputPhone').value;
-            userProfile.username = document.getElementById('inputUsername').value;
-            userProfile.dob = document.getElementById('inputDob').value;
-            alert('Profile updated successfully!');
+            const newUsernameInput = document.getElementById('inputUsername').value.trim();
+            const validation = isUsernameAllowed(newUsernameInput);
+
+            if (!validation.valid) {
+                showToast(validation.reason, true);
+                return;
+            }
+
+            userProfile.name = document.getElementById('inputFullName').value.trim() || userProfile.name;
+            userProfile.phone = document.getElementById('inputPhone').value.trim() || userProfile.phone;
+            userProfile.username = validation.formatted;
+            userProfile.dob = document.getElementById('inputDob').value || userProfile.dob;
+            showToast('Profile updated successfully!');
             renderProfileView();
         }
 
         function renderDeviceContacts() {
             const sortedContacts = [...deviceContacts].sort((a, b) => b.appUser - a.appUser);
             document.getElementById('sidebarContentList').innerHTML = sortedContacts.map(c => `
-                <div onclick="openChatWithContact('${c.phone}', '${c.name}')" class="flex justify-between items-center p-3 hover:bg-[#030305] cursor-pointer transition">
+                <div onclick="openChatWithContact('${c.phone}', '${c.name}')" class="flex justify-between items-center px-4 py-3.5 hover:bg-[#0d0d16] cursor-pointer transition">
                     <div class="flex items-center space-x-3">
-                        <div class="w-9 h-9 rounded-full bg-gray-800 flex items-center justify-center text-xs font-bold gold-gradient-text">${c.name.charAt(0)}</div>
+                        <div class="w-10 h-10 rounded-full bg-[#0e0e18] border border-amber-500/35 flex items-center justify-center text-xs font-bold gold-gradient-text shadow-inner">
+                            ${c.name.charAt(0).toUpperCase()}
+                        </div>
                         <div>
-                            <p class="text-xs font-medium gold-gradient-text">${c.name}</p>
-                            <p class="text-[9px] text-[var(--success-green)]">${c.status}</p>
+                            <p class="text-xs font-semibold gold-gradient-text tracking-wide">${c.name}</p>
+                            <p class="text-[10px] ${c.appUser ? 'text-[#2ed573]' : 'text-gray-400'}">${c.status}</p>
                         </div>
                     </div>
                     <div>
-                        ${c.appUser ? '<span class="text-emerald-400 font-bold text-sm">✓</span>' : '<button onclick="event.stopPropagation(); alert(\'Invite sent!\')" class="text-[10px] px-2 py-1 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">Invite</button>'}
+                        ${c.appUser 
+                            ? `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#2ed573]/15 border border-[#2ed573]/40">
+                                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="#2ed573" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                               </span>` 
+                            : `<button onclick="event.stopPropagation(); showToast('Invitation sent to ${c.name}!')" class="text-[10px] px-3 py-1 rounded-full pink-btn tracking-wide cursor-pointer">Invite</button>`
+                        }
                     </div>
                 </div>
             `).join('');
@@ -272,11 +529,16 @@
 
         function renderChatStories() {
             document.getElementById('sidebarContentList').innerHTML = deviceContacts.filter(c => c.appUser).map(c => `
-                <div onclick="openChatWithContact('${c.phone}', '${c.name}')" class="p-3 hover:bg-[#030305] cursor-pointer flex items-center space-x-3 transition">
-                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-9 h-9 rounded-full object-cover">
+                <div onclick="openChatWithContact('${c.phone}', '${c.name}')" class="px-4 py-3.5 hover:bg-[#0d0d16] cursor-pointer flex items-center space-x-3 transition">
+                    <div class="relative shrink-0">
+                        <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-10 h-10 rounded-full object-cover border border-amber-500/35">
+                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#2ed573] rounded-full border-2 border-[#06060b]"></span>
+                    </div>
                     <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-baseline"><span class="font-medium text-xs gold-gradient-text truncate">${c.name}</span><span class="text-[9px] text-white opacity-80">salaam</span></div>
-                        <p class="text-[10px] text-[var(--success-green)] truncate">Tap to open messages...</p>
+                        <div class="flex justify-between items-baseline">
+                            <span class="font-semibold text-xs gold-gradient-text truncate tracking-wide">${c.name}</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 truncate mt-0.5">${c.lastMsg ? c.lastMsg : 'No messages yet'}</p>
                     </div>
                 </div>
             `).join('');
@@ -317,20 +579,35 @@
 
         function renderActiveCallScreen() {
             const container = document.getElementById('chatMessages');
+            container.className = "flex-1 overflow-y-auto p-4 flex flex-col justify-center items-center";
+            const callIconSvg = activeCallType === 'audio' 
+                ? `<svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>`
+                : `<svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg>`;
+
+            const switchIconSvg = activeCallType === 'audio'
+                ? `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg>`
+                : `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>`;
+
             container.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-full space-y-4 bg-[#030305] p-6 rounded-2xl border border-amber-500/20">
-                    <div class="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center text-3xl border-2 border-amber-500 animate-pulse gold-gradient-text">
-                        ${activeCallType === 'audio' ? '📞' : '📹'}
+                <div class="flex flex-col items-center justify-center space-y-4 bg-[#08080f] p-8 rounded-3xl gold-border-glow max-w-xs w-full shadow-2xl">
+                    <div class="w-20 h-20 rounded-full bg-[#0f0f1a] flex items-center justify-center border-2 border-amber-400 animate-pulse shadow-[0_0_20px_rgba(212,175,55,0.25)]">
+                        ${callIconSvg}
                     </div>
-                    <p class="text-sm font-bold gold-gradient-text">Connected</p>
-                    <p class="text-xs text-white opacity-80">Talking with ${currentActiveRecipient.name}</p>
+                    <div class="text-center">
+                        <p class="text-sm font-bold gold-gradient-text tracking-wide">${activeCallType === 'audio' ? 'Voice Call' : 'Video Call'}</p>
+                        <p class="text-xs text-white mt-1">${currentActiveRecipient.name}</p>
+                        <p class="text-[10px] text-[#2ed573] mt-0.5 animate-pulse">● Connected</p>
+                    </div>
                     
-                    <div class="flex space-x-3 pt-4 items-center">
-                        <button onclick="switchCallMode()" class="px-4 py-2 bg-gray-800 text-xs rounded-lg text-amber-300 border border-amber-500/30 flex items-center space-x-1">
-                            <span>Switch to ${activeCallType === 'audio' ? 'Video 📹' : 'Audio 📞'}</span>
+                    <div class="flex space-x-3 pt-3 items-center">
+                        <button onclick="switchCallMode()" class="px-4 py-2.5 bg-[#0f0f1a] hover:bg-[#161625] text-xs rounded-xl text-amber-300 border border-amber-500/30 flex items-center space-x-2 transition cursor-pointer">
+                            ${switchIconSvg}
+                            <span>Switch to ${activeCallType === 'audio' ? 'Video' : 'Audio'}</span>
                         </button>
-                        <button onclick="endCallSession()" class="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center text-white text-base shadow-lg hover:bg-red-500 transition" title="End Call">
-                            📞
+                        <button onclick="endCallSession()" class="w-11 h-11 pink-btn rounded-full flex items-center justify-center shadow-lg transition cursor-pointer" title="End Call">
+                            <svg class="w-5 h-5 rotate-[135deg]" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
                         </button>
                     </div>
                 </div>`;
@@ -342,78 +619,134 @@
         }
 
         function endCallSession() {
+            showToast('Call ended');
             loadMessages();
         }
 
         function toggleSendButton() {
             const text = document.getElementById('messageInput').value.trim();
             const sendBtn = document.getElementById('sendBtn');
-            if(text.length > 0) sendBtn.classList.remove('hidden');
-            else sendBtn.classList.add('hidden');
+            if(text.length > 0) {
+                sendBtn.classList.remove('hidden');
+                sendBtn.classList.add('flex');
+            } else {
+                sendBtn.classList.add('hidden');
+                sendBtn.classList.remove('flex');
+            }
         }
 
         async function sendTextMessage() {
             if(!currentActiveRecipient) return;
-            const text = document.getElementById('messageInput').value.trim();
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
             if(!text) return;
 
-            await fetch('/api/chat?action=send_message', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sender_phone: userProfile.phone, recipient_phone: currentActiveRecipient.phone, message_text: text })
-            });
-            document.getElementById('messageInput').value = '';
+            input.value = '';
             toggleSendButton();
+
+            const key = currentActiveRecipient.phone;
+            if(!localMessageStore[key]) localMessageStore[key] = [];
+            localMessageStore[key].push({ phone_number: userProfile.phone, message_text: text });
+
+            // Update last message preview in sidebar list
+            const contactObj = deviceContacts.find(c => c.phone === key);
+            if(contactObj) contactObj.lastMsg = text;
+            if(currentTab === 'chat') renderChatStories();
+
+            try {
+                await fetch('/api/chat?action=send_message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sender_phone: userProfile.phone, recipient_phone: currentActiveRecipient.phone, message_text: text })
+                });
+            } catch (e) {}
             loadMessages();
         }
 
-        function sendUniversalFile(inputElement) {
+        async function sendUniversalFile(inputElement) {
             if(!currentActiveRecipient || !inputElement.files[0]) return;
             const file = inputElement.files[0];
             const fileUrl = URL.createObjectURL(file);
-            fetch('/api/chat?action=send_message', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sender_phone: userProfile.phone, recipient_phone: currentActiveRecipient.phone, message_text: `[File: ${file.name}]`, media_url: fileUrl })
-            }).then(() => { inputElement.value = ''; loadMessages(); });
+            const key = currentActiveRecipient.phone;
+            if(!localMessageStore[key]) localMessageStore[key] = [];
+            localMessageStore[key].push({ phone_number: userProfile.phone, message_text: file.name, avatar_url: fileUrl });
+
+            const contactObj = deviceContacts.find(c => c.phone === key);
+            if(contactObj) contactObj.lastMsg = `[File] ${file.name}`;
+            if(currentTab === 'chat') renderChatStories();
+
+            try {
+                await fetch('/api/chat?action=send_message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sender_phone: userProfile.phone, recipient_phone: currentActiveRecipient.phone, message_text: `[File: ${file.name}]`, media_url: fileUrl })
+                });
+            } catch (e) {}
+            inputElement.value = '';
+            loadMessages();
         }
 
         async function loadMessages() {
             if(!currentActiveRecipient) return;
-            const res = await fetch(`/api/chat?action=get_messages&user1=${userProfile.phone}&user2=${currentActiveRecipient.phone}`);
-            const data = await res.json();
             const container = document.getElementById('chatMessages');
+            let messages = localMessageStore[currentActiveRecipient.phone] || [];
+
+            try {
+                const res = await fetch(`/api/chat?action=get_messages&user1=${userProfile.phone}&user2=${currentActiveRecipient.phone}`);
+                if(res.ok) {
+                    const data = await res.json();
+                    if(data.success && Array.isArray(data.messages)) {
+                        messages = data.messages;
+                    }
+                }
+            } catch (e) {}
+
             container.innerHTML = '';
-            
-            if(data.success && data.messages.length > 0) {
-                container.className = "flex-1 overflow-y-auto p-4 space-y-3 flex flex-col";
-                data.messages.forEach(msg => {
+            if(messages.length > 0) {
+                container.className = "flex-1 overflow-y-auto p-4 space-y-2.5 flex flex-col";
+                messages.forEach(msg => {
                     const isMe = msg.phone_number === userProfile.phone;
                     const div = document.createElement('div');
-                    div.className = `max-w-xs p-2.5 rounded-xl text-xs ${isMe ? 'bg-[#122118] self-end text-white' : 'bg-[#06060a] self-start text-white'}`;
-                    div.innerHTML = `<p>${msg.message_text}</p>` + (msg.avatar_url ? `<a href="${msg.avatar_url}" target="_blank" class="text-[var(--gold-solid)] underline block mt-1">[Open File]</a>` : '');
+                    div.className = `max-w-[78%] md:max-w-sm px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed shadow-md ${
+                        isMe 
+                        ? 'bg-gradient-to-br from-[#0f2419] to-[#0a1811] border border-[#2ed573]/30 self-end text-white rounded-br-sm' 
+                        : 'bg-[#0b0b14] border border-amber-500/20 self-start text-white rounded-bl-sm'
+                    }`;
+                    div.innerHTML = `<p>${msg.message_text}</p>` + (msg.avatar_url ? `<a href="${msg.avatar_url}" target="_blank" class="text-amber-300 underline block mt-1 text-[11px]">Open File</a>` : '');
                     container.appendChild(div);
                 });
                 container.scrollTop = container.scrollHeight;
             } else {
                 container.className = "flex-1 overflow-y-auto p-4 space-y-3 flex flex-col justify-center items-center";
-                container.innerHTML = `<div class="text-white opacity-70 text-xs text-center">No messages yet. Say salaam!</div>`;
+                container.innerHTML = `
+                    <div class="bg-[#090910] px-5 py-3.5 rounded-2xl border border-amber-500/20 text-center">
+                        <p class="text-xs text-white/75">No messages yet</p>
+                    </div>`;
             }
         }
 
         async function clearChatHistory() {
             if(!currentActiveRecipient) return;
-            if(confirm('Clear chat history?')) {
-                await fetch('/api/chat?action=clear_chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone_number: userProfile.phone, recipient_phone: currentActiveRecipient.phone })
-                });
+            if(confirm('Clear all messages in this chat?')) {
+                const key = currentActiveRecipient.phone;
+                delete localMessageStore[key];
+                const contactObj = deviceContacts.find(c => c.phone === key);
+                if(contactObj) contactObj.lastMsg = "";
+                if(currentTab === 'chat') renderChatStories();
+
+                try {
+                    await fetch('/api/chat?action=clear_chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone_number: userProfile.phone, recipient_phone: currentActiveRecipient.phone })
+                    });
+                } catch (e) {}
+                showToast('Chat cleared');
                 loadMessages();
             }
         }
 
-        window.onload = () => { switchTab('contact'); };
+        window.onload = () => { switchTab('chat'); };
     </script>
 </body>
 </html>
