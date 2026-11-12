@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SALAAM - chat.rorraxy.com</title>
+    <title>SALAAM - rorraxy.com</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#030305">
     <style>
         :root {
             --bg-retail: #030305;
@@ -60,29 +62,28 @@
         }
         .pink-btn:hover { opacity: 0.92; transform: scale(1.03); }
 
-        /* Smooth Continuous Loop Animation for Call Circle */
         @keyframes luxuryPulseRing {
             0% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.55), 0 0 25px rgba(212, 175, 55, 0.2);
+                transform: scale(0.96);
+                box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.5), 0 0 20px rgba(212, 175, 55, 0.15);
             }
             50% {
-                transform: scale(1.04);
-                box-shadow: 0 0 0 18px rgba(212, 175, 55, 0), 0 0 35px rgba(212, 175, 55, 0.35);
+                transform: scale(1.03);
+                box-shadow: 0 0 0 14px rgba(212, 175, 55, 0), 0 0 28px rgba(212, 175, 55, 0.3);
             }
             100% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(212, 175, 55, 0), 0 0 25px rgba(212, 175, 55, 0.2);
+                transform: scale(0.96);
+                box-shadow: 0 0 0 0 rgba(212, 175, 55, 0), 0 0 20px rgba(212, 175, 55, 0.15);
             }
         }
 
         @keyframes outerWaveLoop {
             0% {
                 transform: scale(1);
-                opacity: 0.65;
+                opacity: 0.6;
             }
             100% {
-                transform: scale(1.55);
+                transform: scale(1.48);
                 opacity: 0;
             }
         }
@@ -123,12 +124,18 @@
                         <path d="M8.5 12.2L10.8 14.5L15.5 9.5" stroke="#030305" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
-                <a href="https://chat.rorraxy.com" target="_blank" class="text-[11px] text-white/90 hover:text-amber-300 transition block tracking-wide">chat.rorraxy.com</a>
+                <a href="https://rorraxy.com" target="_blank" class="text-[11px] text-white/95 hover:text-amber-300 transition block tracking-wide">rorraxy.com</a>
             </div>
         </div>
-        <div class="flex items-center space-x-2 bg-[#0b0b12] px-3.5 py-1.5 rounded-full border border-emerald-500/30 shadow-inner">
-            <span class="w-2 h-2 rounded-full bg-[#2ed573] inline-block animate-pulse shadow-[0_0_8px_#2ed573]"></span>
-            <span class="text-[11px] text-white font-medium tracking-wide">Online</span>
+        
+        <div class="flex items-center space-x-2.5">
+            <button id="installAppBtn" onclick="installPWAApp()" class="hidden gold-btn px-3 py-1.5 rounded-full text-[11px] items-center space-x-1 transition cursor-pointer">
+                <span>Install App</span>
+            </button>
+            <div class="flex items-center space-x-2 bg-[#0b0b12] px-3.5 py-1.5 rounded-full border border-emerald-500/30 shadow-inner">
+                <span class="w-2 h-2 rounded-full bg-[#2ed573] inline-block animate-pulse shadow-[0_0_8px_#2ed573]"></span>
+                <span class="text-[11px] text-white font-medium tracking-wide">Online</span>
+            </div>
         </div>
     </header>
 
@@ -281,6 +288,40 @@
         let currentActiveRecipient = null;
         let activeCallType = null;
         let localMessageStore = {};
+        let deferredPrompt = null;
+
+        // PWA Install Prompt Listener
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = document.getElementById('installAppBtn');
+            if(btn) {
+                btn.classList.remove('hidden');
+                btn.classList.add('flex');
+            }
+        });
+
+        function installPWAApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        showToast('App installed successfully!');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('installAppBtn').classList.add('hidden');
+                });
+            } else {
+                showToast('App is already installed or not supported by browser.');
+            }
+        }
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
 
         const RESERVED_USERNAMES = [
             'mrmasudar', 'masudar', 'masudarrahman', 'mrmasudarenterprise',
@@ -376,7 +417,7 @@
             const shareUrl = `https://chat.rorraxy.com/${userProfile.username}`;
             document.getElementById('sidebarContentList').innerHTML = `
                 <div class="p-4 space-y-4 text-xs">
-                    <div class="flex flex-col items-center space-y-2.5 pb-4 bg-[#090910] p-4 rounded-2xl">
+                    <div class="flex flex-col items-center space-y-3 pb-4 bg-[#090910] p-5 rounded-2xl">
                         <div class="relative p-[2px] rounded-full" style="background: var(--gold-gradient);">
                             <img id="profileAvatarImg" src="${userProfile.avatar}" class="w-20 h-20 rounded-full object-cover bg-[#030305]">
                             <label class="absolute bottom-0 right-0 bg-[#08080e] p-1.5 rounded-full border border-amber-400 cursor-pointer shadow-lg hover:scale-110 transition" title="Change Photo">
@@ -389,11 +430,10 @@
                         </div>
                         <div class="text-center">
                             <p class="font-bold text-sm gold-gradient-text tracking-wide">${userProfile.name}</p>
-                            <p class="text-[11px] text-white/85 mt-0.5">chat.rorraxy.com/<span class="text-amber-300 font-semibold">${userProfile.username}</span></p>
                         </div>
 
-                        <div class="w-full pt-2">
-                            <button onclick="shareProfileLink('${shareUrl}')" class="w-full pink-btn py-2 px-3 rounded-xl text-[11px] flex items-center justify-center space-x-1.5 transition cursor-pointer">
+                        <div class="w-full pt-1">
+                            <button onclick="shareProfileLink('${shareUrl}')" class="w-full pink-btn py-2.5 px-3 rounded-xl text-[11px] flex items-center justify-center space-x-1.5 transition cursor-pointer">
                                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="18" cy="5" r="3"></circle>
                                     <circle cx="6" cy="12" r="3"></circle>
@@ -563,17 +603,15 @@
             const container = document.getElementById('chatMessages');
             container.className = "flex-1 overflow-y-auto p-4 flex flex-col justify-center items-center";
 
-            // Center main call icon (Video or Audio)
             const centerCallIcon = activeCallType === 'video'
-                ? `<svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                ? `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polygon points="23 7 16 12 23 17 23 7"></polygon>
                     <rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect>
                    </svg>`
-                : `<svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                : `<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                    </svg>`;
 
-            // Opposite mode icon for Switch Button
             const oppositeModeIcon = activeCallType === 'video'
                 ? `<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#e5c158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
@@ -583,32 +621,21 @@
                     <rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect>
                    </svg>`;
 
-            // Switch Arrow SVG before Switch text
-            const switchArrowIcon = `<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#fcf6ba" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="17 1 21 5 17 9"></polyline>
-                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-                <polyline points="7 23 3 19 7 15"></polyline>
-                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-            </svg>`;
-
-            // Clear visible End Call (Hang up) SVG
-            const endCallIcon = `<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path>
-                <line x1="23" y1="1" x2="1" y2="23"></line>
+            const endCallIcon = `<svg class="w-5 h-5 rotate-[135deg]" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
             </svg>`;
 
             container.innerHTML = `
-                <div class="flex flex-col items-center justify-center space-y-5 bg-[#08080f] p-8 sm:p-10 rounded-3xl max-w-sm w-full shadow-2xl">
+                <div class="flex flex-col items-center justify-between min-h-[340px] sm:min-h-[360px] bg-[#08080f] p-7 sm:p-9 rounded-3xl max-w-sm w-full shadow-2xl">
                     
-                    <!-- Looping Animated Call Circle (No outer card border) -->
-                    <div class="relative flex items-center justify-center my-2">
-                        <span class="absolute w-24 h-24 rounded-full border border-amber-400/40 call-wave-loop"></span>
-                        <div class="w-22 h-22 rounded-full bg-[#0e0e18] flex items-center justify-center border-2 border-amber-400/90 call-circle-loop relative z-10">
+                    <div class="relative flex items-center justify-center mt-2 mb-6">
+                        <span class="absolute w-20 h-20 rounded-full border border-amber-400/45 call-wave-loop"></span>
+                        <div class="w-18 h-18 rounded-full bg-[#0e0e18] flex items-center justify-center border-2 border-amber-400/90 call-circle-loop relative z-10">
                             ${centerCallIcon}
                         </div>
                     </div>
 
-                    <div class="text-center space-y-1">
+                    <div class="text-center space-y-1.5 my-2">
                         <p class="text-base font-bold gold-gradient-text tracking-wide">${activeCallType === 'audio' ? 'Audio Call' : 'Video Call'}</p>
                         <p class="text-xs text-white font-medium">${currentActiveRecipient.name}</p>
                         <p class="text-[11px] text-[#2ed573] font-medium flex items-center justify-center space-x-1.5 pt-0.5">
@@ -617,14 +644,12 @@
                         </p>
                     </div>
 
-                    <!-- Controls: Switch Button with Arrow + Opposite Icon & Visible End Call Button -->
-                    <div class="flex items-center justify-center space-x-3 pt-2 w-full">
-                        <button onclick="switchCallMode()" class="px-4 py-2.5 bg-[#0f0f1a] hover:bg-[#171726] text-xs rounded-2xl text-amber-200 border border-white/10 flex items-center space-x-2 transition cursor-pointer shadow-md">
-                            ${switchArrowIcon}
+                    <div class="flex flex-col items-center space-y-4 pt-5 w-full">
+                        <button onclick="switchCallMode()" class="px-5 py-2.5 bg-[#0f0f1a] hover:bg-[#171726] text-xs rounded-2xl text-amber-200 border border-white/10 flex items-center space-x-2 transition cursor-pointer shadow-md">
+                            <span class="font-medium tracking-wide">Switch</span>
                             ${oppositeModeIcon}
-                            <span class="font-medium">Switch to ${activeCallType === 'audio' ? 'Video' : 'Audio'}</span>
                         </button>
-                        <button onclick="endCallSession()" class="w-12 h-12 pink-btn rounded-full flex items-center justify-center transition cursor-pointer shrink-0" title="End Call">
+                        <button onclick="endCallSession()" class="w-13 h-13 pink-btn rounded-full flex items-center justify-center transition cursor-pointer shadow-lg" title="End Call">
                             ${endCallIcon}
                         </button>
                     </div>
@@ -691,7 +716,6 @@
             if(file.type.startsWith('image/')) fileType = 'image';
             else if(file.type.startsWith('video/')) fileType = 'video';
 
-            // Convert to DataURL so high quality media transfers smoothly to both sender and recipient
             const reader = new FileReader();
             reader.onload = async function(e) {
                 const fileDataUrl = e.target.result;
@@ -705,7 +729,7 @@
                 });
 
                 const contactObj = deviceContacts.find(c => c.phone === key);
-                if(contactObj) contactObj.lastMsg = fileType === 'image' ? '📷 Photo' : (fileType === 'video' ? '🎬 Video' : `📎 ${file.name}`);
+                if(contactObj) contactObj.lastMsg = fileType === 'image' ? 'Photo' : (fileType === 'video' ? 'Video' : `${file.name}`);
                 if(currentTab === 'chat') renderChatStories();
                 loadMessages();
 
