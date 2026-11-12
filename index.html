@@ -142,15 +142,23 @@
         <div id="sidebarSection" class="w-full md:w-[380px] bg-[#06060b] flex flex-col justify-between border-r border-white/[0.06] shrink-0 z-20 h-full">
             <div class="flex flex-col flex-1 overflow-hidden">
                 
-                <!-- Search Bar with Search Button -->
+                <!-- Search Bar with Clickable Golden Search Icon -->
                 <div id="searchBarContainer" class="p-3 bg-[#030305] border-b border-white/[0.05] shrink-0">
-                    <div class="flex items-center space-x-2 bg-[#0a0a12] px-3 py-1.5 rounded-xl border border-white/[0.08] focus-within:border-amber-400/50 transition">
-                        <svg class="w-4 h-4 shrink-0 text-amber-400 ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="7.5"></circle>
-                            <line x1="20.5" y1="20.5" x2="16.35" y2="16.35"></line>
-                        </svg>
-                        <input type="text" id="searchInput" placeholder="Search..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1" onkeypress="if(event.key === 'Enter') filterContent()">
-                        <button onclick="filterContent()" class="gold-btn px-3 py-1.5 text-[11px] rounded-lg shrink-0 cursor-pointer">Search</button>
+                    <div class="flex items-center space-x-2 bg-[#0a0a12] px-3.5 py-2 rounded-xl border border-white/[0.08] focus-within:border-amber-400/50 transition">
+                        <input type="text" id="searchInput" placeholder="Search..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-0.5" onkeypress="if(event.key === 'Enter') filterContent()">
+                        <button onclick="filterContent()" class="cursor-pointer p-1 hover:scale-110 transition-transform" title="Search">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                <defs>
+                                    <linearGradient id="searchIconGrad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#bf953f"/>
+                                        <stop offset="50%" stop-color="#fcf6ba"/>
+                                        <stop offset="100%" stop-color="#aa771c"/>
+                                    </linearGradient>
+                                </defs>
+                                <circle cx="11" cy="11" r="7.5" stroke="url(#searchIconGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></circle>
+                                <line x1="20.5" y1="20.5" x2="16.35" y2="16.35" stroke="url(#searchIconGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></line>
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
@@ -217,9 +225,9 @@
                 </div>
             </div>
 
-            <!-- Fully Fixed Mobile Input Bar -->
-            <div id="chatInputBar" class="bg-[#06060b] px-3 py-2.5 hidden items-center space-x-2 border-t border-white/[0.06] shrink-0 sticky bottom-0 z-20">
-                <div class="flex-1 flex items-center bg-[#0a0a12] rounded-2xl px-3 py-2 space-x-2.5 border border-white/[0.08] focus-within:border-amber-400/50 transition">
+            <!-- Input Bar with Telegram Style Inside Golden Send Arrow Icon -->
+            <div id="chatInputBar" class="bg-[#06060b] px-3 py-2.5 hidden items-center border-t border-white/[0.06] shrink-0 sticky bottom-0 z-20">
+                <div class="flex-1 flex items-center bg-[#0a0a12] rounded-2xl px-3.5 py-2 space-x-2.5 border border-white/[0.08] focus-within:border-amber-400/50 transition">
                     <label class="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center shrink-0" title="Attach File">
                         <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
@@ -227,10 +235,22 @@
                         <input type="file" accept="image/*,video/*,application/pdf,.doc,.docx,.zip" class="hidden" onchange="sendUniversalFile(this)">
                     </label>
                     <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1 min-w-0" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
+                    
+                    <!-- Telegram Style Inside Golden Send Arrow Icon -->
+                    <button id="sendBtn" onclick="sendTextMessage()" class="hidden cursor-pointer hover:scale-110 transition-transform p-1 shrink-0" title="Send">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                            <defs>
+                                <linearGradient id="telegramSendGrad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#bf953f"/>
+                                    <stop offset="50%" stop-color="#fcf6ba"/>
+                                    <stop offset="100%" stop-color="#aa771c"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M22 2L11 13" stroke="url(#telegramSendGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M22 2L15 22L11 13L2 9L22 2Z" fill="url(#telegramSendGrad)" fill-opacity="0.25" stroke="url(#telegramSendGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
                 </div>
-                <button id="sendBtn" onclick="sendTextMessage()" class="gold-btn px-3.5 py-2 text-xs rounded-xl transition hidden items-center space-x-1 shrink-0 cursor-pointer">
-                    <span>Send</span>
-                </button>
             </div>
         </div>
 
@@ -662,10 +682,10 @@
             const sendBtn = document.getElementById('sendBtn');
             if(text.length > 0) {
                 sendBtn.classList.remove('hidden');
-                sendBtn.classList.add('flex');
+                sendBtn.classList.add('block');
             } else {
                 sendBtn.classList.add('hidden');
-                sendBtn.classList.remove('flex');
+                sendBtn.classList.remove('block');
             }
         }
 
@@ -781,8 +801,11 @@
                                     <img src="${mediaSrc}" alt="${msg.message_text}" class="max-h-60 w-full object-cover hover:scale-[1.02] transition-transform duration-300 cursor-pointer" onclick="window.open('${mediaSrc}', '_blank')">
                                 </div>
                                 <div class="flex items-center justify-between px-1">
-                                    <span class="text-[10px] text-gray-300 truncate max-w-[170px]">${msg.message_text}</span>
-                                    <a href="${mediaSrc}" download="${msg.message_text}" class="text-[10px] gold-gradient-text font-semibold hover:underline">Save</a>
+                                    <span class="text-[10px] text-gray-300 truncate max-w-[150px]">${msg.message_text}</span>
+                                    <div class="flex items-center space-x-2">
+                                        <a href="${mediaSrc}" download="${msg.message_text}" class="text-[10px] gold-gradient-text font-semibold hover:underline" title="Download">Save</a>
+                                        <button onclick="shareMediaLink('${mediaSrc}')" class="text-[10px] text-amber-300 hover:underline cursor-pointer" title="Share">Share</button>
+                                    </div>
                                 </div>
                             </div>`;
                     } else if (isVid && mediaSrc) {
@@ -792,8 +815,11 @@
                                     <video src="${mediaSrc}" controls playsinline class="max-h-60 w-full object-contain"></video>
                                 </div>
                                 <div class="flex items-center justify-between px-1">
-                                    <span class="text-[10px] text-gray-300 truncate max-w-[170px]">${msg.message_text}</span>
-                                    <a href="${mediaSrc}" download="${msg.message_text}" class="text-[10px] gold-gradient-text font-semibold hover:underline">Save</a>
+                                    <span class="text-[10px] text-gray-300 truncate max-w-[150px]">${msg.message_text}</span>
+                                    <div class="flex items-center space-x-2">
+                                        <a href="${mediaSrc}" download="${msg.message_text}" class="text-[10px] gold-gradient-text font-semibold hover:underline" title="Download">Save</a>
+                                        <button onclick="shareMediaLink('${mediaSrc}')" class="text-[10px] text-amber-300 hover:underline cursor-pointer" title="Share">Share</button>
+                                    </div>
                                 </div>
                             </div>`;
                     } else if (mediaSrc) {
@@ -804,7 +830,10 @@
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-[11px] font-medium text-white truncate">${msg.message_text}</p>
-                                    <a href="${mediaSrc}" download="${msg.message_text}" class="text-[10px] gold-gradient-text font-semibold hover:underline">Download File</a>
+                                    <div class="flex items-center space-x-3 mt-1">
+                                        <a href="${mediaSrc}" download="${msg.message_text}" class="text-[10px] gold-gradient-text font-semibold hover:underline">Download</a>
+                                        <button onclick="shareMediaLink('${mediaSrc}')" class="text-[10px] text-amber-300 hover:underline cursor-pointer">Share</button>
+                                    </div>
                                 </div>
                             </div>`;
                     } else {
@@ -823,6 +852,14 @@
             } else {
                 container.className = "flex-1 overflow-y-auto p-4 space-y-3 flex flex-col justify-center items-center";
                 container.innerHTML = `<div class="bg-[#090910] px-5 py-3.5 rounded-2xl text-center"><p class="text-xs text-white/75">No message yet</p></div>`;
+            }
+        }
+
+        function shareMediaLink(url) {
+            if (navigator.share) {
+                navigator.share({ title: 'SALAAM Media', url: url }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(url).then(() => showToast('Media link copied to clipboard!'));
             }
         }
 
