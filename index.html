@@ -3,171 +3,324 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rorraxy Chat - Secure P2P Messenger</title>
+    <title>rorraxy messenger</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        body { background-color: #0b141a; color: #e9edef; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        .chat-bg { background-color: #080d12; background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; }
+        :root {
+            --bg-retail: #030305;
+            --card-retail: #06060a;
+            --gold-gradient: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+            --gold-solid: #d4af37;
+            --text-white: #ffffff;
+            --text-gray: #a8a8b8;
+            --font-main: 'Poppins', sans-serif;
+            --border-soft: rgba(212, 175, 55, 0.2);
+            --success-green: #2ed573;
+        }
+
+        body { 
+            background-color: var(--bg-retail); 
+            color: var(--text-white); 
+            font-family: var(--font-main); 
+        }
+
+        .gold-text {
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gold-border { border-color: var(--border-soft); }
+        .gold-btn { background: var(--gold-gradient); color: #000; font-weight: 600; }
+        .gold-btn:hover { opacity: 0.9; }
+        
+        .gold-icon {
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bg-retail); }
+        ::-webkit-scrollbar-thumb { background: #b38728; border-radius: 4px; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
 
-    <!-- Top Navbar / Brand Header -->
-    <header class="bg-[#202c33] px-4 py-3 flex justify-between items-center border-b border-[#2f3b43]">
+    <!-- Top Header Bar -->
+    <header class="bg-[#06060a] px-4 py-3 flex justify-between items-center border-b gold-border">
         <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-full bg-gradient-to-r from-amber-500 to-yellow-300 flex items-center justify-center font-bold text-black">RX</div>
+            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" alt="logo" class="w-10 h-10 rounded-full object-cover border gold-border">
             <div>
-                <h1 class="font-semibold text-lg tracking-wide text-[#e9edef]">Rorraxy Messenger</h1>
-                <p class="text-xs text-emerald-400 font-medium">● P2P Direct & Encrypted</p>
+                <h1 class="font-bold text-sm tracking-wide gold-text">rorraxy messenger</h1>
+                <p class="text-[10px] text-[var(--text-gray)] flex items-center space-x-1.5">
+                    <span id="headerStatusDot" class="w-2 h-2 rounded-full bg-gray-500 inline-block"></span>
+                    <span id="headerStatusText">Offline</span>
+                </p>
             </div>
         </div>
-        <div class="flex items-center space-x-4 text-[#aebac1]">
-            <span id="userPhoneDisplay" class="text-sm bg-[#2a3942] px-3 py-1 rounded-full text-amber-400">Not Logged In</span>
+        <div>
+            <span id="userBadge" class="text-xs bg-[#030305] px-3 py-1 rounded-full text-[var(--gold-solid)] border gold-border">Guest</span>
         </div>
     </header>
 
-    <!-- Main Container -->
+    <!-- Main Workspace Container -->
     <div class="flex flex-1 overflow-hidden">
         
-        <!-- Sidebar: Chat List & Contacts -->
-        <div class="w-1/3 bg-[#111b21] border-r border-[#2f3b43] flex flex-col">
-            <div class="p-3 bg-[#202c33] flex justify-between items-center">
-                <input type="text" id="myPhoneInput" placeholder="Enter Your Phone (e.g. 017...)" class="w-full bg-[#2a3942] text-sm px-3 py-2 rounded-lg focus:outline-none text-white placeholder-gray-400">
-                <button onclick="registerUser()" class="ml-2 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 text-sm rounded-lg font-medium transition">Login</button>
-            </div>
+        <!-- Sidebar: Tabs & Dynamic Lists -->
+        <div class="w-full md:w-[360px] bg-[#06060a] border-r gold-border flex flex-col justify-between">
             
-            <div class="p-2 border-b border-[#2f3b43]">
-                <input type="text" id="recipientPhoneInput" placeholder="Chat with (Recipient Phone)" class="w-full bg-[#2a3942] text-sm px-3 py-2 rounded-lg focus:outline-none text-white placeholder-gray-400">
-            </div>
+            <div class="flex flex-col flex-1 overflow-hidden">
+                <div class="p-3 bg-[#030305] border-b gold-border flex space-x-2">
+                    <input type="text" id="myPhoneInput" placeholder="Phone number..." class="flex-1 bg-[#06060a] border gold-border text-xs px-3 py-2 rounded-lg focus:outline-none text-white placeholder-gray-500">
+                    <button onclick="saveUserPhone()" class="gold-btn px-4 py-2 text-xs rounded-lg">Save</button>
+                </div>
+                
+                <div class="p-2.5 bg-[#06060a] border-b gold-border">
+                    <input type="text" id="recipientPhoneInput" placeholder="Search contact..." class="w-full bg-[#030305] border gold-border text-xs px-3 py-2 rounded-lg focus:outline-none text-white placeholder-gray-500" onchange="loadMessages()">
+                </div>
 
-            <div class="flex-1 overflow-y-auto p-2 space-y-1">
-                <div class="p-3 hover:bg-[#202c33] rounded-lg cursor-pointer flex items-center space-x-3 transition">
-                    <div class="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center text-lg font-bold text-white">AI</div>
-                    <div class="flex-1">
-                        <div class="flex justify-between"><span class="font-semibold">Rorraxy Support</span><span class="text-xs text-gray-400">Just now</span></div>
-                        <p class="text-xs text-gray-400 truncate">Welcome to P2P decentralized messaging!</p>
+                <!-- Content Area -->
+                <div id="sidebarContentList" class="flex-1 overflow-y-auto divide-y divide-[#1a1a24]">
+                    <div class="p-3 hover:bg-[#030305] cursor-pointer flex items-center space-x-3 transition">
+                        <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-11 h-11 rounded-full object-cover border gold-border">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-baseline"><span class="font-medium text-xs gold-text truncate">rorraxy support</span><span class="text-[9px] text-[var(--success-green)]">Online</span></div>
+                            <p class="text-[11px] text-[var(--text-gray)] truncate">Direct messaging ready.</p>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Bottom Navigation Bar with Golden Gradient Icons -->
+            <div class="bg-[#030305] border-t gold-border grid grid-cols-3 py-2.5 text-center text-xs">
+                <button onclick="switchTab('chat')" id="tabChatBtn" class="font-semibold gold-text flex flex-col items-center space-y-1 transition">
+                    <span class="text-base">💬</span> Chat
+                </button>
+                <button onclick="switchTab('call')" id="tabCallBtn" class="font-medium text-[var(--text-gray)] hover:text-white flex flex-col items-center space-y-1 transition">
+                    <span class="text-base">📞</span> Call
+                </button>
+                <button onclick="switchTab('settings')" id="tabSettingsBtn" class="font-medium text-[var(--text-gray)] hover:text-white flex flex-col items-center space-y-1 transition">
+                    <span class="text-base">⚙️</span> Settings
+                </button>
+            </div>
         </div>
 
-        <!-- Chat Box Section -->
-        <div class="flex-2 flex flex-col chat-bg">
-            <!-- Active Chat Header -->
-            <div class="bg-[#202c33] px-4 py-3 flex items-center justify-between border-b border-[#2f3b43]">
+        <!-- Active Chat Box Section -->
+        <div class="flex-1 hidden md:flex flex-col bg-[#030305] flex-2">
+            
+            <div class="bg-[#06060a] px-4 py-3 flex items-center justify-between border-b gold-border">
                 <div class="flex items-center space-x-3">
-                    <div class="w-9 h-9 rounded-full bg-emerald-700 flex items-center justify-center font-bold text-white">RC</div>
-                    <span id="activeChatTitle" class="font-medium text-white">Select a contact to chat</span>
+                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-9 h-9 rounded-full object-cover border gold-border">
+                    <div>
+                        <span id="activeChatTitle" class="font-medium text-white text-xs">Select conversation</span>
+                        <p class="text-[9px] text-[var(--success-green)]">Direct P2P</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="startAudioCall()" class="text-xs px-2.5 py-1.5 bg-[#030305] border gold-border rounded-md hover:bg-[#1a1a24] gold-icon" title="Audio Call">📞</button>
+                    <button onclick="startVideoCall()" class="text-xs px-2.5 py-1.5 bg-[#030305] border gold-border rounded-md hover:bg-[#1a1a24] gold-icon" title="Video Call">📹</button>
+                    <button onclick="clearChatHistory()" class="text-[11px] text-red-400 bg-[#030305] border border-red-900/30 px-3 py-1.5 rounded-md">Clear</button>
                 </div>
             </div>
 
-            <!-- Messages Area -->
+            <!-- Messages Area (Clean without unnecessary text) -->
             <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
-                <!-- Messages will dynamically append here -->
+                <div class="self-center text-[var(--text-gray)] text-[11px] py-10">Select a recipient number from sidebar to start chatting.</div>
             </div>
 
-            <!-- Input & P2P File Share Footer -->
-            <div class="bg-[#202c33] px-4 py-3 flex items-center space-x-3 border-t border-[#2f3b43]">
-                <label class="cursor-pointer text-gray-400 hover:text-white transition" title="Share Local Image/Video P2P">
-                    📁 <input type="file" id="mediaFileInput" class="hidden" onchange="sendP2PFile()">
-                </label>
-                <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 bg-[#2a3942] text-sm px-4 py-3 rounded-lg focus:outline-none text-white placeholder-gray-400" onkeypress="if(event.key === 'Enter') sendMessage()">
-                <button onclick="sendMessage()" class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded-lg font-medium text-white transition">Send</button>
+            <!-- Advanced Input Bar with Distinct Image & File Icons -->
+            <div class="bg-[#06060a] px-4 py-3 flex items-center space-x-2 border-t gold-border relative">
+                
+                <div class="flex-1 flex items-center bg-[#030305] border gold-border rounded-xl px-3 py-2 space-x-3">
+                    
+                    <!-- 🖼️ Image / Video Upload Icon -->
+                    <label class="cursor-pointer text-lg hover:opacity-80 transition gold-icon" title="Upload Image / Video">
+                        🖼️
+                        <input type="file" id="imageInput" accept="image/*,video/*" class="hidden" onchange="sendMediaFile(this, 'Media')">
+                    </label>
+
+                    <!-- 📎 Document / File Attachment Icon -->
+                    <label class="cursor-pointer text-lg hover:opacity-80 transition gold-icon" title="Attach Document / File">
+                        📎
+                        <input type="file" id="docInput" class="hidden" onchange="sendMediaFile(this, 'Document')">
+                    </label>
+
+                    <!-- Text Input Box -->
+                    <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
+                    
+                    <!-- Voice / Speech Input Icon -->
+                    <button onclick="toggleVoiceRecording()" class="text-lg hover:opacity-80 transition gold-icon" title="Voice Input">
+                        🎙️
+                    </button>
+                </div>
+
+                <!-- Dynamic Send Button (Appears when typing) -->
+                <button id="sendBtn" onclick="sendTextMessage()" class="gold-btn px-5 py-2.5 text-xs rounded-xl transition hidden">
+                    Send
+                </button>
             </div>
         </div>
 
     </div>
 
+    <!-- Core Script Logic -->
     <script>
         let myPhone = "";
 
-        async function registerUser() {
+        function saveUserPhone() {
             const phone = document.getElementById('myPhoneInput').value.trim();
-            if(!phone) return alert('Please enter phone number');
-            
-            const res = await fetch('/api/chat?action=login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone_number: phone, display_name: "User " + phone })
-            });
-            const data = await res.json();
-            if(data.success) {
-                myPhone = phone;
-                document.getElementById('userPhoneDisplay').innerText = "Logged: " + phone;
-                alert('Login Successful & Magic Code Generated!');
-                loadMessages();
+            if(!phone) return alert('Please enter phone number!');
+            myPhone = phone;
+            document.getElementById('userBadge').innerText = phone;
+            document.getElementById('headerStatusText').innerText = "Online";
+            document.getElementById('headerStatusDot').className = "w-2 h-2 rounded-full bg-[var(--success-green)] inline-block";
+            loadMessages();
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tabChatBtn').className = "font-medium text-[var(--text-gray)] flex flex-col items-center space-y-1 transition";
+            document.getElementById('tabCallBtn').className = "font-medium text-[var(--text-gray)] flex flex-col items-center space-y-1 transition";
+            document.getElementById('tabSettingsBtn').className = "font-medium text-[var(--text-gray)] flex flex-col items-center space-y-1 transition";
+
+            if(tab === 'chat') {
+                document.getElementById('tabChatBtn').className = "font-semibold gold-text flex flex-col items-center space-y-1 transition";
+                renderChatList();
+            } else if(tab === 'call') {
+                document.getElementById('tabCallBtn').className = "font-semibold gold-text flex flex-col items-center space-y-1 transition";
+                renderCallList();
+            } else if(tab === 'settings') {
+                document.getElementById('tabSettingsBtn').className = "font-semibold gold-text flex flex-col items-center space-y-1 transition";
+                renderSettingsView();
             }
         }
 
-        async function sendMessage() {
+        function renderChatList() {
+            document.getElementById('sidebarContentList').innerHTML = `
+                <div class="p-3 hover:bg-[#030305] cursor-pointer flex items-center space-x-3 transition">
+                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-11 h-11 rounded-full object-cover border gold-border">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-baseline"><span class="font-medium text-xs gold-text truncate">rorraxy support</span><span class="text-[9px] text-[var(--success-green)]">Online</span></div>
+                        <p class="text-[11px] text-[var(--text-gray)] truncate">Direct messaging ready.</p>
+                    </div>
+                </div>`;
+        }
+
+        function renderCallList() {
+            document.getElementById('sidebarContentList').innerHTML = `
+                <div class="p-4 space-y-3 text-xs">
+                    <p class="font-bold gold-text text-sm">Direct Calls</p>
+                    <div class="bg-[#030305] p-3 rounded-lg border gold-border space-y-2">
+                        <p class="text-white font-medium">📞 P2P Audio Call</p>
+                        <p class="text-white font-medium">📹 P2P Video Call</p>
+                    </div>
+                </div>`;
+        }
+
+        function renderSettingsView() {
+            document.getElementById('sidebarContentList').innerHTML = `
+                <div class="p-4 space-y-3 text-xs">
+                    <p class="font-bold gold-text text-sm">Settings</p>
+                    <div class="bg-[#030305] p-3 rounded-lg border gold-border space-y-1">
+                        <p class="text-[var(--text-gray)]">Phone: <span class="text-white">${myPhone || 'Not Set'}</span></p>
+                        <p class="text-[var(--text-gray)]">Status: <span class="text-[var(--success-green)]">Active P2P</span></p>
+                    </div>
+                </div>`;
+        }
+
+        function startAudioCall() { alert('Connecting P2P Audio Call...'); }
+        function startVideoCall() { alert('Connecting P2P Video Call...'); }
+
+        function toggleSendButton() {
+            const text = document.getElementById('messageInput').value.trim();
+            const sendBtn = document.getElementById('sendBtn');
+            if(text.length > 0) {
+                sendBtn.classList.remove('hidden');
+            } else {
+                sendBtn.classList.add('hidden');
+            }
+        }
+
+        async function sendTextMessage() {
             const recipient = document.getElementById('recipientPhoneInput').value.trim();
             const text = document.getElementById('messageInput').value.trim();
-            if(!myPhone || !recipient || !text) return alert('Fill phone numbers and message text!');
+            if(!myPhone || !recipient || !text) return;
 
-            const formData = new FormData();
-            formData.append('sender_phone', myPhone);
-            formData.append('recipient_phone', recipient);
-            formData.append('message_text', text);
-
-            const res = await fetch('/api/chat?action=send_message', { method: 'POST', body: formData });
-            const data = await res.json();
-            if(data.success) {
-                document.getElementById('messageInput').value = '';
-                loadMessages();
-            }
+            await fetch('/api/chat?action=send_message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sender_phone: myPhone, recipient_phone: recipient, message_text: text })
+            });
+            document.getElementById('messageInput').value = '';
+            toggleSendButton();
+            loadMessages();
         }
 
-        async function sendP2PFile() {
-            const fileInput = document.getElementById('mediaFileInput');
+        function sendMediaFile(inputElement, type) {
             const recipient = document.getElementById('recipientPhoneInput').value.trim();
-            if(!fileInput.files[0] || !recipient) return alert('Select file and recipient first!');
+            if(!myPhone || !recipient || !inputElement.files[0]) return;
+            
+            const file = inputElement.files[0];
+            const fileUrl = URL.createObjectURL(file);
+            fetch('/api/chat?action=send_message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sender_phone: myPhone, recipient_phone: recipient, message_text: `[${type}: ${file.name}]`, media_url: fileUrl })
+            }).then(() => { inputElement.value = ''; loadMessages(); });
+        }
 
-            const file = fileInput.files[0];
-            const formData = new FormData();
-            formData.append('sender_phone', myPhone);
-            formData.append('recipient_phone', recipient);
-            formData.append('message_text', `[Shared Local File: ${file.name}]`);
-            formData.append('media', file); // Local file direct buffer stream
-
-            const res = await fetch('/api/chat?action=send_message', { method: 'POST', body: formData });
-            const data = await res.json();
-            if(data.success) {
-                alert('File Shared Successfully via Direct Channel!');
-                loadMessages();
-            }
+        function toggleVoiceRecording() {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(SpeechRec) {
+                const rec = new SpeechRec();
+                rec.start();
+                document.getElementById('messageInput').placeholder = "Listening...";
+                rec.onresult = e => {
+                    document.getElementById('messageInput').value = e.results[0][0].transcript;
+                    document.getElementById('messageInput').placeholder = "Type a message...";
+                    toggleSendButton();
+                };
+                rec.onerror = () => { document.getElementById('messageInput').placeholder = "Type a message..."; };
+            } else { alert('Voice input not supported in this browser.'); }
         }
 
         async function loadMessages() {
             const recipient = document.getElementById('recipientPhoneInput').value.trim();
             if(!myPhone || !recipient) return;
+            document.getElementById('activeChatTitle').innerText = recipient;
 
             const res = await fetch(`/api/chat?action=get_messages&user1=${myPhone}&user2=${recipient}`);
             const data = await res.json();
-            
             if(data.success) {
                 const container = document.getElementById('chatMessages');
                 container.innerHTML = '';
                 data.messages.forEach(msg => {
                     const isMe = msg.phone_number === myPhone;
                     const div = document.createElement('div');
-                    div.className = `max-w-md p-3 rounded-lg text-sm ${isMe ? 'bg-[#005c4b] self-end text-white' : 'bg-[#202c33] self-start text-white'}`;
-                    
-                    let content = `<p>${msg.message_text}</p>`;
-                    if(msg.avatar_url) {
-                        content += `<a href="${msg.avatar_url}" target="_blank" class="text-xs text-blue-400 underline mt-1 block">[View Shared Media]</a>`;
-                    }
-                    div.innerHTML = content;
+                    div.className = `max-w-xs p-2.5 rounded-xl text-xs ${isMe ? 'bg-[#122118] border border-emerald-900/40 self-end text-white' : 'bg-[#06060a] border gold-border self-start text-white'}`;
+                    div.innerHTML = `<p>${msg.message_text}</p>` + (msg.avatar_url ? `<a href="${msg.avatar_url}" target="_blank" class="text-[var(--gold-solid)] underline block mt-1">[View Attached File]</a>` : '');
                     container.appendChild(div);
                 });
                 container.scrollTop = container.scrollHeight;
             }
         }
 
-        // Auto refresh chat every 3 seconds for real-time feel
-        setInterval(() => {
-            if(myPhone && document.getElementById('recipientPhoneInput').value.trim()) {
+        async function clearChatHistory() {
+            const recipient = document.getElementById('recipientPhoneInput').value.trim();
+            if(!myPhone || !recipient) return;
+            if(confirm('Clear chat history?')) {
+                await fetch('/api/chat?action=clear_chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone_number: myPhone, recipient_phone: recipient })
+                });
                 loadMessages();
             }
+        }
+
+        setInterval(() => {
+            if(myPhone && document.getElementById('recipientPhoneInput').value.trim()) loadMessages();
         }, 3000);
     </script>
 </body>
