@@ -24,6 +24,8 @@ export async function onRequest(context) {
                 return new Response(JSON.stringify({ success: false, error: 'Phone number required' }), { status: 400, headers: corsHeaders });
             }
 
+            const clientIp = (ip && ip !== 'Detecting...' && ip !== 'Unknown') ? ip : (request.headers.get('CF-Connecting-IP') || 'Unknown');
+
             const existing = await env.chat.prepare(
                 "SELECT * FROM chat_master_system WHERE record_type = 'user' AND phone_number = ?"
             ).bind(phone).first();
@@ -31,12 +33,12 @@ export async function onRequest(context) {
             if (existing) {
                 await env.chat.prepare(
                     "UPDATE chat_master_system SET magic_code = ?, display_name = COALESCE(?, display_name), ip_address = ?, updated_at = CURRENT_TIMESTAMP WHERE phone_number = ? AND record_type = 'user'"
-                ).bind(magic_code, display_name || null, ip || '', phone).run();
+                ).bind(magic_code, display_name || null, clientIp, phone).run();
             } else {
                 await env.chat.prepare(
                     `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, magic_code, ip_address, is_verified, is_online) 
                      VALUES (?, 'user', ?, ?, ?, ?, 0, 1)`
-                ).bind('user_' + Date.now(), phone, display_name || 'rorraxy User', magic_code, ip || '').run();
+                ).bind('user_' + Date.now(), phone, display_name || 'rorraxy User', magic_code, clientIp).run();
             }
 
             return new Response(JSON.stringify({ success: true, message: 'Code generated successfully' }), { headers: corsHeaders });
@@ -47,11 +49,13 @@ export async function onRequest(context) {
             const body = await request.json();
             const { phone, magic_code, unique_id, ip } = body;
 
+            const clientIp = (ip && ip !== 'Detecting...' && ip !== 'Unknown') ? ip : (request.headers.get('CF-Connecting-IP') || 'Unknown');
+
             await env.chat.prepare(
                 `UPDATE chat_master_system 
                  SET is_verified = 1, unique_id = ?, ip_address = ?, is_online = 1, updated_at = CURRENT_TIMESTAMP 
                  WHERE phone_number = ? AND magic_code = ? AND record_type = 'user'`
-            ).bind(unique_id || 'usr_' + Date.now(), ip || '', phone, magic_code).run();
+            ).bind(unique_id || 'usr_' + Date.now(), clientIp, phone, magic_code).run();
 
             return new Response(JSON.stringify({ success: true, message: 'Verified successfully' }), { headers: corsHeaders });
         }
