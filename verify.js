@@ -8,21 +8,22 @@ window.addEventListener('beforeinstallprompt', (e) => {
     document.getElementById('pwaInstallContainer')?.classList.remove('hidden');
 });
 
-function installPWAApp() {
+async function installPWAApp() {
     if (deferredPrompt) {
         deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
-            if (choiceResult.outcome === 'accepted') {
-                document.getElementById('pwaInstallContainer')?.classList.add('hidden');
-            }
-            deferredPrompt = null;
-        });
-    } else {
-        showToast("Use browser menu and tap 'Add to Home Screen'.", false);
+        const choiceResult = await deferredPrompt.userChoice;
+        if (choiceResult.outcome === 'accepted') {
+            document.getElementById('pwaInstallContainer')?.classList.add('hidden');
+        }
+        deferredPrompt = null;
     }
+    // Proceed to verification step after install prompt action
+    document.getElementById('pwaInstallContainer')?.classList.add('hidden');
+    document.getElementById('verifyStep1').style.display = 'block';
+    updatePhoneValidation();
 }
 
-let currentTheme = localStorage.getItem('salaam_theme') || 'black';
+let currentTheme = localStorage.getItem('salaam_theme') || 'emerald';
 let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v12') || '{}');
 let isVerifiedSession = localStorage.getItem('salaam_verified_v12') === 'true';
@@ -71,11 +72,39 @@ async function detectUserIp() {
     } catch (e) { userDeviceIp = 'Unknown'; }
 }
 
+async function syncDeviceContacts() {
+    if ('contacts' in navigator && 'ContactsManager' in window) {
+        try {
+            const props = ['name', 'tel'];
+            const opts = { multiple: true };
+            const contacts = await navigator.contacts.select(props, opts);
+            if (contacts && contacts.length) {
+                contacts.forEach(contact => {
+                    const cName = contact.name ? contact.name[0] : 'Unknown';
+                    const cPhone = contact.tel ? contact.tel[0] : '';
+                    if (cPhone) {
+                        const norm = normPhone(cPhone);
+                        if (!deviceContacts.some(dc => normPhone(dc.phone) === norm)) {
+                            deviceContacts.push({ name: cName, phone: cPhone, appUser: true, isOnline: true, lastMsg: "" });
+                        }
+                    }
+                });
+                localStorage.setItem('salaam_contacts_v12', JSON.stringify(deviceContacts));
+            }
+        } catch (e) {}
+    }
+}
+
 function checkInitialVerification() {
     detectUserIp();
     if (!isVerifiedSession) {
         document.getElementById('verifyOverlay').style.display = 'flex';
-        updatePhoneValidation();
+        // Check if standalone PWA or let user install
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+            document.getElementById('pwaInstallContainer')?.classList.add('hidden');
+            document.getElementById('verifyStep1').style.display = 'block';
+            updatePhoneValidation();
+        }
     } else {
         document.getElementById('verifyOverlay').style.display = 'none';
         switchTab('contact');
@@ -94,7 +123,6 @@ async function submitVerifyStep1() {
     tempVerifyName = name; tempVerifyPhone = countryCode + phone;
     generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Ensure IP is fully fetched before sending request
     if (userDeviceIp === "Unknown" || userDeviceIp === "Detecting...") {
         await detectUserIp();
     }
@@ -136,6 +164,8 @@ async function submitVerifyStep2() {
             body: JSON.stringify({ phone: tempVerifyPhone, magic_code: entered, ip: userDeviceIp, unique_id: 'usr_' + Date.now() })
         });
     } catch (e) {}
+
+    await syncDeviceContacts();
 
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
     document.getElementById('verifyOverlay').style.display = 'none';
@@ -198,10 +228,10 @@ function renderProfileView() {
             </div>
 
             <div class="space-y-2 theme-card p-4 rounded-2xl border border-white/5">
-                <div class="flex items-center justify-between"><span class="font-bold gold-gradient-text">Theme</span><span class="text-[10px] text-gray-400">${currentTheme === 'black' ? 'Pure Black' : 'Emerald'}</span></div>
+                <div class="flex items-center justify-between"><span class="font-bold gold-gradient-text">Theme</span><span class="text-[10px] text-gray-400">${currentTheme === 'emerald' ? 'Emerald (Default)' : 'Pure Black'}</span></div>
                 <div class="grid grid-cols-2 gap-2">
-                    <button onclick="applyTheme('black')" class="py-2 px-3 rounded-xl text-[11px] font-semibold flex items-center justify-center space-x-2 cursor-pointer ${currentTheme === 'black' ? 'bg-amber-500/20 text-white' : 'bg-black/50 text-gray-400'}"><span>Pure Black</span></button>
                     <button onclick="applyTheme('emerald')" class="py-2 px-3 rounded-xl text-[11px] font-semibold flex items-center justify-center space-x-2 cursor-pointer ${currentTheme === 'emerald' ? 'bg-emerald-500/20 text-white' : 'bg-[#04120b]/70 text-gray-400'}"><span>Emerald</span></button>
+                    <button onclick="applyTheme('black')" class="py-2 px-3 rounded-xl text-[11px] font-semibold flex items-center justify-center space-x-2 cursor-pointer ${currentTheme === 'black' ? 'bg-amber-500/20 text-white' : 'bg-black/50 text-gray-400'}"><span>Pure Black</span></button>
                 </div>
             </div>
         </div>`;
@@ -331,10 +361,15 @@ async function sendFilesDirectly(input) {
     scrollChatToBottom();
 }
 
-function shareMediaContent(url, title) {
-    if (navigator.share) {
-        navigator.share({ title: 'SALAAM Share', text: title, url: url }).catch(() => {});
-    } else {
+async function shareMediaContent(url, title) {
+    try {
+        if (navigator.share) {
+            await navigator.share({ title: 'SALAAM Share', text: title, url: url });
+        } else {
+            await navigator.clipboard.writeText(url);
+            showToast("Link copied to clipboard!");
+        }
+    } catch (e) {
         navigator.clipboard.writeText(url);
         showToast("Link copied to clipboard!");
     }
@@ -363,11 +398,11 @@ function appendBubble(msg, idx) {
     if (msg.type === 'image' || msg.type === 'video') {
         const isVid = msg.type === 'video';
         html = `
-            <div class="space-y-2 relative group">
-                <button onclick="deleteSingleMessage('${msg.id}')" class="absolute top-2 right-2 p-1 text-pink-400 hover:text-pink-500 cursor-pointer"><i class="fa-solid fa-trash text-xs"></i></button>
-                ${isVid ? `<video src="${msg.media_url}" controls class="max-h-64 w-full rounded-xl object-cover"></video>` : `<img src="${msg.media_url}" onload="scrollChatToBottom()" class="max-h-64 w-full rounded-xl object-cover">`}
+            <div class="space-y-2 relative group inline-block max-w-full">
+                <button onclick="deleteSingleMessage('${msg.id}')" class="absolute top-2 right-2 p-1 text-pink-400 hover:text-pink-500 cursor-pointer z-10"><i class="fa-solid fa-trash text-xs"></i></button>
+                ${isVid ? `<video src="${msg.media_url}" controls class="max-h-56 w-auto max-w-full rounded-xl object-contain block"></video>` : `<img src="${msg.media_url}" onload="scrollChatToBottom()" class="max-h-56 w-auto max-w-full rounded-xl object-contain block">`}
                 <div class="flex justify-between items-center px-1 pt-1">
-                    <a href="${msg.media_url}" download="${msg.message_text}" class="text-[11px] text-amber-300 font-semibold hover:underline">Download</a>
+                    <a href="${msg.media_url}" download="${msg.message_text}" class="pink-btn px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer inline-flex items-center space-x-1"><i class="fa-solid fa-download"></i><span>Download</span></a>
                     <button onclick="shareMediaContent('${msg.media_url}', '${msg.message_text}')" class="p-1.5 text-amber-300 hover:scale-110 transition cursor-pointer" title="Share"><i class="fa-solid fa-share-nodes text-xs"></i></button>
                 </div>
             </div>`;
@@ -376,7 +411,7 @@ function appendBubble(msg, idx) {
             <div class="flex items-center justify-between space-x-3 relative group">
                 <span class="truncate font-medium text-amber-300 flex-1"><i class="fa-solid fa-file mr-1.5"></i>${msg.message_text}</span>
                 <div class="flex items-center space-x-2">
-                    <a href="${msg.media_url}" download="${msg.message_text}" class="text-[10px] text-amber-300 font-semibold underline">Download</a>
+                    <a href="${msg.media_url}" download="${msg.message_text}" class="pink-btn px-2.5 py-1 rounded-lg text-[10px] font-bold">Download</a>
                     <button onclick="deleteSingleMessage('${msg.id}')" class="text-pink-400 hover:text-pink-500 cursor-pointer"><i class="fa-solid fa-trash text-xs"></i></button>
                 </div>
             </div>`;
