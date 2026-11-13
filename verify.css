@@ -1,0 +1,289 @@
+:root {
+    --bg-retail: #030305;
+    --card-retail: #06060a;
+    --gold-gradient: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+    --gold-solid: #d4af37;
+    --text-white: #ffffff;
+    --text-gray: #a8a8b8;
+    --font-main: 'Poppins', sans-serif;
+    --required-red: #ff4d4d;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    width: 100%;
+    overflow-x: hidden;
+    background: var(--bg-retail) !important;
+    color: var(--text-white);
+    font-family: var(--font-main);
+    min-height: 100vh;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 14px;
+    text-transform: uppercase;
+    min-height: 100vh;
+}
+
+.main-container {
+    width: 100%;
+    max-width: 450px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Header & Logo (বড়, স্পষ্ট এবং সম্পূর্ণ শ্যাডো ও ইফেক্ট মুক্ত) */
+.dashboard-header {
+    text-align: center;
+    margin-bottom: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.header-logo-img {
+    width: 115px;
+    height: 115px;
+    object-fit: contain;
+    background: transparent !important;
+    filter: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    outline: none !important;
+    image-rendering: -webkit-optimize-contrast;
+    margin-bottom: 4px;
+}
+
+.dashboard-header h1 {
+    font-size: 1.65rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.2;
+}
+
+.header-subtitle {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--text-gray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Card Styling */
+.info-card {
+    background: var(--card-retail);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 16px;
+    padding: 26px 22px;
+    width: 100%;
+    text-align: left;
+    animation: fadeIn 0.25s ease-in-out;
+}
+
+.info-card-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    padding-bottom: 12px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Form Elements */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.form-group label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+}
+
+.req-star {
+    color: var(--required-red);
+    -webkit-text-fill-color: var(--required-red);
+    font-weight: 900;
+    margin-left: 2px;
+}
+
+.form-control {
+    width: 100%;
+    background: #000000;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 13px 14px;
+    color: var(--text-white);
+    font-size: 0.84rem;
+    outline: none;
+    font-family: var(--font-main);
+    text-transform: none;
+}
+
+.form-control:focus {
+    background: #040408;
+    border-color: rgba(212, 175, 55, 0.45);
+}
+
+.phone-input-group {
+    display: flex;
+    align-items: center;
+    background: #000000;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.phone-input-group:focus-within {
+    border-color: rgba(212, 175, 55, 0.45);
+}
+
+.country-code-select {
+    background: #050508;
+    color: var(--gold-solid);
+    border: none;
+    padding: 13px 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    outline: none;
+    cursor: pointer;
+}
+
+.phone-control {
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    flex: 1;
+    box-shadow: none !important;
+}
+
+.status-msg {
+    font-size: 0.72rem;
+    text-transform: none;
+    display: none;
+    text-align: center;
+    padding: 9px 12px;
+    border-radius: 8px;
+    margin-top: 4px;
+}
+
+.status-msg.error {
+    color: #ff4d4d;
+    background: rgba(255, 77, 77, 0.08);
+}
+
+.status-msg.success {
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.08);
+}
+
+/* Buttons & Tick Icon */
+.btn-gold {
+    background: var(--gold-gradient);
+    border: none;
+    border-radius: 12px;
+    padding: 14px 20px;
+    color: #000000;
+    font-weight: 800;
+    font-size: 0.82rem;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity 0.2s ease;
+}
+
+.btn-tick-icon {
+    font-size: 1rem;
+    color: #000000;
+}
+
+.btn-gold:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.btn-gold:hover {
+    opacity: 0.92;
+}
+
+.btn-secondary {
+    background: #000000;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 9px 14px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.68rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Custom Notification Modal */
+#customNotifyModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    z-index: 99999;
+    justify-content: center;
+    align-items: center;
+    padding: 12px;
+}
+
+.notify-card {
+    background: var(--card-retail);
+    border-radius: 16px;
+    padding: 22px 18px;
+    width: 100%;
+    max-width: 330px;
+    text-align: center;
+    border: 1px solid rgba(212, 175, 55, 0.15);
+}
