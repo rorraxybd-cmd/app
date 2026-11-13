@@ -46,7 +46,7 @@ body {
     align-items: center;
 }
 
-/* Header & Logo (বড়, স্পষ্ট এবং সম্পূর্ণ শ্যাডো ও ইফেক্ট মুক্ত) */
+/* Header & Logo (শ্যাডো ও ইফেক্ট মুক্ত, বড় ও স্পষ্ট) */
 .dashboard-header {
     text-align: center;
     margin-bottom: 22px;
@@ -58,8 +58,8 @@ body {
 }
 
 .header-logo-img {
-    width: 115px;
-    height: 115px;
+    width: 120px;
+    height: 120px;
     object-fit: contain;
     background: transparent !important;
     filter: none !important;
@@ -71,7 +71,7 @@ body {
 }
 
 .dashboard-header h1 {
-    font-size: 1.65rem;
+    font-size: 1.75rem;
     font-weight: 800;
     letter-spacing: 2px;
     background: var(--gold-gradient);
