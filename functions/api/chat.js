@@ -15,6 +15,56 @@ export async function onRequest(context) {
     }
 
     try {
+        // নতুন: ম্যাজিক কোড জেনারেট এবং পাঠানো হ্যান্ডলার (SALAAM Verify)
+        if (request.method === 'POST' && action === 'send_magic_link') {
+            const body = await request.json();
+            const { email, phone, magic_code, ip } = body;
+
+            if (!email || !phone) {
+                return new Response(JSON.stringify({ success: false, error: 'Email and phone are required' }), { status: 400, headers: corsHeaders });
+            }
+
+            const existing = await env.DB.prepare(
+                "SELECT * FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR email = ?)"
+            ).bind(phone, email).first();
+
+            if (existing) {
+                await env.DB.prepare(
+                    "UPDATE chat_master_system SET magic_code = ?, ip_address = ?, updated_at = CURRENT_TIMESTAMP WHERE (phone_number = ? OR email = ?) AND record_type = 'user'"
+                ).bind(magic_code, ip || '', phone, email).run();
+            } else {
+                const userId = 'user_' + Date.now();
+                await env.DB.prepare(
+                    `INSERT INTO chat_master_system (id, record_type, phone_number, email, magic_code, ip_address, is_verified, is_online) 
+                     VALUES (?, 'user', ?, ?, ?, ?, 0, 1)`
+                ).bind(userId, phone, email, magic_code, ip || '').run();
+            }
+
+            return new Response(JSON.stringify({ success: true, message: 'Magic code generated successfully', magic_code }), { headers: corsHeaders });
+        }
+
+        // নতুন: ম্যাজিক কোড ও আইপি ভেরিফিকেশন হ্যান্ডলার
+        if (request.method === 'POST' && action === 'verify_magic_code') {
+            const body = await request.json();
+            const { email, phone, magic_code, unique_affiliate_id, ip } = body;
+
+            const record = await env.DB.prepare(
+                "SELECT * FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR email = ?) AND magic_code = ?"
+            ).bind(phone, email, magic_code).first();
+
+            if (!record) {
+                return new Response(JSON.stringify({ success: false, error: 'Invalid magic code' }), { status: 400, headers: corsHeaders });
+            }
+
+            await env.DB.prepare(
+                `UPDATE chat_master_system 
+                 SET is_verified = 1, unique_id = ?, ip_address = ?, updated_at = CURRENT_TIMESTAMP 
+                 WHERE id = ?`
+            ).bind(unique_affiliate_id, ip || '', record.id).run();
+
+            return new Response(JSON.stringify({ success: true, unique_affiliate_id, message: 'Account verified successfully' }), { headers: corsHeaders });
+        }
+
         // ১. ইউজার রেজিস্ট্রেশন ও ম্যাজিক কোড লগইন হ্যান্ডলার
         if (request.method === 'POST' && action === 'login') {
             const body = await request.json();
