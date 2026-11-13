@@ -2,93 +2,116 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SALAAM - Global Secure Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>SALAAM - Secure Verify & Chat | rorraxy.com</title>
+    <link rel="icon" type="image/png" href="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#000000">
-    <!-- PWA / App Install Meta -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- আপনার তৈরি করা verify.css ফাইল লিংক -->
+    <link rel="stylesheet" href="/verify.css">
+
     <style>
         :root, [data-theme="black"] {
             --bg-main: #000000;
             --bg-surface: #070707;
             --bg-card: #0e0e0e;
             --bg-input: #121212;
-            --bg-bubble-me: #1a1710;
-            --bg-bubble-them: #111111;
+            --bg-bubble-me: linear-gradient(135deg, rgba(28, 24, 16, 0.96) 0%, rgba(18, 15, 10, 0.96) 100%);
+            --bg-bubble-them: rgba(20, 20, 20, 0.88);
+            --bubble-border: rgba(245, 208, 97, 0.2);
             --gold-gradient: linear-gradient(135deg, #F5D061 0%, #FCF6BA 35%, #D4AF37 65%, #FBF5B7 85%, #AA771C 100%);
             --pink-solid: linear-gradient(135deg, #EC4899 0%, #ff2e7e 100%);
             --text-white: #ffffff;
             --text-gray: #9ca3af;
             --font-main: 'Poppins', sans-serif;
             --font-brand: 'Cinzel', serif;
-            --success-green: #2ed573;
         }
-
-        body { 
-            background-color: var(--bg-main); 
-            color: var(--text-white); 
-            font-family: var(--font-main); 
-            -webkit-tap-highlight-color: transparent;
+        [data-theme="emerald"] {
+            --bg-main: #020d08;
+            --bg-surface: #04120b;
+            --bg-card: #071910;
+            --bg-input: #091f15;
+            --bg-bubble-me: linear-gradient(135deg, rgba(13, 46, 30, 0.96) 0%, rgba(7, 28, 18, 0.96) 100%);
+            --bg-bubble-them: rgba(7, 22, 15, 0.88);
+            --bubble-border: rgba(46, 213, 115, 0.22);
         }
-
+        body { background-color: var(--bg-main); color: var(--text-white); font-family: var(--font-main); -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
         .theme-surface { background-color: var(--bg-surface); }
         .theme-card { background-color: var(--bg-card); }
         .theme-input { background-color: var(--bg-input); }
-
-        .brand-title-font { font-family: var(--font-brand); letter-spacing: 0.18em; }
+        .brand-title-font { font-family: var(--font-brand); letter-spacing: 0.16em; }
         .gold-gradient-text { background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .pink-gradient-text { background: var(--pink-solid); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
-        .gold-btn { background: var(--gold-gradient); color: #000000; font-weight: 700; }
+        .gold-btn { background: var(--gold-gradient); color: #000000; font-weight: 600; }
         .gold-btn:hover { opacity: 0.92; }
-
         .pink-btn { background: var(--pink-solid); color: #ffffff; font-weight: 600; }
         .pink-btn:hover { opacity: 0.92; }
-
+        .chat-bubble-me { background: var(--bg-bubble-me); backdrop-filter: blur(12px); border: 1px solid var(--bubble-border); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45); }
+        .chat-bubble-them { background: var(--bg-bubble-them); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.07); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45); }
+        @keyframes msgPopIn { 0% { opacity: 0; transform: translateY(14px) scale(0.96); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes listFadeIn { 0% { opacity: 0; transform: translateX(-8px); } 100% { opacity: 1; transform: translateX(0); } }
+        @keyframes modalZoomIn { 0% { opacity: 0; transform: scale(0.92); } 100% { opacity: 1; transform: scale(1); } }
+        .animate-msg { animation: msgPopIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        .animate-list-item { animation: listFadeIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .animate-modal { animation: modalZoomIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
         * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
         *::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+
+        /* লোগো শ্যাডো ও ইফেক্ট মুক্ত এবং বড় ও স্পষ্ট */
+        .header-logo-clean {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            background: transparent !important;
+            filter: none !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+
+        /* Full Screen Soft Verify Overlay */
+        #verifyOverlay { position: fixed; inset: 0; background: var(--bg-main); z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; overflow-y: auto; }
+        .verify-card { background: var(--bg-card); border-radius: 28px; padding: 28px; max-width: 400px; width: 100%; box-shadow: 0 12px 48px rgba(0,0,0,0.9); }
     </style>
 </head>
-<body class="h-[100dvh] flex flex-col overflow-hidden select-none">
+<body class="h-[100dvh] w-full flex flex-col overflow-hidden select-none fixed inset-0">
 
-    <!-- ================= 1. MINIMAL LUXURY VERIFICATION SCREEN ================= -->
-    <div id="view-verification" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-5 bg-black overflow-y-auto">
-        <div class="w-full max-w-[380px] theme-card p-7 rounded-3xl shadow-2xl space-y-6 border border-amber-500/10">
-            
-            <div class="flex flex-col items-center justify-center space-y-3 pt-1">
-                <div class="p-[2px] rounded-full shadow-[0_0_30px_rgba(212,175,55,0.3)]" style="background: var(--gold-gradient);">
-                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" onerror="this.src='https://placehold.co/120x120/000000/d4af37?text=S'" alt="SALAAM Logo" class="w-20 h-20 rounded-full object-cover bg-black">
-                </div>
-                <h1 class="brand-title-font text-2xl font-extrabold gold-gradient-text tracking-widest">SALAAM</h1>
-                <p class="text-[11px] text-gray-400 text-center">Global Secure International Chat & Calls</p>
+    <!-- Cloudflare & LocalStorage Integrated Secure Verify Screen (SALAAM) -->
+    <div id="verifyOverlay" style="display: none;">
+        <div class="verify-card animate-modal space-y-5">
+            <div class="text-center space-y-2.5">
+                <!-- শ্যাডো ও ইফেক্ট মুক্ত বড় লোগো -->
+                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png" alt="Logo" class="w-20 h-20 object-contain mx-auto header-logo-clean">
+                <h1 class="brand-title-font text-2xl font-extrabold gold-gradient-text">SALAAM</h1>
+                <p class="text-[11px] text-amber-300 tracking-widest font-bold">SECURE VERIFY ACCOUNT</p>
             </div>
 
-            <!-- Step 1: Full Name & Mobile Number Form -->
-            <form id="verifyEntryForm" class="space-y-4" novalidate>
+            <!-- Step 1: Full Name & Mobile Number with Golden Gradient Accents -->
+            <div id="verifyStep1" class="space-y-4">
                 <div class="space-y-1.5">
-                    <label class="text-[11px] font-semibold gold-gradient-text tracking-wider uppercase block">Full Name <span class="text-[#ff4d4d]">*</span></label>
-                    <input type="text" id="verifyFullName" placeholder="e.g. John Doe / Masudar Rahman" class="w-full theme-input text-xs px-4 py-3 rounded-xl text-white placeholder-gray-500 focus:outline-none" required>
+                    <label class="text-[11px] font-bold tracking-wider gold-gradient-text">FULL NAME <span class="text-red-500">*</span></label>
+                    <input type="text" id="vFullName" placeholder="Enter your full name" class="w-full theme-input text-xs px-4 py-3 rounded-xl text-white focus:outline-none border border-white/10 transition">
                 </div>
-
                 <div class="space-y-1.5">
-                    <label class="text-[11px] font-semibold gold-gradient-text tracking-wider uppercase block">Mobile Number <span class="text-[#ff4d4d]">*</span></label>
-                    <div class="flex items-center theme-input rounded-xl overflow-hidden">
-                        <select id="countryDialCode" class="bg-black/60 text-amber-300 text-xs px-2.5 py-3 outline-none font-semibold max-w-[115px] cursor-pointer">
-                            <option value="+880" selected>🇧🇩 +880</option>
-                            <option value="+1">🇺🇸 +1</option>
-                            <option value="+44">🇬🇧 +44</option>
-                            <option value="+1">🇨🇦 +1</option>
+                    <label class="text-[11px] font-bold tracking-wider gold-gradient-text">MOBILE NUMBER <span class="text-red-500">*</span></label>
+                    <div class="flex space-x-2">
+                        <select id="vCountrySelect" class="theme-input text-xs px-2.5 py-3 rounded-xl gold-gradient-text font-bold focus:outline-none border border-white/10 cursor-pointer">
+                            <option value="+880">🇧🇩 +880</option>
                             <option value="+91">🇮🇳 +91</option>
                             <option value="+92">🇵🇰 +92</option>
                             <option value="+966">🇸🇦 +966</option>
                             <option value="+971">🇦🇪 +971</option>
+                            <option value="+1">🇺🇸 +1</option>
+                            <option value="+44">🇬🇧 +44</option>
                             <option value="+60">🇲🇾 +60</option>
                             <option value="+65">🇸🇬 +65</option>
                             <option value="+61">🇦🇺 +61</option>
@@ -97,629 +120,767 @@
                             <option value="+81">🇯🇵 +81</option>
                             <option value="+82">🇰🇷 +82</option>
                             <option value="+86">🇨🇳 +86</option>
+                            <option value="+94">🇱🇰 +94</option>
+                            <option value="+974">🇶🇦 +974</option>
+                            <option value="+965">🇰🇼 +965</option>
+                            <option value="+39">🇮🇹 +39</option>
+                            <option value="+34">🇪🇸 +34</option>
                         </select>
-                        <input type="tel" id="verifyMobileNumber" placeholder="Mobile Number" pattern="[0-9]*" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="w-full bg-transparent text-xs px-3 py-3 text-white placeholder-gray-500 focus:outline-none" required>
+                        <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 theme-input text-xs px-4 py-3 rounded-xl text-white focus:outline-none border border-white/10 transition">
                     </div>
                 </div>
-
-                <div id="verifyErrorMsg" class="text-[11px] text-[#ff4d4d] text-center hidden"></div>
-
-                <button type="submit" id="btnInitialVerify" class="w-full py-3.5 gold-btn rounded-xl text-xs uppercase tracking-widest cursor-pointer shadow-lg mt-2">
-                    VERIFY
+                <button onclick="submitVerifyStep1()" class="w-full py-3.5 gold-btn text-xs rounded-xl cursor-pointer mt-1 shadow-lg tracking-wider font-bold flex items-center justify-center space-x-2">
+                    <span>6-DIGIT CODE</span> <i class="fa-solid fa-circle-check text-black"></i>
                 </button>
-            </form>
+            </div>
 
-            <!-- Step 2: Code Confirmation -->
-            <form id="otpConfirmForm" class="space-y-4 hidden" novalidate>
-                <div class="p-3 rounded-xl bg-amber-500/10 text-center space-y-1">
-                    <div id="displayCodeNumber" class="text-2xl font-extrabold tracking-[0.25em] text-white">------</div>
-                    <button type="button" onclick="autoFillOtpCode()" class="text-[10px] text-amber-300 underline cursor-pointer">Auto Fill Code</button>
+            <!-- Step 2: 6-Digit OTP Verification -->
+            <div id="verifyStep2" class="space-y-4 hidden">
+                <div class="text-center bg-black/50 p-4 rounded-2xl border border-amber-400/20 space-y-1">
+                    <span class="text-[10px] text-amber-300 font-bold">SECURE 6-DIGIT CODE:</span>
+                    <h2 id="vDisplayCode" class="text-2xl font-extrabold gold-gradient-text tracking-[6px] my-1">------</h2>
+                    <button onclick="autoFillOtp()" class="text-[11px] text-amber-300 font-semibold underline cursor-pointer hover:text-white transition">Auto-Verify Code</button>
                 </div>
-
                 <div class="space-y-1.5">
-                    <input type="text" id="inputOtpCode" placeholder="000000" maxlength="6" pattern="[0-9]*" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="w-full theme-input text-center text-lg font-bold tracking-[0.3em] px-4 py-3 rounded-xl text-white placeholder-gray-600 focus:outline-none" required>
+                    <label class="text-[11px] font-bold tracking-wider gold-gradient-text">6-DIGIT CODE <span class="text-red-500">*</span></label>
+                    <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-base font-extrabold tracking-[8px] px-4 py-3 rounded-xl text-white focus:outline-none border border-white/10">
                 </div>
-
-                <div id="otpErrorMsg" class="text-[11px] text-[#ff4d4d] text-center hidden"></div>
-
-                <button type="submit" id="btnFinalVerify" class="w-full py-3.5 gold-btn rounded-xl text-xs uppercase tracking-widest cursor-pointer shadow-lg">
-                    VERIFY
+                <button onclick="submitVerifyStep2()" class="w-full py-3.5 gold-btn text-xs rounded-xl cursor-pointer mt-1 shadow-lg tracking-wider font-bold flex items-center justify-center space-x-2">
+                    <span>AUTHORIZE & VERIFY</span> <i class="fa-solid fa-circle-check text-black"></i>
                 </button>
-            </form>
-
+            </div>
         </div>
     </div>
 
-    <!-- ================= 2. MAIN APP WORKSPACE ================= -->
-    <div id="mainAppLayout" class="flex-col h-[100dvh] overflow-hidden pb-16 md:pb-0 hidden">
-
-        <!-- Top Header Bar -->
-        <header class="theme-surface px-4 py-3 flex justify-between items-center shrink-0 z-30">
-            <div class="flex items-center space-x-3">
-                <div class="relative p-[1px] rounded-full" style="background: var(--gold-gradient);">
-                    <img id="headerAvatarImg" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" onerror="this.src='https://placehold.co/80x80/000000/d4af37?text=S'" alt="Logo" class="w-10 h-10 rounded-full object-cover bg-black">
-                </div>
-                <div>
-                    <div class="flex items-center space-x-1.5">
-                        <h1 class="brand-title-font font-extrabold text-lg sm:text-xl gold-gradient-text leading-none">SALAAM</h1>
-                        <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold uppercase">Global</span>
-                    </div>
-                    <button id="installAppBtn" onclick="promptInstallApp()" class="text-[10px] text-pink-400 hover:underline hidden text-left font-semibold mt-0.5 cursor-pointer">⚡ Install App</button>
-                </div>
+    <!-- Top Header Bar -->
+    <header class="theme-surface px-4 py-3 flex justify-between items-center shrink-0 z-30">
+        <div class="flex items-center space-x-3">
+            <div class="relative flex items-center justify-center">
+                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png" onerror="this.src='https://placehold.co/80x80/000000/d4af37?text=S'" alt="Logo" class="header-logo-clean">
             </div>
-            
-            <div class="flex items-center space-x-2">
-                <div class="flex items-center space-x-2 theme-card px-3 py-1.5 rounded-full">
-                    <span class="w-2 h-2 rounded-full bg-[#2ed573] inline-block animate-pulse"></span>
-                    <span id="headerActiveUserLabel" class="text-[11px] text-white font-medium tracking-wide">Online</span>
+            <div>
+                <div class="flex items-center space-x-1.5">
+                    <h1 class="brand-title-font font-extrabold text-lg sm:text-xl gold-gradient-text leading-none">SALAAM</h1>
+                    <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
+                        <defs><linearGradient id="vGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#F5D061"/><stop offset="100%" stop-color="#AA771C"/></linearGradient></defs>
+                        <path d="M12 2L14.8 4.2L18.3 4.3L19.5 7.6L22 10L20.8 13.3L21.5 16.8L18.3 18.4L16.7 21.5L13.3 20.8L10 22L7.6 19.5L4.3 18.3L4.2 14.8L2 12L4.2 9.2L4.3 5.7L7.6 4.5L10 2L12 2Z" fill="url(#vGrad)"/>
+                        <path d="M8.5 12.2L10.8 14.5L15.6 9.5" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                 </div>
+                <a href="https://rorraxy.com" target="_blank" class="text-[11px] text-white/70 hover:text-amber-300 transition block tracking-wider mt-0.5">rorraxy.com</a>
             </div>
-        </header>
-
-        <!-- Main Workspace Container -->
-        <div class="flex flex-1 overflow-hidden relative">
-            
-            <!-- Sidebar -->
-            <div id="sidebarSection" class="w-full md:w-[360px] theme-surface flex flex-col justify-between shrink-0 z-20 h-full">
-                <div class="flex flex-col flex-1 overflow-hidden">
-                    <div id="searchBarContainer" class="p-3 shrink-0" style="background-color: var(--bg-main);">
-                        <div class="flex items-center space-x-2 theme-input px-3.5 py-2 rounded-2xl">
-                            <input type="text" id="searchInput" placeholder="Search international contacts..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-0.5" oninput="filterContent()">
-                        </div>
-                    </div>
-                    <div id="sidebarContentList" class="flex-1 overflow-y-auto space-y-1 p-2 pb-20 md:pb-4">
-                        <!-- Populated dynamically -->
-                    </div>
-                </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="openNotificationModal()" class="relative p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer" title="Notifications">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                <span id="headerNotifBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full pink-btn text-[9px] flex items-center justify-center font-bold">0</span>
+            </button>
+            <button id="installAppBtn" onclick="installPWAApp()" class="hidden gold-btn px-3 py-1 rounded-full text-[11px] items-center space-x-1 transition cursor-pointer"><span>Install App</span></button>
+            <div class="flex items-center space-x-2 theme-card px-3 py-1.5 rounded-full">
+                <span id="headerStatusDot" class="w-2 h-2 rounded-full bg-[#2ed573] inline-block"></span>
+                <span id="headerStatusText" class="text-[11px] text-white font-medium">Online</span>
             </div>
+        </div>
+    </header>
 
-            <!-- Active Chat Workspace -->
-            <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full z-10 relative" style="background-color: var(--bg-main);">
-                <div id="activeChatHeader" class="theme-surface px-4 py-3 hidden items-center justify-between shrink-0">
-                    <div class="flex items-center space-x-3">
-                        <button onclick="backToSidebarMobile()" class="md:hidden p-1.5 rounded-xl theme-card cursor-pointer">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.4" stroke-linecap="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                        </button>
-                        <div class="relative">
-                            <img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" onerror="this.src='https://placehold.co/80x80/000000/d4af37?text=U'" class="w-9 h-9 rounded-full object-cover">
-                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#2ed573] rounded-full border-2 border-black"></span>
-                        </div>
-                        <div>
-                            <span id="activeChatTitle" class="font-semibold text-white text-xs tracking-wide block">Select a contact</span>
-                            <p id="activeChatStatus" class="text-[10px] text-[#2ed573] font-medium">Global Secure</p>
-                        </div>
-                    </div>
-
-                    <!-- Audio, Video Call & Clear -->
-                    <div class="flex items-center space-x-2">
-                        <button onclick="startWhatsAppCall('audio')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer" title="Audio Call">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                        </button>
-                        <button onclick="startWhatsAppCall('video')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer" title="Video Call">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg>
-                        </button>
-                        <button onclick="clearChatHistory()" class="p-2 theme-card rounded-xl hover:bg-pink-950/20 transition cursor-pointer" title="Delete All">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#EC4899" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+    <!-- Main Workspace -->
+    <div class="flex flex-1 overflow-hidden relative min-h-0">
+        <!-- Sidebar -->
+        <div id="sidebarSection" class="w-full md:w-[360px] theme-surface flex flex-col justify-between shrink-0 z-20 h-full min-h-0 pb-14 md:pb-14">
+            <div class="flex flex-col flex-1 overflow-hidden min-h-0">
+                <div id="searchBarContainer" class="p-3 shrink-0" style="background-color: var(--bg-main);">
+                    <div class="flex items-center space-x-2 theme-input px-3.5 py-2 rounded-2xl">
+                        <input type="text" id="searchInput" placeholder="Search name or number..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-0.5" oninput="filterContent()" onkeypress="if(event.key === 'Enter') filterContent()">
+                        <button onclick="filterContent()" class="cursor-pointer p-1 hover:scale-110 transition-transform shrink-0">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7.5" stroke="#F5D061" stroke-width="2.2"/><line x1="20.5" y1="20.5" x2="16.35" y2="16.35" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round"/></svg>
                         </button>
                     </div>
                 </div>
-
-                <!-- Messages Area -->
-                <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col justify-center items-center">
-                    <div class="flex flex-col items-center space-y-3 max-w-xs text-center">
-                        <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center">
-                            <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                        </div>
-                        <p class="text-sm font-bold gold-gradient-text tracking-wide">Assalamu Alaikum</p>
-                        <p class="text-[11px] text-gray-400">Select an international contact to start secure messaging or high quality calls.</p>
-                    </div>
-                </div>
-
-                <!-- Input Bar -->
-                <div id="chatInputBar" class="theme-surface px-3 py-2.5 hidden items-center shrink-0 sticky bottom-0 z-20">
-                    <div class="flex-1 flex items-center theme-input rounded-2xl px-3.5 py-2 space-x-2.5">
-                        <label class="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center shrink-0" title="Attach Files">
-                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-                            <input type="file" id="universalFileInput" accept="image/*,video/*,application/pdf,.doc,.docx,.zip,.txt" multiple class="hidden" onchange="sendUniversalFile(this)">
-                        </label>
-                        <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1 min-w-0" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
-                        
-                        <button id="sendBtn" onclick="sendTextMessage()" class="hidden cursor-pointer hover:scale-110 transition-transform p-1 shrink-0 items-center justify-center" title="Send">
-                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round"><path d="M22 2L11 13"></path><path d="M22 2L15 22L11 13L2 9L22 2Z"></path></svg>
-                        </button>
-                    </div>
-                </div>
+                <div id="sidebarContentList" class="flex-1 overflow-y-auto space-y-1.5 p-3 pb-16"></div>
             </div>
-
         </div>
 
-        <!-- Navigation Menu Bar -->
-        <nav class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface/95 backdrop-blur-md flex justify-center items-center py-2 shrink-0 z-40">
-            <div class="flex items-center justify-center gap-10 sm:gap-12">
-                <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-2 transition group cursor-pointer">
-                    <div class="nav-icon-wrap transition-transform duration-200">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"></circle><path d="M20 21a8 8 0 0 0-16 0"></path></svg>
+        <!-- Chat Area -->
+        <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full min-h-0 z-10 relative" style="background-color: var(--bg-main);">
+            <div id="activeChatHeader" class="theme-surface px-4 py-3 hidden items-center justify-between shrink-0">
+                <div class="flex items-center space-x-3">
+                    <button onclick="backToSidebarMobile()" class="md:hidden p-1.5 rounded-xl theme-card hover:brightness-125 transition cursor-pointer">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <div onclick="openRecipientInfoModal()" class="flex items-center space-x-3 cursor-pointer group">
+                        <div class="relative">
+                            <img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" onerror="this.src='https://placehold.co/80x80/000000/d4af37?text=U'" class="w-9 h-9 rounded-full object-cover">
+                            <span id="activeChatStatusDot" class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#2ed573] rounded-full border-2 border-black"></span>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-1.5">
+                                <span id="activeChatTitle" class="font-semibold text-white text-xs tracking-wide group-hover:text-amber-300 transition">Select a contact</span>
+                                <span id="activeChatHeaderTick"></span>
+                            </div>
+                        </div>
                     </div>
-                    <span class="nav-label text-[10px] gold-gradient-text font-semibold">Profile</span>
-                </button>
-                <button onclick="switchTab('contact')" id="tabContact" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-2 transition group cursor-pointer">
-                    <div class="nav-icon-wrap transition-transform duration-200 scale-110">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#EC4899" stroke-width="2.2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                    </div>
-                    <span class="nav-label text-[10px] pink-gradient-text font-bold">Contact</span>
-                </button>
-                <button onclick="switchTab('chat')" id="tabChat" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-2 transition group cursor-pointer">
-                    <div class="nav-icon-wrap transition-transform duration-200">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                    </div>
-                    <span class="nav-label text-[10px] gold-gradient-text font-semibold">Chat</span>
-                </button>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="startWhatsAppCall('audio')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer" title="Audio Call"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button>
+                    <button onclick="startWhatsAppCall('video')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer" title="Video Call"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg></button>
+                    <button onclick="confirmClearChatHistory()" class="p-2 theme-card rounded-xl hover:bg-pink-950/20 transition cursor-pointer" title="Delete All"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#EC4899" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </div>
             </div>
-        </nav>
+
+            <!-- Chat Message Scroll Container -->
+            <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 flex flex-col justify-start">
+                <div class="flex flex-col items-center justify-center space-y-3 max-w-xs text-center m-auto">
+                    <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center">
+                        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    </div>
+                    <p class="text-sm font-bold gold-gradient-text">Assalamu Alaikum</p>
+                    <p class="text-[11px] text-gray-400">Select a verified contact to start messaging.</p>
+                </div>
+            </div>
+
+            <div id="chatInputBar" class="theme-surface px-3 py-2.5 hidden items-center shrink-0 z-20">
+                <div class="flex-1 flex items-center theme-input rounded-2xl px-3.5 py-2 space-x-2.5">
+                    <label class="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center shrink-0" title="Attach & Send Directly">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                        <input type="file" id="universalFileInput" accept="image/*,video/*,application/pdf,.doc,.docx,.zip,.txt" multiple class="hidden" onchange="sendFilesDirectly(this)">
+                    </label>
+                    <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1 min-w-0" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
+                    <button id="sendBtn" onclick="sendTextMessage()" class="hidden cursor-pointer hover:scale-110 transition-transform p-1 shrink-0 items-center justify-center">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar with Settings Gear Icon -->
+    <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40">
+        <div class="flex items-center justify-center gap-10 sm:gap-12">
+            <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-2 cursor-pointer focus:outline-none group">
+                <svg id="iconProfile" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <span id="labelProfile" class="nav-label text-[10px] gold-gradient-text font-semibold">Settings</span>
+            </button>
+            <button onclick="switchTab('contact')" id="tabContact" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-2 cursor-pointer focus:outline-none group">
+                <svg id="iconContact" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#EC4899" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                <span id="labelContact" class="nav-label text-[10px] pink-gradient-text font-bold">Contact</span>
+            </button>
+            <button onclick="switchTab('chat')" id="tabChat" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-2 cursor-pointer focus:outline-none group">
+                <svg id="iconChat" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                <span id="labelChat" class="nav-label text-[10px] gold-gradient-text font-semibold">Chat</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4" onclick="if(event.target === this) closeNotificationModal()">
+        <div class="theme-card p-5 rounded-3xl max-w-sm w-full space-y-3.5 shadow-2xl border border-white/10 animate-modal">
+            <div class="flex items-center justify-between pb-2 border-b border-white/10">
+                <h3 class="text-xs font-bold gold-gradient-text flex items-center space-x-2"><span>Notifications</span><span id="modalNotifCountBadge" class="px-2 py-0.5 rounded-full pink-btn text-[9px]">0</span></h3>
+                <div class="flex space-x-3">
+                    <button onclick="clearAllNotifications()" class="text-[10px] text-pink-400 hover:underline cursor-pointer font-semibold">Clear All</button>
+                    <button onclick="closeNotificationModal()" class="text-[10px] text-amber-300 hover:underline cursor-pointer font-semibold">Close</button>
+                </div>
+            </div>
+            <div id="modalNotifList" class="space-y-2 max-h-60 overflow-y-auto"><p class="text-xs text-gray-400 text-center py-4">No notifications</p></div>
+        </div>
+    </div>
+
+    <!-- Recipient Info Modal -->
+    <div id="recipientInfoModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4" onclick="if(event.target === this) closeRecipientInfoModal()">
+        <div class="theme-card p-5 rounded-3xl max-w-xs w-full text-center space-y-3.5 shadow-2xl border border-white/10 animate-modal">
+            <div class="relative mx-auto w-16 h-16 p-[1px] rounded-full flex items-center justify-center">
+                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" onerror="this.src='https://placehold.co/80x80/000000/d4af37?text=S'" class="w-full h-full rounded-full object-cover bg-black">
+            </div>
+            <div>
+                <h3 id="infoModalName" class="text-sm font-bold gold-gradient-text">Contact</h3>
+                <p id="infoModalStatus" class="text-[10px] text-[#2ed573] mt-0.5 font-medium">Online</p>
+            </div>
+            <div id="infoModalPhoneContainer" class="theme-input px-3.5 py-2.5 rounded-2xl flex items-center justify-between">
+                <span id="infoModalPhone" class="text-xs text-amber-300 font-medium">+880...</span>
+                <button onclick="copyRecipientPhone()" class="gold-btn px-3 py-1 rounded-xl text-[10px] cursor-pointer">Copy</button>
+            </div>
+            <button onclick="closeRecipientInfoModal()" class="w-full py-2 bg-white/10 hover:bg-white/15 text-xs rounded-xl text-gray-300 cursor-pointer">Close</button>
+        </div>
     </div>
 
     <!-- Call Modal -->
     <div id="whatsAppCallModal" class="fixed inset-0 z-50 hidden flex-col justify-between bg-black/95 backdrop-blur-xl p-6 select-none">
         <div id="remoteVideoBackdrop" class="absolute inset-0 hidden items-center justify-center overflow-hidden bg-black">
             <div class="flex flex-col items-center space-y-4 opacity-90">
-                <div class="relative p-[2px] rounded-full" style="background: var(--gold-gradient);">
-                    <img id="remoteVideoAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-28 h-28 rounded-full object-cover bg-black">
-                </div>
-                <p class="text-xs text-amber-200/80 tracking-wider">HD Encrypted Stream</p>
+                <div class="relative p-[2px] rounded-full flex items-center justify-center"><img id="remoteVideoAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-28 h-28 rounded-full object-cover bg-black"></div>
+                <p class="text-xs text-amber-200/80">Encrypted Stream</p>
             </div>
         </div>
         <div id="localPipContainer" class="hidden absolute top-6 right-5 w-28 h-40 sm:w-32 sm:h-44 rounded-2xl overflow-hidden shadow-2xl z-30 bg-black">
             <video id="localCameraVideo" autoplay playsinline muted class="w-full h-full object-cover scale-x-[-1]"></video>
-            <div id="localCameraOffPlaceholder" class="hidden w-full h-full flex-col items-center justify-center text-center p-2 bg-black">
-                <span class="text-[10px] text-gray-400">Camera Off</span>
-            </div>
+            <div id="localCameraOffPlaceholder" class="hidden w-full h-full flex-col items-center justify-center text-center p-2 bg-black"><span class="text-[10px] text-gray-400">Camera Off</span></div>
         </div>
         <div class="relative z-20 flex flex-col items-center text-center pt-6 space-y-2">
-            <h2 id="callPeerName" class="text-xl sm:text-2xl font-bold gold-gradient-text tracking-wide pt-2">Contact</h2>
-            <p id="callLiveStatus" class="text-xs text-[#2ed573] font-medium tracking-wide">Connecting...</p>
+            <div class="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-white/5"><span class="w-1.5 h-1.5 rounded-full bg-[#2ed573] animate-pulse"></span><span class="text-[10px] text-amber-200/90 tracking-widest uppercase font-semibold">End-to-End Encrypted</span></div>
+            <h2 id="callPeerName" class="text-xl sm:text-2xl font-bold gold-gradient-text pt-2">Contact</h2>
+            <p id="callLiveStatus" class="text-xs text-[#2ed573] font-medium">Ringing...</p>
         </div>
         <div id="audioCallCenterAvatar" class="relative z-20 flex flex-col items-center justify-center my-auto">
-            <div class="p-[2px] rounded-full relative z-10" style="background: var(--gold-gradient);">
-                <img id="callCenterImg" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-28 h-28 rounded-full object-cover bg-black">
-            </div>
+            <div class="relative flex items-center justify-center"><div class="p-[2px] rounded-full relative z-10 flex items-center justify-center"><img id="callCenterImg" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-28 h-28 rounded-full object-cover bg-black"></div></div>
         </div>
         <div class="relative z-20 flex flex-col items-center pb-6 space-y-5">
-            <div class="flex items-center justify-center space-x-5 theme-card px-6 py-3.5 rounded-3xl shadow-xl">
-                <button onclick="endWhatsAppCall()" class="w-14 h-14 rounded-full pink-btn flex items-center justify-center transition cursor-pointer shadow-lg" title="End Call">
-                    <svg class="w-6 h-6 rotate-[135deg]" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                </button>
+            <div class="flex items-center justify-center space-x-5 sm:space-x-6 theme-card px-6 py-3.5 rounded-3xl shadow-xl">
+                <button onclick="toggleCallSpeaker()" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition cursor-pointer"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg></button>
+                <button onclick="toggleCallVideo()" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition cursor-pointer"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg></button>
+                <button onclick="toggleCallMute()" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition cursor-pointer"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path></svg></button>
+                <button onclick="endWhatsAppCall()" class="w-14 h-14 rounded-full pink-btn flex items-center justify-center transition cursor-pointer shadow-lg"><svg class="w-6 h-6 rotate-[135deg]" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button>
             </div>
         </div>
     </div>
 
     <!-- Confirm Modal -->
     <div id="customConfirmModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="theme-card p-5 rounded-2xl max-w-[260px] w-full text-center space-y-3.5 shadow-2xl">
+        <div class="theme-card p-5 rounded-2xl max-w-[260px] w-full text-center space-y-3.5 shadow-2xl animate-modal">
             <p id="confirmModalText" class="text-xs text-white font-medium">Delete?</p>
             <div class="flex space-x-2">
-                <button onclick="closeConfirmModal(false)" class="flex-1 py-2 bg-white/10 text-xs rounded-xl text-gray-300 cursor-pointer">Cancel</button>
+                <button onclick="closeConfirmModal(false)" class="flex-1 py-2 bg-white/10 text-xs rounded-xl text-gray-300 hover:bg-white/15 cursor-pointer">Cancel</button>
                 <button onclick="closeConfirmModal(true)" class="flex-1 py-2 pink-btn text-xs rounded-xl cursor-pointer">OK</button>
             </div>
         </div>
     </div>
 
-    <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 theme-card text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden items-center space-x-2">
-        <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span>
-        <span id="toastText">Done</span>
+    <!-- Toast -->
+    <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 theme-card text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden items-center space-x-2 animate-modal">
+        <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- Application Script -->
+    <!-- Main Logic Script linked with LocalStorage & Cloudflare Architecture -->
     <script>
-        let deferredPrompt = null;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            const btn = document.getElementById('installAppBtn');
-            if (btn) btn.classList.remove('hidden');
-        });
+        let currentTab = 'contact', currentActiveRecipient = null, confirmCallback = null, deferredPrompt = null;
+        let generatedOtpCode = "";
+        let tempVerifyPhone = "";
+        let tempVerifyName = "";
+        let userDeviceIp = "Detecting...";
 
-        function promptInstallApp() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        showToast('App installed successfully!');
-                    }
-                    deferredPrompt = null;
-                });
-            } else {
-                showToast('App already installed or browser menu available.');
-            }
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('installAppBtn')?.classList.remove('hidden'); });
+        function installPWAApp() { if(deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; document.getElementById('installAppBtn').classList.add('hidden'); }); } }
+
+        let currentTheme = localStorage.getItem('salaam_theme') || 'black';
+        let globalSoundEnabled = localStorage.getItem('salaam_sound_on') !== 'false';
+        let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
+
+        function updateHeaderNotifBadge() {
+            const badge = document.getElementById('headerNotifBadge');
+            const count = callHistoryNotifications.length;
+            if (count > 0) { badge.innerText = count; badge.classList.remove('hidden'); badge.classList.add('flex'); }
+            else { badge.classList.add('hidden'); badge.classList.remove('flex'); }
         }
 
-        let pendingName = '';
-        let pendingPhone = '';
-        let generatedOtpCode = '';
+        function applyTheme(t) {
+            currentTheme = t; document.documentElement.setAttribute('data-theme', t); localStorage.setItem('salaam_theme', t);
+            if(currentTab === 'profile') renderProfileView();
+        }
 
-        // Auto detect IP / Country Code
-        async function detectCountryDialCode() {
+        let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v12') || '{}');
+        const chatChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('salaam_realtime_sync') : null;
+        if(chatChannel) {
+            chatChannel.onmessage = (event) => {
+                if(event.data && event.data.type === 'SYNC_MESSAGES') {
+                    localMessageStore = event.data.store || {};
+                    autoDiscoverContacts();
+                    if(currentActiveRecipient) loadMessages(true);
+                    if(currentTab === 'chat') renderChatStories();
+                }
+            };
+        }
+        function persistMessages() {
+            localStorage.setItem('salaam_messages_v12', JSON.stringify(localMessageStore));
+            chatChannel?.postMessage({ type: 'SYNC_MESSAGES', store: localMessageStore });
+        }
+
+        const DEFAULT_PROFILES = [{ name: "Masudar Rahman", phone: "+8801700000000", username: "mrmasudar", privacy: "public", avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg", status: "Online", isVerified: false }];
+        let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v12') || 'null') || DEFAULT_PROFILES;
+        let activeProfileIndex = parseInt(localStorage.getItem('salaam_active_idx_v12') || '0', 10);
+        let isVerifiedSession = localStorage.getItem('salaam_verified_v12') === 'true';
+
+        function saveProfiles() {
+            localStorage.setItem('salaam_profiles_v12', JSON.stringify(savedProfiles));
+            localStorage.setItem('salaam_active_idx_v12', String(activeProfileIndex));
+            localStorage.setItem('salaam_verified_v12', String(isVerifiedSession));
+        }
+        function getActiveProfile() { return savedProfiles[activeProfileIndex] || savedProfiles[0]; }
+
+        let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v12') || 'null') || [
+            { name: "rorraxy", phone: "+8801711111111", appUser: true, isOnline: true, lastMsg: "" },
+            { name: "Mamun Rashid", phone: "+8801800000000", appUser: true, isOnline: true, lastMsg: "" }
+        ];
+        function saveContacts() { localStorage.setItem('salaam_contacts_v12', JSON.stringify(deviceContacts)); }
+        function normPhone(p) { return String(p || '').replace(/[\s\-\(\)]/g, ''); }
+
+        function upsertContact(name, phone, appUser = true, isOnline = true) {
+            const cp = normPhone(phone);
+            if(!cp) return false;
+            let c = deviceContacts.find(x => normPhone(x.phone) === cp);
+            if(!c) { deviceContacts.unshift({ name: name || cp, phone: cp, appUser, isOnline, lastMsg: "" }); return true; }
+            else { if(name && c.name === c.phone) c.name = name; c.isOnline = isOnline; return false; }
+        }
+
+        function autoDiscoverContacts() {
+            let added = false, myP = normPhone(getActiveProfile().phone);
+            Object.keys(localMessageStore).forEach(tp => {
+                let cp = normPhone(tp);
+                if(cp && cp !== myP) {
+                    let msgs = localMessageStore[tp] || [];
+                    let last = msgs.length ? msgs[msgs.length - 1].message_text : '';
+                    let isNew = upsertContact(cp, cp, true, true);
+                    let ref = deviceContacts.find(x => normPhone(x.phone) === cp);
+                    if(ref && last) ref.lastMsg = last;
+                    if(isNew) added = true;
+                }
+            });
+            if(added) saveContacts();
+        }
+
+        function showToast(msg, isErr = false) {
+            const b = document.getElementById('toastBanner'), dot = document.getElementById('toastDot'), text = document.getElementById('toastText');
+            dot.style.backgroundColor = isErr ? '#ff2e7e' : '#2ed573'; text.innerText = msg;
+            b.classList.remove('hidden'); b.classList.add('flex');
+            setTimeout(() => { b.classList.add('hidden'); b.classList.remove('flex'); }, 2200);
+        }
+
+        async function detectUserIp() {
             try {
                 const res = await fetch('https://ipapi.co/json/').catch(() => null);
                 if (res && res.ok) {
                     const data = await res.json();
-                    const dial = data.country_calling_code || '+880';
-                    const select = document.getElementById('countryDialCode');
-                    if (select) {
-                        for (let opt of select.options) {
-                            if (opt.value === dial) { select.value = dial; break; }
-                        }
-                    }
+                    userDeviceIp = data.ip || 'Unknown';
                 }
-            } catch (e) {}
+            } catch (e) {
+                userDeviceIp = 'Unknown';
+            }
         }
 
-        document.getElementById('verifyEntryForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const nameInput = document.getElementById('verifyFullName').value.trim();
-            const rawMobile = document.getElementById('verifyMobileNumber').value.trim();
-            const dialCode = document.getElementById('countryDialCode').value;
-            const errEl = document.getElementById('verifyErrorMsg');
-            const btn = document.getElementById('btnInitialVerify');
-
-            if (!nameInput || nameInput.length < 2) {
-                errEl.innerText = "Please enter your full name.";
-                errEl.classList.remove('hidden');
-                return;
+        function checkInitialVerification() {
+            detectUserIp();
+            if(!isVerifiedSession) {
+                document.getElementById('verifyOverlay').style.display = 'flex';
+            } else {
+                document.getElementById('verifyOverlay').style.display = 'none';
+                switchTab('contact');
             }
-            if (!rawMobile || rawMobile.length < 5) {
-                errEl.innerText = "Please enter a valid mobile number.";
-                errEl.classList.remove('hidden');
-                return;
-            }
+        }
 
-            errEl.classList.add('hidden');
-            btn.disabled = true;
-            btn.innerText = "SENDING CODE...";
-
-            pendingName = nameInput;
-            pendingPhone = dialCode + rawMobile;
+        async function submitVerifyStep1() {
+            let name = document.getElementById('vFullName').value.trim();
+            let code = document.getElementById('vCountrySelect').value;
+            let phone = document.getElementById('vPhoneInput').value.trim();
+            if(!name || !phone) { showToast("Please enter name and phone number", true); return; }
+            
+            tempVerifyName = name;
+            tempVerifyPhone = code + phone;
             generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-            document.getElementById('verifyEntryForm').classList.add('hidden');
-            document.getElementById('otpConfirmForm').classList.remove('hidden');
-            document.getElementById('displayCodeNumber').innerText = generatedOtpCode;
-            btn.disabled = false;
-            btn.innerText = "VERIFY";
-        });
+            // Cloudflare API-তে রিকোয়েস্ট পাঠানো
+            try {
+                await fetch('/api/chat?action=send_magic_link', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: tempVerifyPhone + '@rorraxy.com', phone: tempVerifyPhone, magic_code: generatedOtpCode, ip: userDeviceIp })
+                }).catch(() => null);
+            } catch(e) {}
 
-        function autoFillOtpCode() {
-            document.getElementById('inputOtpCode').value = generatedOtpCode;
-            document.getElementById('otpConfirmForm').dispatchEvent(new Event('submit'));
+            document.getElementById('verifyStep1').style.display = 'none';
+            document.getElementById('verifyStep2').style.display = 'block';
+            document.getElementById('vDisplayCode').innerText = generatedOtpCode;
+            showToast("Secure 6-digit code generated from Cloudflare");
         }
 
-        document.getElementById('otpConfirmForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const codeVal = document.getElementById('inputOtpCode').value.trim();
-            const errEl = document.getElementById('otpErrorMsg');
-            const btn = document.getElementById('btnFinalVerify');
-
-            if (codeVal !== generatedOtpCode && codeVal !== '123456') {
-                errEl.innerText = "Invalid code. Try again.";
-                errEl.classList.remove('hidden');
-                return;
-            }
-
-            errEl.classList.add('hidden');
-            btn.disabled = true;
-            btn.innerText = "VERIFYING...";
-
-            let registry = JSON.parse(localStorage.getItem('salaam_registered_registry') || '{}');
-            let userRecord;
-
-            if (registry[pendingPhone]) {
-                userRecord = registry[pendingPhone];
-                userRecord.name = pendingName;
-            } else {
-                let base = pendingName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                if (base.length < 3) base = 'user' + base;
-                const suffix = pendingPhone.replace(/[^0-9]/g, '').slice(-4);
-                userRecord = {
-                    name: pendingName,
-                    phone: pendingPhone,
-                    username: `${base}${suffix}`,
-                    avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg",
-                    status: "Online"
-                };
-                registry[pendingPhone] = userRecord;
-                localStorage.setItem('salaam_registered_registry', JSON.stringify(registry));
-            }
-
-            localStorage.setItem('salaam_active_account', JSON.stringify(userRecord));
-
-            // Request Contact Access Permission Automatically on Login
-            requestDeviceContactsPermission();
-
-            if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-
-            setTimeout(() => {
-                unlockMainChatApp(userRecord);
-            }, 500);
-        });
-
-        // Request Local Contacts Permission and Sync
-        async function requestDeviceContactsPermission() {
-            if ('contacts' in navigator && 'select' in navigator.contacts) {
-                try {
-                    const props = ['name', 'tel', 'email'];
-                    const opts = { multiple: true };
-                    const contacts = await navigator.contacts.select(props, opts);
-                    if (contacts && contacts.length > 0) {
-                        contacts.forEach(c => {
-                            if (c.tel && c.tel[0]) {
-                                deviceContacts.push({
-                                    name: c.name ? c.name[0] : 'Local Contact',
-                                    phone: c.tel[0],
-                                    appUser: true,
-                                    status: 'Global Peer',
-                                    lastMsg: ''
-                                });
-                            }
-                        });
-                        showToast('Contacts synced successfully!');
-                    }
-                } catch (ex) {}
-            }
+        function autoFillOtp() {
+            document.getElementById('vOtpInput').value = generatedOtpCode;
         }
 
-        function unlockMainChatApp(userRecord) {
-            savedProfiles = [userRecord];
-            activeProfileIndex = 0;
-            isLoggedIn = true;
+        async function submitVerifyStep2() {
+            let entered = document.getElementById('vOtpInput').value.trim();
+            if(entered !== generatedOtpCode) { showToast("Invalid verification code", true); return; }
 
-            document.getElementById('view-verification').style.display = 'none';
-            const mainApp = document.getElementById('mainAppLayout');
-            mainApp.classList.remove('hidden');
-            mainApp.classList.add('flex');
+            isVerifiedSession = true;
+            let p = getActiveProfile();
+            p.name = tempVerifyName;
+            p.phone = tempVerifyPhone;
+            p.isVerified = true;
+            saveProfiles();
 
-            updateHeaderProfileBadge();
+            try {
+                await fetch('/api/chat?action=verify_magic_code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: tempVerifyPhone, magic_code: entered, ip: userDeviceIp })
+                }).catch(() => null);
+            } catch(e) {}
+
+            if(typeof confetti === 'function') {
+                confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+            }
+
+            document.getElementById('verifyOverlay').style.display = 'none';
+            showToast("Verification completed successfully!");
             switchTab('contact');
         }
 
-        let currentTab = 'contact';
-        let currentActiveRecipient = null;
-        let confirmCallback = null;
-        let isLoggedIn = false;
-        let currentTheme = localStorage.getItem('salaam_theme') || 'black';
-        let globalSoundEnabled = localStorage.getItem('salaam_sound_on') !== 'false';
-        let notificationList = JSON.parse(localStorage.getItem('salaam_notifications') || '[]');
-
-        function applyTheme(themeName) {
-            currentTheme = themeName;
-            document.documentElement.setAttribute('data-theme', themeName);
-            localStorage.setItem('salaam_theme', themeName);
-            const metaTheme = document.querySelector('meta[name="theme-color"]');
-            if (metaTheme) metaTheme.setAttribute('content', themeName === 'emerald' ? '#04120b' : '#000000');
-            if (currentTab === 'profile') renderProfileView();
-        }
-
-        const STORAGE_MSG_KEY = 'salaam_messages_v4';
-        let localMessageStore = {};
-        try {
-            const savedMsgs = localStorage.getItem(STORAGE_MSG_KEY);
-            if (savedMsgs) localMessageStore = JSON.parse(savedMsgs);
-        } catch (e) { localMessageStore = {}; }
-
-        function persistAndBroadcastMessages() {
-            try { localStorage.setItem(STORAGE_MSG_KEY, JSON.stringify(localMessageStore)); } catch (e) {}
-        }
-
-        let savedProfiles = [];
-        let activeProfileIndex = 0;
-        function getActiveProfile() { return savedProfiles[activeProfileIndex] || savedProfiles[0]; }
-
-        let deviceContacts = [
-            { name: "rorraxy Global Support", phone: "support", appUser: true, status: "International Admin", lastMsg: "" },
-            { name: "Mamun Rashid", phone: "+8801800000000", appUser: true, status: "Online", lastMsg: "" }
-        ];
-
-        function showToast(msg, isError = false) {
-            const banner = document.getElementById('toastBanner');
-            document.getElementById('toastDot').style.backgroundColor = isError ? '#ff2e7e' : '#2ed573';
-            document.getElementById('toastText').innerText = msg;
-            banner.classList.remove('hidden');
-            banner.classList.add('flex');
-            setTimeout(() => { banner.classList.add('hidden'); banner.classList.remove('flex'); }, 2600);
-        }
-
         function switchTab(tab) {
+            if(!isVerifiedSession) { checkInitialVerification(); return; }
             currentTab = tab;
-            const searchBar = document.getElementById('searchBarContainer');
-            if (tab === 'profile') {
-                searchBar.style.display = 'none';
-                renderProfileView();
-            } else {
-                searchBar.style.display = 'block';
-                if (tab === 'chat') renderChatStories();
-                else if (tab === 'contact') renderDeviceContacts();
-            }
-            if (window.innerWidth < 768) {
-                document.getElementById('sidebarSection').style.display = 'flex';
-                document.getElementById('workspaceSection').style.display = 'none';
-            }
-        }
+            ['profile', 'contact', 'chat'].forEach(t => {
+                let isSel = (t === tab);
+                let lbl = document.getElementById('label' + t.charAt(0).toUpperCase() + t.slice(1));
+                let icn = document.getElementById('icon' + t.charAt(0).toUpperCase() + t.slice(1));
+                if(lbl) lbl.className = `nav-label text-[10px] ${isSel ? 'pink-gradient-text font-bold' : 'gold-gradient-text font-semibold'}`;
+                if(icn) icn.setAttribute('stroke', isSel ? '#EC4899' : '#F5D061');
+            });
 
-        function updateHeaderProfileBadge() {
-            const label = document.getElementById('headerActiveUserLabel');
-            if (label) label.innerText = isLoggedIn ? 'Online' : 'Offline';
+            const sb = document.getElementById('searchBarContainer');
+            if(tab === 'profile') { sb.style.display = 'none'; renderProfileView(); }
+            else { sb.style.display = 'block'; document.getElementById('searchInput').value = ''; tab === 'chat' ? renderChatStories() : renderDeviceContacts(); }
+            if(window.innerWidth < 768) { document.getElementById('sidebarSection').style.display = 'flex'; document.getElementById('workspaceSection').style.display = 'none'; }
         }
 
         function renderProfileView() {
-            const userProfile = getActiveProfile();
+            const p = getActiveProfile();
             document.getElementById('sidebarContentList').innerHTML = `
-                <div class="p-3 space-y-3 text-xs">
-                    <div class="flex flex-col items-center space-y-3 pb-3 theme-card p-5 rounded-2xl">
-                        <div class="relative p-[1px] rounded-full" style="background: var(--gold-gradient);">
-                            <img src="${userProfile.avatar}" class="w-20 h-20 rounded-full object-cover bg-black">
-                        </div>
-                        <div class="text-center">
-                            <p class="font-bold text-sm gold-gradient-text">${userProfile.name}</p>
-                            <p class="text-[10px] text-gray-400">@${userProfile.username}</p>
-                            <p class="text-[10px] text-amber-300 mt-1">🌍 Global Network Connected</p>
+                <div class="p-3 space-y-3 text-xs pb-20 animate-list-item">
+                    <div class="flex flex-col items-center space-y-3 pb-3 theme-card p-5 rounded-2xl relative">
+                        <span class="absolute top-3 right-3 px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-[#2ed573]">VERIFIED</span>
+                        <img src="${p.avatar}" class="w-20 h-20 rounded-full object-cover bg-black border border-amber-400/30">
+                        <div class="text-center"><p class="font-bold text-sm gold-gradient-text">${p.name}</p><p class="text-[11px] text-amber-300">@${p.username}</p></div>
+                    </div>
+
+                    <div class="space-y-3 theme-card p-4 rounded-2xl">
+                        <div class="flex justify-between items-center"><span class="font-bold gold-gradient-text">Account Details</span><button onclick="let f=document.getElementById('editBox'); f.style.display=f.style.display==='block'?'none':'block'" class="text-[11px] pink-gradient-text font-semibold">Edit Profile</button></div>
+                        <p class="flex justify-between text-gray-400">Phone: <span class="text-amber-300">${p.phone}</span></p>
+                        
+                        <div class="space-y-1 pt-2 border-t border-white/5">
+                            <label class="text-[11px] font-bold block gold-gradient-text">Mobile Number Privacy</label>
+                            <select id="profilePrivacySelect" onchange="updatePrivacySetting(this.value)" class="w-full theme-input text-xs px-3 py-2 rounded-xl text-white focus:outline-none border border-white/10 cursor-pointer">
+                                <option value="public" ${p.privacy==='public'?'selected':''}>🌍 Public (Visible to Everyone)</option>
+                                <option value="active" ${p.privacy==='active'?'selected':''}>🟢 Active Contacts (Visible to Active Chats)</option>
+                                <option value="private" ${p.privacy==='private'?'selected':''}>🔒 Only Me (Hidden)</option>
+                            </select>
                         </div>
                     </div>
-                    <div class="space-y-2 pt-1">
-                        <button onclick="localStorage.removeItem('salaam_active_account'); window.location.reload();" class="w-full py-2.5 bg-pink-950/20 text-xs rounded-xl text-pink-400 cursor-pointer">Log Out</button>
+
+                    <div id="editBox" class="space-y-2.5 theme-card p-4 rounded-2xl hidden">
+                        <label class="text-[10px] font-bold block gold-gradient-text">Update Name & Username</label>
+                        <input type="text" id="eName" value="${p.name}" placeholder="Full Name" class="w-full theme-input text-xs px-3 py-2.5 rounded-xl text-white">
+                        <input type="text" id="eUsername" value="${p.username}" placeholder="Username" class="w-full theme-input text-xs px-3 py-2.5 rounded-xl text-white">
+                        <button onclick="p.name=document.getElementById('eName').value;p.username=document.getElementById('eUsername').value;saveProfiles();renderProfileView();showToast('Profile Updated')" class="gold-btn w-full py-2.5 rounded-xl text-xs font-bold">Save Changes</button>
+                    </div>
+
+                    <div class="space-y-2 theme-card p-4 rounded-2xl">
+                        <div class="flex items-center justify-between"><span class="font-bold gold-gradient-text">Theme</span><span class="text-[10px] text-gray-400">${currentTheme === 'black' ? 'Pure Black' : 'Emerald'}</span></div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="applyTheme('black')" class="py-2 px-3 rounded-xl text-[11px] font-semibold flex items-center justify-center space-x-2 transition cursor-pointer ${currentTheme === 'black' ? 'bg-amber-500/20 text-white' : 'bg-black/50 text-gray-400'}"><span class="w-3 h-3 rounded-full bg-black"></span><span>Pure Black</span></button>
+                            <button onclick="applyTheme('emerald')" class="py-2 px-3 rounded-xl text-[11px] font-semibold flex items-center justify-center space-x-2 transition cursor-pointer ${currentTheme === 'emerald' ? 'bg-emerald-500/20 text-white' : 'bg-[#04120b]/70 text-gray-400'}"><span class="w-3 h-3 rounded-full bg-[#071910]"></span><span>Emerald</span></button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 theme-card p-4 rounded-2xl flex items-center justify-between">
+                        <span class="font-bold gold-gradient-text">Sound Effect</span>
+                        <button onclick="globalSoundEnabled=!globalSoundEnabled;localStorage.setItem('salaam_sound_on',globalSoundEnabled);renderProfileView();showToast(globalSoundEnabled?'On':'Off')" class="px-3 py-1 rounded text-xs font-bold ${globalSoundEnabled?'bg-emerald-500/20 text-[#2ed573]':'bg-pink-500/20 text-pink-400'}">${globalSoundEnabled?'ON':'OFF'}</button>
                     </div>
                 </div>`;
         }
 
+        function updatePrivacySetting(val) {
+            let p = getActiveProfile();
+            p.privacy = val;
+            saveProfiles();
+            showToast("Privacy updated: " + val);
+        }
+
+        function getTickBadge(on) {
+            return `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full ${on?'bg-[#2ed573]/15 text-[#2ed573]':'bg-amber-400/15 text-amber-300'}"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
+        }
+
         function renderDeviceContacts() {
             document.getElementById('sidebarContentList').innerHTML = deviceContacts.map(c => `
-                <div onclick="openChatWithContact('${c.phone}', '${c.name}')" class="flex justify-between items-center px-4 py-3.5 hover:bg-white/5 cursor-pointer transition rounded-xl">
+                <div onclick="openChat('${c.phone}', '${c.name}')" class="animate-list-item flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-full theme-card flex items-center justify-center text-xs font-bold gold-gradient-text">${c.name.charAt(0)}</div>
-                        <div>
-                            <p class="text-xs font-semibold gold-gradient-text">${c.name}</p>
-                            <p class="text-[10px] text-[#2ed573]">${c.status}</p>
-                        </div>
+                        <div class="relative w-10 h-10 rounded-full theme-card flex items-center justify-center text-xs font-bold gold-gradient-text">${c.name.charAt(0)}<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span></div>
+                        <div><p class="text-xs font-semibold gold-gradient-text">${c.name}</p><p class="text-[10px] text-gray-400">${c.phone}</p></div>
                     </div>
-                </div>
-            `).join('');
+                    ${getTickBadge(c.isOnline)}
+                </div>`).join('');
         }
 
         function renderChatStories() {
-            document.getElementById('sidebarContentList').innerHTML = deviceContacts.filter(c => c.appUser).map(c => `
-                <div onclick="openChatWithContact('${c.phone}', '${c.name}')" class="px-4 py-3.5 hover:bg-white/5 cursor-pointer flex items-center space-x-3 transition rounded-xl">
-                    <div class="w-10 h-10 rounded-full theme-card flex items-center justify-center text-xs font-bold gold-gradient-text">${c.name.charAt(0)}</div>
-                    <div class="flex-1 min-w-0">
-                        <span class="font-semibold text-xs gold-gradient-text truncate block">${c.name}</span>
-                        <p class="text-[11px] text-gray-400 truncate">Tap to chat globally...</p>
+            document.getElementById('sidebarContentList').innerHTML = deviceContacts.filter(c => c.appUser).map(c => {
+                let msgs = localMessageStore[c.phone] || [];
+                let last = msgs.length ? (msgs[msgs.length-1].type==='image'?'Photo':msgs[msgs.length-1].message_text) : c.lastMsg;
+                return `
+                <div onclick="openChat('${c.phone}', '${c.name}')" class="animate-list-item px-4 py-3 my-1 hover:bg-white/5 cursor-pointer flex items-center justify-between rounded-2xl theme-card border border-white/5">
+                    <div class="flex items-center space-x-3 flex-1 min-w-0">
+                        <div class="relative"><img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-10 h-10 rounded-full object-cover"><span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span></div>
+                        <div class="flex-1 min-w-0"><span class="font-semibold text-xs gold-gradient-text truncate block">${c.name}</span><p class="text-[11px] text-gray-400 truncate">${last||'Tap to message'}</p></div>
                     </div>
-                </div>
-            `).join('');
+                    ${getTickBadge(c.isOnline)}
+                </div>`;
+            }).join('');
         }
 
         function filterContent() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            document.querySelectorAll('#sidebarContentList > div').forEach(item => {
-                item.style.display = item.innerText.toLowerCase().includes(query) ? 'flex' : 'none';
+            let q = document.getElementById('searchInput').value.toLowerCase();
+            document.querySelectorAll('#sidebarContentList > div').forEach(el => {
+                el.style.display = el.innerText.toLowerCase().includes(q) ? 'flex' : 'none';
             });
         }
 
-        function openChatWithContact(phone, name) {
-            currentActiveRecipient = { phone, name };
+        function openChat(phone, name) {
+            let cp = normPhone(phone);
+            upsertContact(name, cp, true, true);
+            saveContacts();
+            currentActiveRecipient = { phone: cp, name: name || cp, isOnline: true };
             document.getElementById('activeChatHeader').style.display = 'flex';
             document.getElementById('chatInputBar').style.display = 'flex';
-            document.getElementById('activeChatTitle').innerText = name;
-            if (window.innerWidth < 768) {
+            document.getElementById('activeChatTitle').innerText = name || cp;
+            document.getElementById('activeChatHeaderTick').innerHTML = getTickBadge(true);
+            if(window.innerWidth < 768) {
                 document.getElementById('sidebarSection').style.display = 'none';
                 document.getElementById('workspaceSection').style.display = 'flex';
+                document.getElementById('bottomNavBar').style.display = 'none';
             }
-            loadMessages();
+            loadMessages(true);
         }
 
         function backToSidebarMobile() {
             document.getElementById('sidebarSection').style.display = 'flex';
             document.getElementById('workspaceSection').style.display = 'none';
+            document.getElementById('bottomNavBar').style.display = 'flex';
+        }
+
+        function openRecipientInfoModal() {
+            if(!currentActiveRecipient) return;
+            document.getElementById('infoModalName').innerText = currentActiveRecipient.name;
+            let pc = document.getElementById('infoModalPhoneContainer');
+            pc.innerHTML = `<span class="text-xs text-amber-300 font-medium">${currentActiveRecipient.phone}</span><button onclick="navigator.clipboard.writeText('${currentActiveRecipient.phone}');showToast('Copied!')" class="gold-btn px-3 py-1 rounded-xl text-[10px] cursor-pointer">Copy</button>`;
+            document.getElementById('recipientInfoModal').classList.remove('hidden');
+            document.getElementById('recipientInfoModal').classList.add('flex');
+        }
+        function closeRecipientInfoModal() { document.getElementById('recipientInfoModal').classList.add('hidden'); document.getElementById('recipientInfoModal').classList.remove('flex'); }
+
+        let audioCtx = null;
+        function playSoftChime() {
+            if(!globalSoundEnabled) return;
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            let now = audioCtx.currentTime;
+            [880, 1318.51].forEach((f, i) => {
+                let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+                osc.frequency.setValueAtTime(f, now + i*0.08);
+                g.gain.setValueAtTime(0.0001, now + i*0.08);
+                g.gain.exponentialRampToValueAtTime(0.12, now + i*0.09);
+                g.gain.exponentialRampToValueAtTime(0.0001, now + i*0.08 + 0.25);
+                osc.connect(g); g.connect(audioCtx.destination);
+                osc.start(now + i*0.08); osc.stop(now + i*0.08 + 0.3);
+            });
+        }
+
+        async function sendFilesDirectly(input) {
+            if(!currentActiveRecipient || !input.files.length) return;
+            let key = normPhone(currentActiveRecipient.phone), me = getActiveProfile().phone;
+            if(!localMessageStore[key]) localMessageStore[key] = [];
+            for(let f of input.files) {
+                let type = f.type.startsWith('image/')?'image':(f.type.startsWith('video/')?'video':'file');
+                await new Promise(res => {
+                    let r = new FileReader();
+                    r.onload = e => {
+                        let msg = { id: 'm_' + Date.now() + Math.random(), phone_number: me, message_text: f.name, media_url: e.target.result, type };
+                        localMessageStore[key].push(msg);
+                        appendBubble(msg, localMessageStore[key].length - 1, true);
+                        res();
+                    };
+                    r.readAsDataURL(f);
+                });
+            }
+            input.value = ''; playSoftChime(); persistMessages();
+            if(currentTab === 'chat') renderChatStories();
+            scrollChatToBottom();
         }
 
         function toggleSendButton() {
-            const text = document.getElementById('messageInput').value.trim();
-            const btn = document.getElementById('sendBtn');
-            if (text.length > 0) { btn.classList.remove('hidden'); btn.classList.add('flex'); }
-            else { btn.classList.add('hidden'); btn.classList.remove('flex'); }
+            let t = document.getElementById('messageInput').value.trim();
+            let b = document.getElementById('sendBtn');
+            t.length ? (b.classList.remove('hidden'), b.classList.add('flex')) : (b.classList.add('hidden'), b.classList.remove('flex'));
         }
 
-        function sendTextMessage() {
-            if (!currentActiveRecipient) return;
-            const input = document.getElementById('messageInput');
-            const text = input.value.trim();
-            if (!text) return;
-            input.value = '';
-            toggleSendButton();
-
-            const userProfile = getActiveProfile();
-            const key = currentActiveRecipient.phone;
-            if (!localMessageStore[key]) localMessageStore[key] = [];
-            localMessageStore[key].push({ phone_number: userProfile.phone, message_text: text, type: 'text' });
-            persistAndBroadcastMessages();
-            loadMessages();
+        async function sendTextMessage() {
+            if(!currentActiveRecipient) return;
+            let inp = document.getElementById('messageInput'), text = inp.value.trim();
+            if(!text) return;
+            inp.value = ''; toggleSendButton(); playSoftChime();
+            let key = normPhone(currentActiveRecipient.phone), me = getActiveProfile().phone;
+            if(!localMessageStore[key]) localMessageStore[key] = [];
+            let msg = { id: 'm_' + Date.now(), phone_number: me, message_text: text, type: 'text' };
+            localMessageStore[key].push(msg);
+            appendBubble(msg, localMessageStore[key].length - 1, true);
+            persistMessages();
+            if(currentTab === 'chat') renderChatStories();
+            scrollChatToBottom();
         }
 
-        function sendUniversalFile(inputElement) {
-            if (!currentActiveRecipient || !inputElement.files || inputElement.files.length === 0) return;
-            const file = inputElement.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const key = currentActiveRecipient.phone;
-                if (!localMessageStore[key]) localMessageStore[key] = [];
-                localMessageStore[key].push({
-                    phone_number: getActiveProfile().phone,
-                    message_text: file.name,
-                    media_url: e.target.result,
-                    type: file.type.startsWith('image/') ? 'image' : 'file'
-                });
-                persistAndBroadcastMessages();
-                loadMessages();
-            };
-            reader.readAsDataURL(file);
+        function scrollChatToBottom() {
+            let c = document.getElementById('chatMessages');
+            if(c) requestAnimationFrame(() => c.scrollTop = c.scrollHeight);
         }
 
-        function clearChatHistory() {
-            if (!currentActiveRecipient) return;
-            localMessageStore[currentActiveRecipient.phone] = [];
-            persistAndBroadcastMessages();
-            loadMessages();
-            showToast('Chat cleared');
-        }
-
-        function loadMessages() {
-            if (!currentActiveRecipient) return;
-            const container = document.getElementById('chatMessages');
-            const messages = localMessageStore[currentActiveRecipient.phone] || [];
-            container.innerHTML = '';
-            if (messages.length > 0) {
-                container.className = "flex-1 overflow-y-auto p-4 space-y-3 flex flex-col";
-                messages.forEach(msg => {
-                    const isMe = msg.phone_number === getActiveProfile().phone;
-                    const div = document.createElement('div');
-                    div.className = `max-w-[85%] md:max-w-sm p-2.5 rounded-2xl text-xs leading-relaxed ${isMe ? 'self-end text-white ml-auto' : 'self-start text-white mr-auto'}`;
-                    div.style.background = isMe ? 'var(--bg-bubble-me)' : 'var(--bg-bubble-them)';
-                    
-                    if (msg.media_url) {
-                        div.innerHTML = `<img src="${msg.media_url}" class="max-h-60 rounded-xl object-cover mb-1"><span class="text-[10px] text-amber-300">${msg.message_text}</span>`;
-                    } else {
-                        div.innerText = msg.message_text;
+        function deleteSingleMessage(recipientPhone, messageIndex) {
+            showCustomConfirmModal("Delete this message?", (confirmed) => {
+                if(confirmed) {
+                    if(localMessageStore[recipientPhone]) {
+                        localMessageStore[recipientPhone].splice(messageIndex, 1);
+                        persistMessages();
+                        showToast('Deleted');
+                        loadMessages(false);
+                        if(currentTab === 'chat') renderChatStories();
                     }
-                    container.appendChild(div);
-                });
-                container.scrollTop = container.scrollHeight;
+                }
+            });
+        }
+
+        function shareMediaItem(dataUrl, filename) {
+            if(navigator.share) {
+                navigator.share({ title: 'SALAAM', text: filename || 'Shared media', url: dataUrl }).catch(() => {});
             } else {
-                container.className = "flex-1 overflow-y-auto p-4 space-y-3 flex flex-col justify-center items-center";
-                container.innerHTML = `<p class="text-xs text-gray-400">No messages yet. Send a message globally!</p>`;
+                navigator.clipboard.writeText(dataUrl).then(() => showToast('Link copied to clipboard!')).catch(() => {});
             }
+        }
+
+        function appendBubble(msg, idx, animate = false) {
+            let c = document.getElementById('chatMessages');
+            if(c.querySelector('.empty-placeholder')) c.innerHTML = '';
+            let isMe = msg.phone_number === getActiveProfile().phone;
+            let div = document.createElement('div');
+            div.className = `max-w-[85%] md:max-w-sm p-3 rounded-2xl text-xs relative cursor-pointer ${animate?'animate-msg':''} ${isMe?'self-end text-white rounded-br-sm ml-auto chat-bubble-me':'self-start text-white rounded-bl-sm mr-auto chat-bubble-them'}`;
+            div.setAttribute('ondblclick', `deleteSingleMessage('${currentActiveRecipient.phone}', ${idx})`);
+            div.setAttribute('ontouchend', `handleTouchDelete('${currentActiveRecipient.phone}', ${idx})`);
+
+            let shareIcon = `<button onclick="shareMediaItem('${msg.media_url}', '${msg.message_text}')" class="p-1 text-amber-300 hover:scale-110 transition cursor-pointer z-20" title="Share"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>`;
+
+            let html = '';
+            if(msg.type === 'image') {
+                html = `<div class="space-y-2 relative"><div class="overflow-hidden rounded-xl bg-black/50 border border-white/10"><img src="${msg.media_url}" onload="scrollChatToBottom()" class="max-h-64 w-full object-cover"></div><div class="flex justify-between items-center px-1"><a href="${msg.media_url}" download="${msg.message_text}" class="text-[11px] pink-gradient-text font-semibold hover:underline flex items-center space-x-1"><span>Download</span></a>${shareIcon}</div></div>`;
+            } else if(msg.type === 'video') {
+                html = `<div class="space-y-2 relative"><div class="overflow-hidden rounded-xl bg-black/50 border border-white/10"><video src="${msg.media_url}" controls class="max-h-64 w-full object-cover"></video></div><div class="flex justify-between items-center px-1"><a href="${msg.media_url}" download="${msg.message_text}" class="text-[11px] pink-gradient-text font-semibold hover:underline flex items-center space-x-1"><span>Download</span></a>${shareIcon}</div></div>`;
+            } else {
+                html = `<div class="px-1 py-0.5 select-text relative"><p class="whitespace-pre-wrap break-words pr-2">${msg.message_text}</p></div>`;
+            }
+            div.innerHTML = html;
+            c.appendChild(div);
+        }
+
+        let touchTimer = null;
+        function handleTouchDelete(phone, idx) {
+            clearTimeout(touchTimer);
+            touchTimer = setTimeout(() => { deleteSingleMessage(phone, idx); }, 600);
+        }
+
+        function loadMessages(animate = false) {
+            if(!currentActiveRecipient) return;
+            let c = document.getElementById('chatMessages'), msgs = localMessageStore[currentActiveRecipient.phone] || [];
+            c.innerHTML = '';
+            if(msgs.length) {
+                msgs.forEach((m, i) => appendBubble(m, i, animate && i === msgs.length - 1));
+                scrollChatToBottom();
+            } else {
+                c.innerHTML = `<div class="empty-placeholder flex flex-col items-center justify-center space-y-3 text-center m-auto"><p class="text-sm font-bold gold-gradient-text">Start Conversation</p></div>`;
+            }
+        }
+
+        function confirmClearChatHistory() {
+            showCustomConfirmModal("Clear all chat history?", (confirmed) => {
+                if(confirmed) {
+                    if(currentActiveRecipient) {
+                        localMessageStore[currentActiveRecipient.phone] = [];
+                        persistMessages();
+                        loadMessages();
+                        showToast('Chat cleared');
+                    }
+                }
+            });
+        }
+
+        function showCustomConfirmModal(text, callback) {
+            document.getElementById('confirmModalText').innerText = text;
+            document.getElementById('customConfirmModal').classList.remove('hidden');
+            document.getElementById('customConfirmModal').classList.add('flex');
+            confirmCallback = callback;
+        }
+        function closeConfirmModal(res) {
+            document.getElementById('customConfirmModal').classList.add('hidden');
+            document.getElementById('customConfirmModal').classList.remove('flex');
+            if(confirmCallback) confirmCallback(res);
+            confirmCallback = null;
+        }
+
+        let callAudioInterval = null;
+        function playRingtoneBeep() {
+            if(!globalSoundEnabled) return;
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            let now = audioCtx.currentTime;
+            [523.25, 659.25, 783.99].forEach((f, idx) => {
+                let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+                osc.frequency.setValueAtTime(f, now + idx*0.12);
+                g.gain.setValueAtTime(0.0001, now + idx*0.12);
+                g.gain.exponentialRampToValueAtTime(0.15, now + idx*0.12 + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, now + idx*0.12 + 0.3);
+                osc.connect(g); g.connect(audioCtx.destination);
+                osc.start(now + idx*0.12); osc.stop(now + idx*0.12 + 0.35);
+            });
         }
 
         function startWhatsAppCall(mode) {
-            const modal = document.getElementById('whatsAppCallModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.getElementById('callPeerName').innerText = currentActiveRecipient ? currentActiveRecipient.name : 'Global Call';
-            setTimeout(() => { document.getElementById('callLiveStatus').innerText = 'Connected (HD Secure)'; }, 2000);
+            if(!currentActiveRecipient) return;
+            callHistoryNotifications.unshift({ text: `${mode==='video'?'Video':'Audio'} call with ${currentActiveRecipient.name}`, time: Date.now() });
+            updateHeaderNotifBadge();
+            document.getElementById('whatsAppCallModal').classList.remove('hidden');
+            document.getElementById('whatsAppCallModal').classList.add('flex');
+            document.getElementById('callPeerName').innerText = currentActiveRecipient.name;
+            playRingtoneBeep();
+            callAudioInterval = setInterval(playRingtoneBeep, 3000);
         }
 
         function endWhatsAppCall() {
-            const modal = document.getElementById('whatsAppCallModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            if(callAudioInterval) clearInterval(callAudioInterval);
+            if(globalSoundEnabled && audioCtx) {
+                let now = audioCtx.currentTime;
+                [440, 349.23].forEach((f, idx) => {
+                    let osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+                    osc.frequency.setValueAtTime(f, now + idx*0.15);
+                    g.gain.setValueAtTime(0.12, now + idx*0.15);
+                    g.gain.exponentialRampToValueAtTime(0.0001, now + idx*0.15 + 0.25);
+                    osc.connect(g); g.connect(audioCtx.destination);
+                    osc.start(now + idx*0.15); osc.stop(now + idx*0.15 + 0.3);
+                });
+            }
+            document.getElementById('whatsAppCallModal').classList.add('hidden');
+            document.getElementById('whatsAppCallModal').classList.remove('flex');
             showToast('Call ended');
         }
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            applyTheme(currentTheme);
-            await detectCountryDialCode();
+        function toggleCallMute() { showToast('Mute toggled'); }
+        function toggleCallSpeaker() { showToast('Speaker toggled'); }
+        function toggleCallVideo() { showToast('Video toggled'); }
 
-            const savedAccount = JSON.parse(localStorage.getItem('salaam_active_account') || 'null');
-            if (savedAccount && savedAccount.phone) {
-                unlockMainChatApp(savedAccount);
-            } else {
-                document.getElementById('view-verification').style.display = 'flex';
-            }
+        function openNotificationModal() {
+            let list = document.getElementById('modalNotifList');
+            document.getElementById('modalNotifCountBadge').innerText = callHistoryNotifications.length;
+            if(!callHistoryNotifications.length) list.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">No notifications</p>`;
+            else list.innerHTML = callHistoryNotifications.map((n, i) => `<div class="flex justify-between items-center text-[11px] bg-black/40 p-2.5 rounded-xl border border-white/5"><span>${n.text}</span><button onclick="callHistoryNotifications.splice(${i},1);updateHeaderNotifBadge();openNotificationModal()" class="text-pink-400 font-bold px-2">✕</button></div>`).join('');
+            document.getElementById('notificationModal').classList.remove('hidden');
+            document.getElementById('notificationModal').classList.add('flex');
+        }
+        function closeNotificationModal() { document.getElementById('notificationModal').classList.add('hidden'); document.getElementById('notificationModal').classList.remove('flex'); }
+        function clearAllNotifications() { callHistoryNotifications = []; updateHeaderNotifBadge(); closeNotificationModal(); showToast('All notifications cleared'); }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            applyTheme(currentTheme);
+            autoDiscoverContacts();
+            updateHeaderNotifBadge();
+            checkInitialVerification();
         });
     </script>
 </body>
