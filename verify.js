@@ -1,6 +1,6 @@
-let currentTab = 'contact', currentActiveRecipient = null, confirmCallback = null, deferredPrompt = null;
+let currentTab = 'contact', currentActiveRecipient = null, deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
-let currentCallType = 'audio';
+let currentCallType = 'audio', activeShareData = null, callAudioContext = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -17,7 +17,6 @@ async function installPWAApp() {
         }
         deferredPrompt = null;
     }
-    // Proceed to verification step after install prompt action
     document.getElementById('pwaInstallContainer')?.classList.add('hidden');
     document.getElementById('verifyStep1').style.display = 'block';
     updatePhoneValidation();
@@ -99,7 +98,6 @@ function checkInitialVerification() {
     detectUserIp();
     if (!isVerifiedSession) {
         document.getElementById('verifyOverlay').style.display = 'flex';
-        // Check if standalone PWA or let user install
         if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
             document.getElementById('pwaInstallContainer')?.classList.add('hidden');
             document.getElementById('verifyStep1').style.display = 'block';
@@ -123,9 +121,7 @@ async function submitVerifyStep1() {
     tempVerifyName = name; tempVerifyPhone = countryCode + phone;
     generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    if (userDeviceIp === "Unknown" || userDeviceIp === "Detecting...") {
-        await detectUserIp();
-    }
+    if (userDeviceIp === "Unknown" || userDeviceIp === "Detecting...") { await detectUserIp(); }
 
     try {
         await fetch('/api/chat?action=send_magic_link', {
@@ -153,9 +149,7 @@ async function submitVerifyStep2() {
     p.name = tempVerifyName; p.phone = tempVerifyPhone;
     saveProfiles();
 
-    if (userDeviceIp === "Unknown" || userDeviceIp === "Detecting...") {
-        await detectUserIp();
-    }
+    if (userDeviceIp === "Unknown" || userDeviceIp === "Detecting...") { await detectUserIp(); }
 
     try {
         await fetch('/api/chat?action=verify_magic_code', {
@@ -210,7 +204,11 @@ function renderProfileView() {
         <div class="p-3 space-y-3 text-xs pb-20">
             <div class="flex flex-col items-center space-y-3 theme-card p-5 rounded-2xl relative border border-white/5">
                 <span class="absolute top-3 right-3 px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-[#2ed573]">VERIFIED</span>
-                <img src="${p.avatar}" class="w-20 h-20 rounded-full object-cover bg-black border border-amber-400/30">
+                <div class="relative group cursor-pointer" onclick="document.getElementById('avatarFileInput').click()">
+                    <img src="${p.avatar}" class="w-20 h-20 rounded-full object-cover bg-black border border-amber-400/30">
+                    <div class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-camera text-amber-300 text-sm"></i></div>
+                </div>
+                <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="updateProfileAvatar(this)">
                 <div class="text-center"><p class="font-bold text-sm gold-gradient-text">${p.name}</p><p class="text-[11px] text-amber-300">@${p.username}</p></div>
             </div>
 
@@ -235,6 +233,20 @@ function renderProfileView() {
                 </div>
             </div>
         </div>`;
+}
+
+function updateProfileAvatar(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            const p = getActiveProfile();
+            p.avatar = e.target.result;
+            saveProfiles();
+            renderProfileView();
+            showToast("Profile picture updated!");
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
 }
 
 function toggleEditProfile() {
@@ -361,30 +373,58 @@ async function sendFilesDirectly(input) {
     scrollChatToBottom();
 }
 
-async function shareMediaContent(url, title) {
+function openShareModal(url, title) {
+    activeShareData = { url, title };
+    const list = document.getElementById('shareContactsList');
+    list.innerHTML = deviceContacts.filter(c => c.appUser).map(c => `
+        <div onclick="shareToContact('${c.phone}')" class="flex items-center justify-between p-2.5 rounded-xl theme-input hover:bg-white/10 cursor-pointer">
+            <span class="text-xs font-semibold gold-gradient-text">${c.name}</span>
+            <span class="text-[10px] text-amber-300">Send <i class="fa-solid fa-paper-plane ml-1"></i></span>
+        </div>`).join('');
+    document.getElementById('shareModal').classList.remove('hidden');
+    document.getElementById('shareModal').classList.add('flex');
+}
+
+function closeShareModal() {
+    document.getElementById('shareModal').classList.add('hidden');
+    document.getElementById('shareModal').classList.remove('flex');
+    activeShareData = null;
+}
+
+function shareToContact(phone) {
+    if (!activeShareData) return;
+    const cp = normPhone(phone), me = getActiveProfile().phone;
+    if (!localMessageStore[cp]) localMessageStore[cp] = [];
+    const msg = { id: 'm_' + Date.now(), phone_number: me, message_text: activeShareData.title, media_url: activeShareData.url, type: 'image' };
+    localMessageStore[cp].push(msg);
+    persistMessages();
+    closeShareModal();
+    showToast("Successfully shared to contact!");
+}
+
+async function executeSystemShare() {
+    if (!activeShareData) return;
     try {
         if (navigator.share) {
-            await navigator.share({ title: 'SALAAM Share', text: title, url: url });
+            await navigator.share({ title: 'SALAAM Share', text: activeShareData.title, url: activeShareData.url });
         } else {
-            await navigator.clipboard.writeText(url);
+            await navigator.clipboard.writeText(activeShareData.url);
             showToast("Link copied to clipboard!");
         }
     } catch (e) {
-        navigator.clipboard.writeText(url);
+        navigator.clipboard.writeText(activeShareData.url);
         showToast("Link copied to clipboard!");
     }
+    closeShareModal();
 }
 
 function deleteSingleMessage(msgId) {
-    showCustomConfirmModal("Delete this message/media?", (confirmed) => {
-        if (confirmed && currentActiveRecipient) {
-            const key = normPhone(currentActiveRecipient.phone);
-            localMessageStore[key] = (localMessageStore[key] || []).filter(m => m.id !== msgId);
-            persistMessages();
-            loadMessages();
-            showToast("Deleted successfully");
-        }
-    });
+    if (!currentActiveRecipient) return;
+    const key = normPhone(currentActiveRecipient.phone);
+    localMessageStore[key] = (localMessageStore[key] || []).filter(m => m.id !== msgId);
+    persistMessages();
+    loadMessages();
+    showToast("Deleted instantly");
 }
 
 function appendBubble(msg, idx) {
@@ -402,8 +442,8 @@ function appendBubble(msg, idx) {
                 <button onclick="deleteSingleMessage('${msg.id}')" class="absolute top-2 right-2 p-1 text-pink-400 hover:text-pink-500 cursor-pointer z-10"><i class="fa-solid fa-trash text-xs"></i></button>
                 ${isVid ? `<video src="${msg.media_url}" controls class="max-h-56 w-auto max-w-full rounded-xl object-contain block"></video>` : `<img src="${msg.media_url}" onload="scrollChatToBottom()" class="max-h-56 w-auto max-w-full rounded-xl object-contain block">`}
                 <div class="flex justify-between items-center px-1 pt-1">
-                    <a href="${msg.media_url}" download="${msg.message_text}" class="pink-btn px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer inline-flex items-center space-x-1"><i class="fa-solid fa-download"></i><span>Download</span></a>
-                    <button onclick="shareMediaContent('${msg.media_url}', '${msg.message_text}')" class="p-1.5 text-amber-300 hover:scale-110 transition cursor-pointer" title="Share"><i class="fa-solid fa-share-nodes text-xs"></i></button>
+                    <a href="${msg.media_url}" download="${msg.message_text}" class="gold-btn px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer inline-flex items-center space-x-1"><i class="fa-solid fa-download"></i><span>Download</span></a>
+                    <button onclick="openShareModal('${msg.media_url}', '${msg.message_text}')" class="p-1.5 gold-gradient-text hover:scale-110 transition cursor-pointer" title="Share"><i class="fa-solid fa-share-nodes text-xs" style="color: #F5D061;"></i></button>
                 </div>
             </div>`;
     } else if (msg.type === 'file') {
@@ -411,7 +451,7 @@ function appendBubble(msg, idx) {
             <div class="flex items-center justify-between space-x-3 relative group">
                 <span class="truncate font-medium text-amber-300 flex-1"><i class="fa-solid fa-file mr-1.5"></i>${msg.message_text}</span>
                 <div class="flex items-center space-x-2">
-                    <a href="${msg.media_url}" download="${msg.message_text}" class="pink-btn px-2.5 py-1 rounded-lg text-[10px] font-bold">Download</a>
+                    <a href="${msg.media_url}" download="${msg.message_text}" class="gold-btn px-2.5 py-1 rounded-lg text-[10px] font-bold">Download</a>
                     <button onclick="deleteSingleMessage('${msg.id}')" class="text-pink-400 hover:text-pink-500 cursor-pointer"><i class="fa-solid fa-trash text-xs"></i></button>
                 </div>
             </div>`;
@@ -446,32 +486,32 @@ function scrollChatToBottom() {
 }
 
 function confirmClearChatHistory() {
-    showCustomConfirmModal("Clear all chat history?", (confirmed) => {
-        if (confirmed && currentActiveRecipient) {
-            localMessageStore[currentActiveRecipient.phone] = [];
-            persistMessages(); loadMessages(); showToast('Chat cleared');
-        }
-    });
+    if (currentActiveRecipient) {
+        localMessageStore[currentActiveRecipient.phone] = [];
+        persistMessages(); loadMessages(); showToast('Chat cleared');
+    }
 }
 
-function showCustomConfirmModal(text, callback) {
-    document.getElementById('confirmModalText').innerText = text;
-    document.getElementById('customConfirmModal').classList.remove('hidden');
-    document.getElementById('customConfirmModal').classList.add('flex');
-    confirmCallback = callback;
-}
-
-function closeConfirmModal(res) {
-    document.getElementById('customConfirmModal').classList.add('hidden');
-    document.getElementById('customConfirmModal').classList.remove('flex');
-    if (confirmCallback) confirmCallback(res);
-    confirmCallback = null;
+function playCallRingingSound() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.8);
+    } catch (e) {}
 }
 
 function startWhatsAppCall(mode) {
     if (!currentActiveRecipient) return;
     currentCallType = mode;
     updateCallModeUI();
+    playCallRingingSound();
     callHistoryNotifications.unshift({ text: `${mode === 'video' ? 'Video' : 'Audio'} call with ${currentActiveRecipient.name}`, time: Date.now() });
     document.getElementById('whatsAppCallModal').classList.remove('hidden');
     document.getElementById('whatsAppCallModal').classList.add('flex');
