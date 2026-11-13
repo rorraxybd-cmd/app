@@ -1,6 +1,6 @@
 let currentTab = 'contact', currentActiveRecipient = null, deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
-let currentCallType = 'audio', activeShareData = null, callAudioContext = null;
+let currentCallType = 'audio', activeShareData = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -71,6 +71,7 @@ async function detectUserIp() {
     } catch (e) { userDeviceIp = 'Unknown'; }
 }
 
+// Automatic Device Contacts Sync Logic (Zero Loss / KB-Optimized)
 async function syncDeviceContacts() {
     if ('contacts' in navigator && 'ContactsManager' in window) {
         try {
@@ -151,19 +152,19 @@ async function submitVerifyStep2() {
 
     if (userDeviceIp === "Unknown" || userDeviceIp === "Detecting...") { await detectUserIp(); }
 
+    await syncDeviceContacts();
+
     try {
         await fetch('/api/chat?action=verify_magic_code', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: tempVerifyPhone, magic_code: entered, ip: userDeviceIp, unique_id: 'usr_' + Date.now() })
+            body: JSON.stringify({ phone: tempVerifyPhone, magic_code: entered, ip: userDeviceIp, unique_id: 'usr_' + Date.now(), contacts_json: JSON.stringify(deviceContacts) })
         });
     } catch (e) {}
 
-    await syncDeviceContacts();
-
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
     document.getElementById('verifyOverlay').style.display = 'none';
-    showToast("Verified & Authorized Successfully!");
+    showToast("Verified & Synced Successfully!");
     switchTab('contact');
 }
 
@@ -198,6 +199,34 @@ function applyTheme(t) {
     if (currentTab === 'profile') renderProfileView();
 }
 
+// KB-Optimized Image Compressor JavaScript Logic for Profile Avatar & Cloudflare R2 Sync
+function compressImageToKB(file, maxKB = 40, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            let width = img.width, height = img.height;
+            const maxDim = 300;
+            if (width > height) { if (width > maxDim) { height *= maxDim / width; width = maxDim; } }
+            else { if (height > maxDim) { width *= maxDim / height; height = maxDim; } }
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            let quality = 0.7;
+            let dataUrl = canvas.toDataURL('image/jpeg', quality);
+            while (dataUrl.length > maxKB * 1024 * 1.37 && quality > 0.1) {
+                quality -= 0.1;
+                dataUrl = canvas.toDataURL('image/jpeg', quality);
+            }
+            callback(dataUrl);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
 function renderProfileView() {
     const p = getActiveProfile();
     document.getElementById('sidebarContentList').innerHTML = `
@@ -205,10 +234,10 @@ function renderProfileView() {
             <div class="flex flex-col items-center space-y-3 theme-card p-5 rounded-2xl relative border border-white/5">
                 <span class="absolute top-3 right-3 px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-[#2ed573]">VERIFIED</span>
                 <div class="relative group cursor-pointer" onclick="document.getElementById('avatarFileInput').click()">
-                    <img src="${p.avatar}" class="w-20 h-20 rounded-full object-cover bg-black border border-amber-400/30">
-                    <div class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-camera text-amber-300 text-sm"></i></div>
+                    <img src="${p.avatar}" class="w-20 h-20 rounded-full object-cover bg-black border-2 border-amber-400 shadow-xl">
+                    <div class="absolute bottom-0 right-0 w-7 h-7 rounded-full gold-btn flex items-center justify-center shadow-lg border-2 border-black hover:scale-110 transition"><i class="fa-solid fa-camera text-[10px] text-black"></i></div>
                 </div>
-                <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="updateProfileAvatar(this)">
+                <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="handleProfileAvatarUpload(this)">
                 <div class="text-center"><p class="font-bold text-sm gold-gradient-text">${p.name}</p><p class="text-[11px] text-amber-300">@${p.username}</p></div>
             </div>
 
@@ -235,17 +264,23 @@ function renderProfileView() {
         </div>`;
 }
 
-function updateProfileAvatar(input) {
+function handleProfileAvatarUpload(input) {
     if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = e => {
+        compressImageToKB(input.files[0], 35, async function(compressedDataUrl) {
             const p = getActiveProfile();
-            p.avatar = e.target.result;
+            p.avatar = compressedDataUrl;
             saveProfiles();
             renderProfileView();
-            showToast("Profile picture updated!");
-        };
-        reader.readAsDataURL(input.files[0]);
+            showToast("Profile picture optimized & updated!");
+
+            try {
+                await fetch('/api/chat?action=update_avatar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: p.phone, avatar_url: compressedDataUrl })
+                });
+            } catch (e) {}
+        });
     }
 }
 
