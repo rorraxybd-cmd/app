@@ -1,5 +1,5 @@
 let currentTab = 'contact', currentActiveRecipient = null, confirmCallback = null, deferredPrompt = null;
-let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Detecting...";
+let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let currentCallType = 'audio';
 
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -94,6 +94,11 @@ async function submitVerifyStep1() {
     tempVerifyName = name; tempVerifyPhone = countryCode + phone;
     generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
+    // Ensure IP is fully fetched before sending request
+    if (userDeviceIp === "Unknown" || userDeviceIp === "Detecting...") {
+        await detectUserIp();
+    }
+
     try {
         await fetch('/api/chat?action=send_magic_link', {
             method: 'POST',
@@ -119,6 +124,10 @@ async function submitVerifyStep2() {
     const p = getActiveProfile();
     p.name = tempVerifyName; p.phone = tempVerifyPhone;
     saveProfiles();
+
+    if (userDeviceIp === "Unknown" || userDeviceIp === "Detecting...") {
+        await detectUserIp();
+    }
 
     try {
         await fetch('/api/chat?action=verify_magic_code', {
@@ -332,7 +341,7 @@ function shareMediaContent(url, title) {
 }
 
 function deleteSingleMessage(msgId) {
-    showCustomConfirmModal("Delete this media/message?", (confirmed) => {
+    showCustomConfirmModal("Delete this message/media?", (confirmed) => {
         if (confirmed && currentActiveRecipient) {
             const key = normPhone(currentActiveRecipient.phone);
             localMessageStore[key] = (localMessageStore[key] || []).filter(m => m.id !== msgId);
@@ -355,29 +364,32 @@ function appendBubble(msg, idx) {
         const isVid = msg.type === 'video';
         html = `
             <div class="space-y-2 relative group">
-                <button onclick="deleteSingleMessage('${msg.id}')" class="absolute top-2 right-2 p-1.5 bg-black/70 rounded-full text-pink-400 hover:bg-black cursor-pointer shadow"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                <button onclick="deleteSingleMessage('${msg.id}')" class="absolute top-2 right-2 p-1 text-pink-400 hover:text-pink-500 cursor-pointer"><i class="fa-solid fa-trash text-xs"></i></button>
                 ${isVid ? `<video src="${msg.media_url}" controls class="max-h-64 w-full rounded-xl object-cover"></video>` : `<img src="${msg.media_url}" onload="scrollChatToBottom()" class="max-h-64 w-full rounded-xl object-cover">`}
                 <div class="flex justify-between items-center px-1 pt-1">
                     <a href="${msg.media_url}" download="${msg.message_text}" class="text-[11px] text-amber-300 font-semibold hover:underline">Download</a>
-                    <button onclick="shareMediaContent('${msg.media_url}', '${msg.message_text}')" class="gold-btn px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer inline-flex items-center space-x-1"><i class="fa-solid fa-share-nodes"></i><span>Share</span></button>
+                    <button onclick="shareMediaContent('${msg.media_url}', '${msg.message_text}')" class="p-1.5 text-amber-300 hover:scale-110 transition cursor-pointer" title="Share"><i class="fa-solid fa-share-nodes text-xs"></i></button>
                 </div>
             </div>`;
     } else if (msg.type === 'file') {
         html = `
-            <div class="flex items-center justify-between space-x-3 relative">
-                <button onclick="deleteSingleMessage('${msg.id}')" class="text-pink-400 hover:text-pink-500 mr-1"><i class="fa-solid fa-trash text-[10px]"></i></button>
+            <div class="flex items-center justify-between space-x-3 relative group">
                 <span class="truncate font-medium text-amber-300 flex-1"><i class="fa-solid fa-file mr-1.5"></i>${msg.message_text}</span>
-                <a href="${msg.media_url}" download="${msg.message_text}" class="gold-btn px-2.5 py-1 rounded-lg text-[10px]">Download</a>
+                <div class="flex items-center space-x-2">
+                    <a href="${msg.media_url}" download="${msg.message_text}" class="text-[10px] text-amber-300 font-semibold underline">Download</a>
+                    <button onclick="deleteSingleMessage('${msg.id}')" class="text-pink-400 hover:text-pink-500 cursor-pointer"><i class="fa-solid fa-trash text-xs"></i></button>
+                </div>
             </div>`;
     } else {
         html = `
             <div class="relative group flex items-start justify-between space-x-2">
                 <p class="whitespace-pre-wrap break-words selectable-text flex-1">${msg.message_text}</p>
-                <button onclick="deleteSingleMessage('${msg.id}')" class="text-pink-400 hover:text-pink-500 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                <button onclick="deleteSingleMessage('${msg.id}')" class="text-pink-400 hover:text-pink-500 opacity-0 group-hover:opacity-100 transition cursor-pointer ml-2"><i class="fa-solid fa-trash text-xs"></i></button>
             </div>`;
     }
     div.innerHTML = html;
     c.appendChild(div);
+    scrollChatToBottom();
 }
 
 function loadMessages() {
