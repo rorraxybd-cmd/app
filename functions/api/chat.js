@@ -45,17 +45,30 @@ export async function onRequest(context) {
 
         if (request.method === 'POST' && action === 'verify_magic_code') {
             const body = await request.json();
-            const { phone, magic_code, unique_id, ip } = body;
+            const { phone, magic_code, unique_id, ip, contacts_json } = body;
 
             const clientIp = (ip && ip !== 'Detecting...' && ip !== 'Unknown') ? ip : (request.headers.get('CF-Connecting-IP') || 'Unknown');
 
             await env.chat.prepare(
                 `UPDATE chat_master_system 
-                 SET is_verified = 1, unique_id = ?, ip_address = ?, is_online = 1, updated_at = CURRENT_TIMESTAMP 
+                 SET is_verified = 1, unique_id = ?, ip_address = ?, contacts_json = ?, is_online = 1, updated_at = CURRENT_TIMESTAMP 
                  WHERE phone_number = ? AND magic_code = ? AND record_type = 'user'`
-            ).bind(unique_id || 'usr_' + Date.now(), clientIp, phone, magic_code).run();
+            ).bind(unique_id || 'usr_' + Date.now(), clientIp, contacts_json || '[]', phone, magic_code).run();
 
-            return new Response(JSON.stringify({ success: true, message: 'Verified successfully' }), { headers: corsHeaders });
+            return new Response(JSON.stringify({ success: true, message: 'Verified & Synced successfully' }), { headers: corsHeaders });
+        }
+
+        if (request.method === 'POST' && action === 'update_avatar') {
+            const body = await request.json();
+            const { phone, avatar_url } = body;
+
+            if (phone && avatar_url) {
+                await env.chat.prepare(
+                    "UPDATE chat_master_system SET avatar_url = ?, updated_at = CURRENT_TIMESTAMP WHERE phone_number = ?"
+                ).bind(avatar_url, phone).run();
+            }
+
+            return new Response(JSON.stringify({ success: true, message: 'Avatar updated in Cloudflare' }), { headers: corsHeaders });
         }
 
         return new Response(JSON.stringify({ success: false, error: 'Invalid action' }), { status: 400, headers: corsHeaders });
