@@ -15,7 +15,6 @@ export async function onRequest(context) {
     }
 
     try {
-        // ১. ম্যাজিক কোড জেনারেট ও ডাটাবেসে সেভ
         if (request.method === 'POST' && action === 'send_magic_link') {
             const body = await request.json();
             const { display_name, phone, magic_code, ip } = body;
@@ -44,7 +43,6 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ success: true, message: 'Code generated successfully' }), { headers: corsHeaders });
         }
 
-        // ২. ভেরিফিকেশন কনফার্মেশন ও ডাটাবেস আপডেট
         if (request.method === 'POST' && action === 'verify_magic_code') {
             const body = await request.json();
             const { phone, magic_code, unique_id, ip } = body;
