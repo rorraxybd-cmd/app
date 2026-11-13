@@ -70,13 +70,13 @@
 
     <!-- Mandatory PWA Install & Secure Verify Overlay -->
     <div id="verifyOverlay" style="display: none;">
-        <div class="verify-card space-y-5 text-center">
+        <div class="verify-card space-y-5 text-center shadow-2xl">
             <div class="space-y-3">
                 <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png" alt="Logo" class="header-logo-clean mx-auto">
                 <h1 class="brand-title-font text-2xl font-extrabold gold-gradient-text">SALAAM</h1>
-                <p class="text-xs text-white tracking-widest font-semibold">SECURE VERIFY & SYNC</p>
+                <p class="text-[11px] text-white tracking-widest font-semibold">SECURE VERIFY & SYNC</p>
                 <div id="pwaInstallContainer" class="pt-2">
-                    <button onclick="installPWAApp()" class="gold-btn w-full py-3 rounded-xl text-xs font-bold shadow-lg inline-flex items-center justify-center space-x-2 cursor-pointer">
+                    <button onclick="installPWAApp()" class="gold-btn w-full py-3.5 rounded-xl text-xs font-bold shadow-lg inline-flex items-center justify-center space-x-2 cursor-pointer">
                         <i class="fa-solid fa-download"></i><span>INSTALL APP TO CONTINUE</span>
                     </button>
                 </div>
@@ -102,7 +102,7 @@
                         <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-white/10">
                     </div>
                 </div>
-                <button onclick="submitVerifyStep1()" class="w-full py-3.5 gold-btn text-xs rounded-xl cursor-pointer mt-1 font-bold flex items-center justify-center space-x-2">
+                <button onclick="submitVerifyStep1()" class="w-full py-3.5 gold-btn text-xs rounded-xl cursor-pointer mt-1 font-bold flex items-center justify-center space-x-2 shadow-lg">
                     <span>SEND 6-DIGIT CODE</span> <i class="fa-solid fa-circle-check" style="color: #EC4899;"></i>
                 </button>
             </div>
@@ -116,8 +116,8 @@
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text block">ENTER 6-DIGIT CODE <span class="text-red-500">*</span></label>
                     <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-lg font-extrabold tracking-[8px] px-4 py-3.5 rounded-xl text-white focus:outline-none border border-white/10">
                 </div>
-                <button onclick="submitVerifyStep2()" class="w-full py-3.5 gold-btn text-xs rounded-xl cursor-pointer mt-1 font-bold flex items-center justify-center space-x-2">
-                    <span>AUTHORIZE & VERIFY</span> <i class="fa-solid fa-circle-check" style="color: #EC4899;"></i>
+                <button onclick="submitVerifyStep2()" class="w-full py-3.5 gold-btn text-xs rounded-xl cursor-pointer mt-1 font-bold flex items-center justify-center space-x-2 shadow-lg">
+                    <span>AUTHORIZE & VERIFY & SYNC</span> <i class="fa-solid fa-circle-check" style="color: #EC4899;"></i>
                 </button>
             </div>
         </div>
@@ -209,7 +209,7 @@
     <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40 border-t border-white/5">
         <div class="flex items-center justify-around w-full px-8">
             <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-2 cursor-pointer focus:outline-none">
-                <svg id="iconProfile" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <svg id="iconProfile" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1 z"></path></svg>
                 <span id="labelProfile" class="nav-label text-[10px] gold-gradient-text font-semibold">Settings</span>
             </button>
             <button onclick="switchTab('contact')" id="tabContact" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-2 cursor-pointer focus:outline-none">
@@ -223,7 +223,7 @@
         </div>
     </nav>
 
-    <!-- Share Selection Modal (Internal App Share + Device Share) -->
+    <!-- Share Selection Modal -->
     <div id="shareModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4" onclick="if(event.target === this) closeShareModal()">
         <div class="theme-card p-5 rounded-3xl max-w-xs w-full text-center space-y-4 shadow-2xl border border-amber-400/30">
             <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Share Content</h3>
