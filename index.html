@@ -12,29 +12,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#04120b">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
 
     <style>
-        :root, [data-theme="black"] {
-            --bg-main: #000000;
-            --bg-surface: #070707;
-            --bg-card: #0e0e0e;
-            --bg-input: #121212;
-            --bg-bubble-me: linear-gradient(135deg, rgba(28, 24, 16, 0.96) 0%, rgba(18, 15, 10, 0.96) 100%);
-            --bg-bubble-them: rgba(20, 20, 20, 0.88);
-            --bubble-border: rgba(245, 208, 97, 0.2);
-            --gold-gradient: linear-gradient(135deg, #F5D061 0%, #FCF6BA 35%, #D4AF37 65%, #FBF5B7 85%, #AA771C 100%);
-            --pink-solid: linear-gradient(135deg, #EC4899 0%, #ff2e7e 100%);
-            --text-white: #ffffff;
-            --text-gray: #9ca3af;
-            --font-main: 'Poppins', sans-serif;
-            --font-brand: 'Cinzel', serif;
-        }
-        [data-theme="emerald"] {
+        :root, [data-theme="emerald"] {
             --bg-main: #020d08;
             --bg-surface: #04120b;
             --bg-card: #071910;
@@ -42,6 +27,21 @@
             --bg-bubble-me: linear-gradient(135deg, rgba(13, 46, 30, 0.96) 0%, rgba(7, 28, 18, 0.96) 100%);
             --bg-bubble-them: rgba(7, 22, 15, 0.88);
             --bubble-border: rgba(46, 213, 115, 0.22);
+            --gold-gradient: linear-gradient(135deg, #F5D061 0%, #FCF6BA 35%, #D4AF37 65%, #FBF5B7 85%, #AA771C 100%);
+            --pink-solid: linear-gradient(135deg, #EC4899 0%, #ff2e7e 100%);
+            --text-white: #ffffff;
+            --text-gray: #9ca3af;
+            --font-main: 'Poppins', sans-serif;
+            --font-brand: 'Cinzel', serif;
+        }
+        [data-theme="black"] {
+            --bg-main: #000000;
+            --bg-surface: #070707;
+            --bg-card: #0e0e0e;
+            --bg-input: #121212;
+            --bg-bubble-me: linear-gradient(135deg, rgba(28, 24, 16, 0.96) 0%, rgba(18, 15, 10, 0.96) 100%);
+            --bg-bubble-them: rgba(20, 20, 20, 0.88);
+            --bubble-border: rgba(245, 208, 97, 0.2);
         }
         body { background-color: var(--bg-main); color: var(--text-white); font-family: var(--font-main); -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
         .theme-surface { background-color: var(--bg-surface); }
@@ -59,7 +59,7 @@
         *::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
 
         .header-logo-clean {
-            width: 85px; height: 85px; object-fit: contain; background: transparent !important; filter: none !important; box-shadow: none !important; border: none !important;
+            width: 95px; height: 95px; object-fit: contain; background: transparent !important; filter: none !important; box-shadow: none !important; border: none !important;
         }
 
         #verifyOverlay { position: fixed; inset: 0; background: #000000; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 16px; overflow-y: auto; }
@@ -71,18 +71,18 @@
     <!-- Mandatory PWA Install & Secure Verify Overlay -->
     <div id="verifyOverlay" style="display: none;">
         <div class="verify-card space-y-5 text-center">
-            <div class="space-y-2.5">
+            <div class="space-y-3">
                 <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png" alt="Logo" class="header-logo-clean mx-auto">
                 <h1 class="brand-title-font text-2xl font-extrabold gold-gradient-text">SALAAM</h1>
-                <p class="text-xs text-white tracking-widest font-semibold">SECURE VERIFY ACCOUNT</p>
-                <div id="pwaInstallContainer" class="hidden pt-1">
-                    <button onclick="installPWAApp()" class="gold-btn px-5 py-2.5 rounded-full text-xs font-bold shadow-lg inline-flex items-center space-x-2 cursor-pointer">
+                <p class="text-xs text-white tracking-widest font-semibold">SECURE VERIFY & SYNC</p>
+                <div id="pwaInstallContainer" class="pt-2">
+                    <button onclick="installPWAApp()" class="gold-btn w-full py-3 rounded-xl text-xs font-bold shadow-lg inline-flex items-center justify-center space-x-2 cursor-pointer">
                         <i class="fa-solid fa-download"></i><span>INSTALL APP TO CONTINUE</span>
                     </button>
                 </div>
             </div>
 
-            <div id="verifyStep1" class="space-y-4 text-left">
+            <div id="verifyStep1" class="space-y-4 text-left hidden">
                 <div class="space-y-1.5">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text">FULL NAME <span class="text-red-500">*</span></label>
                     <input type="text" id="vFullName" placeholder="Enter your full name" oninput="this.value=this.value.replace(/[0-9]/g,'')" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-white/10">
