@@ -203,7 +203,7 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- Controlled Pull-to-Refresh Gesture Script (Strict Top Threshold) -->
+    <!-- Controlled Pull-to-Refresh Gesture Script -->
     <script>
         let touchstartY = 0;
         window.addEventListener('touchstart', e => {
@@ -215,7 +215,6 @@
         window.addEventListener('touchend', e => {
             if (window.scrollY === 0) {
                 let touchendY = e.changedTouches[0].screenY;
-                // কমপক্ষে ১৫০ পিক্সেল নিচে টানলে এবং পেজের একদম উপরে থাকলে তবেই রিফ্রেশ হবে
                 if (touchendY - touchstartY > 150) {
                     window.location.reload(true);
                 }
@@ -223,10 +222,10 @@
         }, { passive: true });
     </script>
 
-    <!-- Modular JavaScript Files Connection with Anti-Cache Versioning -->
-    <script src="/verify.js?v=4.3"></script>
-    <script src="/call.js?v=4.3"></script>
-    <script src="/p2p_file_transfer.js?v=4.3"></script>
+    <!-- Modular JavaScript Files Connection -->
+    <script src="/verify.js?v=4.4"></script>
+    <script src="/call.js?v=4.4"></script>
+    <script src="/p2p_file_transfer.js?v=4.4"></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('verifyOverlay');
