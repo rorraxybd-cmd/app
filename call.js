@@ -1,6 +1,6 @@
 let currentTab = 'contact', currentActiveRecipient = null;
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
-let callRingInterval = null, activeAudioCtx = null, callPollInterval = null, chatPollInterval = null;
+let callRingInterval = null, activeAudioCtx = null, callPollInterval = null, chatPollInterval = null, globalUserSyncInterval = null;
 let callTimerInterval = null, callSeconds = 0;
 let peerConnection = null, localStream = null, remoteStream = null;
 let isMicMuted = false, lastHandledSignalTs = 0;
@@ -43,6 +43,10 @@ function initAppAfterVerification() {
     setTimeout(() => { switchTab('contact'); }, 100);
     startBackgroundCallPolling();
     startChatPolling();
+
+    // প্রতি ৫ সেকেন্ড পরপর স্বয়ংক্রিয়ভাবে নতুন গ্লোবাল ইউজার সিঙ্ক হবে (যাতে যেকোনো ডিভাইস বা ব্রাউজার থেকে ঢুকলেই কন্টাক্টে চলে আসে)
+    if (globalUserSyncInterval) clearInterval(globalUserSyncInterval);
+    globalUserSyncInterval = setInterval(syncGlobalNetworkUsers, 5000);
 }
 
 async function syncGlobalNetworkUsers() {
@@ -52,6 +56,8 @@ async function syncGlobalNetworkUsers() {
             const data = await res.json();
             if (data.success && Array.isArray(data.users)) {
                 const myPhone = normPhone(getActiveProfile().phone);
+                let hasNewUser = false;
+                
                 data.users.forEach(u => {
                     const uPhone = normPhone(u.phone_number);
                     if (uPhone && uPhone !== myPhone) {
@@ -66,7 +72,12 @@ async function syncGlobalNetworkUsers() {
                                     avatar: u.avatar_url || null,
                                     lastMsg: "Tap to message"
                                 });
+                                hasNewUser = true;
                             } else {
+                                if (deviceContacts[existingIdx].isOnline !== (u.is_online === 1) || 
+                                    deviceContacts[existingIdx].name !== (u.display_name || deviceContacts[existingIdx].name)) {
+                                    hasNewUser = true;
+                                }
                                 deviceContacts[existingIdx].isOnline = u.is_online === 1;
                                 if (u.display_name) deviceContacts[existingIdx].name = u.display_name;
                                 if (u.avatar_url) deviceContacts[existingIdx].avatar = u.avatar_url;
@@ -75,7 +86,10 @@ async function syncGlobalNetworkUsers() {
                     }
                 });
                 localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
-                if (currentTab === 'contact' || currentTab === 'chat') renderDeviceContacts();
+                if ((currentTab === 'contact' || currentTab === 'chat') && hasNewUser) {
+                    if (currentTab === 'contact') renderDeviceContacts();
+                    else renderChatStories();
+                }
             }
         }
     } catch (e) {}
@@ -125,7 +139,7 @@ function renderDeviceContacts() {
     const contactsHtml = deviceContacts.filter(c => !c.isOfficialSupport && c.phone !== '8801538187301').map(c => {
         const info = getCountryInfo(c.phone);
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${info.name} • ${c.phone}</p>`;
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
@@ -809,7 +823,7 @@ function filterContent() {
     const contactsHtml = filtered.map(c => {
         const info = getCountryInfo(c.phone);
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${info.name} • ${c.phone}</p>`;
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
