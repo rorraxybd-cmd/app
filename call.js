@@ -20,7 +20,9 @@ function showToast(msg, isErr = false) {
 
 function initAppAfterVerification() {
     syncGlobalNetworkUsers();
-    switchTab('contact'); // পেজ ভেরিফাই হওয়ার পর সরাসরি কন্টাক্ট ট্যাব রেন্ডার করবে
+    setTimeout(() => {
+        switchTab('contact'); // অ্যাপ ভেরিফাই হওয়ার পর কন্টাক্ট ট্যাব রেন্ডার করবে
+    }, 100);
     startIncomingCallPolling();
     startChatPolling();
 }
@@ -60,7 +62,6 @@ async function syncGlobalNetworkUsers() {
 }
 
 function switchTab(tab) {
-    if (!isVerifiedSession) { checkInitialVerification(); return; }
     currentTab = tab;
     
     ['profile', 'contact', 'chat'].forEach(t => {
@@ -74,13 +75,16 @@ function switchTab(tab) {
     const sb = document.getElementById('searchBarContainer');
     if (tab === 'profile') { 
         if (sb) sb.style.display = 'none'; 
-        if (typeof renderProfileView === 'function') renderProfileView(); 
+        if (typeof renderProfileView === 'function') {
+            renderProfileView(); 
+        }
     } else {
         if (sb) sb.style.display = 'block';
         const searchInput = document.getElementById('searchInput');
         if (searchInput) searchInput.value = '';
-        if (tab === 'chat') renderChatStories();
-        else {
+        if (tab === 'chat') {
+            renderChatStories();
+        } else {
             syncGlobalNetworkUsers();
             renderDeviceContacts();
         }
@@ -195,7 +199,7 @@ async function fetchMessagesFromCloud() {
 
 function startChatPolling() {
     if (chatPollInterval) clearInterval(chatPollInterval);
-    chatPollInterval = setInterval(() => { if (currentActiveRecipient && isVerifiedSession) fetchMessagesFromCloud(); }, 2000);
+    chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 2000);
 }
 
 function startContinuousRinging() {
@@ -280,7 +284,6 @@ function showCallModalUI(peerName, avatarUrl, statusText, mode) {
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
     callPollInterval = setInterval(async () => {
-        if (!isVerifiedSession) return;
         const myPhone = getActiveProfile().phone;
         try {
             const res = await fetch(`/api/chat?action=check_call_signal&phone=${encodeURIComponent(myPhone)}`);
