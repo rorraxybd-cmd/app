@@ -127,7 +127,6 @@ function compressAndSendImage(file, recipientKey, senderPhone) {
     reader.readAsDataURL(file);
 }
 
-// অপ্টিমাইজড P2P ডেটা চ্যানেল ট্রান্সফার (রিসিভার অনলাইন চেকসহ)
 async function initiateP2PFileTransfer(file, recipientKey) {
     const recipient = deviceContacts.find(c => normPhone(c.phone) === normPhone(recipientKey));
     if (!recipient || !recipient.isOnline) {
