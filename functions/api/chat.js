@@ -31,6 +31,7 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ success: true, user: user || null }), { headers: corsHeaders });
         }
 
+        // Send Call Signal
         if (request.method === 'POST' && action === 'send_call_signal') {
             const body = await request.json();
             const { caller_phone, receiver_phone, call_type, status } = body;
@@ -44,6 +45,7 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
         }
 
+        // Check Call Signal
         if (request.method === 'GET' && action === 'check_call_signal') {
             const phone = url.searchParams.get('phone');
             const res = await env.chat.prepare(
@@ -53,13 +55,35 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ success: true, signal: res || null }), { headers: corsHeaders });
         }
 
+        // Send Chat Message to D1 Database
+        if (request.method === 'POST' && action === 'send_chat_message') {
+            const body = await request.json();
+            const { sender_phone, receiver_phone, message_text, media_url, message_type } = body;
+            
+            await env.chat.prepare(
+                `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, magic_code, is_verified, is_online, updated_at) 
+                 VALUES (?, 'chat_msg', ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)`
+            ).bind('msg_' + Date.now() + Math.random(), receiver_phone, sender_phone, `${message_type || 'text'}:${message_text || ''}:${media_url || ''}`).run();
+
+            return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+        }
+
+        // Get Chat Messages from D1 Database
+        if (request.method === 'GET' && action === 'get_chat_messages') {
+            const phone = url.searchParams.get('phone');
+            const { results } = await env.chat.prepare(
+                "SELECT display_name as sender_phone, magic_code as payload FROM chat_master_system WHERE record_type = 'chat_msg' AND phone_number = ? ORDER BY updated_at ASC"
+            ).bind(phone).all();
+
+            return new Response(JSON.stringify({ success: true, messages: results || [] }), { headers: corsHeaders });
+        }
+
         if (request.method === 'POST' && action === 'send_magic_link') {
             const body = await request.json();
             const { display_name, phone, magic_code, ip } = body;
             const clientIp = (ip && ip !== 'Detecting...' && ip !== 'Unknown') ? ip : (request.headers.get('CF-Connecting-IP') || 'Unknown');
             const defaultUsername = 'user_' + Math.floor(1000 + Math.random() * 9000);
 
-            // Check if user already exists to preserve username and avatar
             const existing = await env.chat.prepare(
                 "SELECT username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND phone_number = ?"
             ).bind(phone).first();
