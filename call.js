@@ -4,6 +4,7 @@ let callRingInterval = null, activeAudioCtx = null, callPollInterval = null, cha
 let callTimerInterval = null, callSeconds = 0;
 let peerConnection = null, localStream = null, remoteStream = null;
 let isMicMuted = false, lastHandledSignalTs = 0;
+let isLocalMain = false; // ভিডিও বড়-ছোট (PiP Swap) করার জন্য
 
 let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
@@ -136,7 +137,6 @@ function openChat(phone, name) {
     const cp = normPhone(phone);
     let targetContact = deviceContacts.find(c => normPhone(c.phone) === cp);
     
-    // যদি কন্টাক্টে না থাকে, তবে অটো নতুন কন্টাক্ট হিসেবে যোগ করে নেওয়া হবে
     if (!targetContact) {
         targetContact = { name: name || cp, phone: cp, appUser: true, isOnline: true, avatar: null };
         deviceContacts.push(targetContact);
@@ -294,22 +294,54 @@ async function setupLocalMedia(mode) {
         if (localStream) {
             localStream.getTracks().forEach(t => t.stop());
         }
+        // মোবাইল ফ্রন্ট ক্যামেরা প্রাধান্য দেওয়ার জন্য facingMode ব্যবহার করা হয়েছে
         localStream = await navigator.mediaDevices.getUserMedia({
             audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
             video: mode === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false
         });
         
-        const localVid = document.getElementById('callLocalVideo');
-        const videoContainer = document.getElementById('videoStreamsBox');
-        if (mode === 'video' && localVid && videoContainer) {
-            videoContainer.classList.remove('hidden');
-            localVid.srcObject = localStream;
-            localVid.muted = true;
-        }
+        applyVideoStreamsToDom();
         return localStream;
     } catch (err) {
         showToast("Camera or Microphone access required", true);
         return null;
+    }
+}
+
+function applyVideoStreamsToDom() {
+    const remoteVid = document.getElementById('callRemoteVideo');
+    const localVid = document.getElementById('callLocalVideo');
+    
+    if (remoteVid && remoteStream) {
+        remoteVid.srcObject = remoteStream;
+        remoteVid.play().catch(e => {});
+    }
+    if (localVid && localStream) {
+        localVid.srcObject = localStream;
+        localVid.muted = true;
+        localVid.play().catch(e => {});
+    }
+}
+
+// ভিডিও বড় ও ছোট পর্দা (PiP Swap) টগল করার ফাংশন
+function toggleVideoSwap() {
+    isLocalMain = !isLocalMain;
+    const remoteVid = document.getElementById('callRemoteVideo');
+    const localVid = document.getElementById('callLocalVideo');
+    if (!remoteVid || !localVid) return;
+
+    if (isLocalMain) {
+        // লোকাল ভিডিও বড় স্ক্রিনে এবং রিমোট ভিডিও ছোট স্ক্রিনে চলে যাবে
+        localVid.className = "w-full h-full object-cover";
+        remoteVid.className = "w-28 h-36 object-cover rounded-2xl border-2 border-amber-400/60 absolute bottom-4 right-4 bg-gray-900 shadow-xl cursor-pointer hover:scale-105 transition-all z-20";
+        localVid.onclick = null;
+        remoteVid.onclick = toggleVideoSwap;
+    } else {
+        // রিমোট ভিডিও বড় স্ক্রিনে এবং লোকাল ভিডিও ছোট স্ক্রিনে থাকবে
+        remoteVid.className = "w-full h-full object-cover";
+        localVid.className = "w-28 h-36 object-cover rounded-2xl border-2 border-amber-400/60 absolute bottom-4 right-4 bg-gray-900 shadow-xl cursor-pointer hover:scale-105 transition-all z-20";
+        remoteVid.onclick = null;
+        localVid.onclick = toggleVideoSwap;
     }
 }
 
@@ -326,14 +358,10 @@ function createPeerConnection(peerPhone) {
     }
 
     peerConnection.ontrack = (event) => {
-        const remoteVid = document.getElementById('callRemoteVideo');
         const remoteAud = document.getElementById('callRemoteAudio');
         if (event.streams && event.streams[0]) {
             remoteStream = event.streams[0];
-            if (remoteVid) {
-                remoteVid.srcObject = remoteStream;
-                remoteVid.play().catch(e => {});
-            }
+            applyVideoStreamsToDom();
             if (remoteAud) {
                 remoteAud.srcObject = remoteStream;
                 remoteAud.play().catch(e => {});
@@ -528,6 +556,7 @@ function toggleMicMute() {
     showToast(isMicMuted ? "Muted" : "Unmuted");
 }
 
+// সুন্দর অ্যানিমেটেড ও আইকনযুক্ত কল মডাল (কোনো বিশ্রী টেক্সট বা লেবেল নেই)
 function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     let existing = document.getElementById('whatsAppCallModal');
     if (existing) existing.remove();
@@ -551,33 +580,34 @@ function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
 
             <div id="videoStreamsBox" class="${mode === 'video' ? 'flex' : 'hidden'} w-full h-[70dvh] bg-black rounded-3xl overflow-hidden border border-white/10 relative shadow-2xl">
                 <video id="callRemoteVideo" autoplay playsinline class="w-full h-full object-cover"></video>
-                <video id="callLocalVideo" autoplay muted playsinline class="w-28 h-36 object-cover rounded-2xl border-2 border-amber-400/60 absolute bottom-4 right-4 bg-gray-900 shadow-xl"></video>
+                <video id="callLocalVideo" autoplay muted playsinline class="w-28 h-36 object-cover rounded-2xl border-2 border-amber-400/60 absolute bottom-4 right-4 bg-gray-900 shadow-xl cursor-pointer hover:scale-105 transition-all z-20" onclick="toggleVideoSwap()"></video>
             </div>
             <audio id="callRemoteAudio" autoplay></audio>
         </div>
 
         <div id="callControlButtons" class="w-full max-w-md flex justify-center items-center space-x-6 pb-6">
             ${isIncoming ? `
-                <button type="button" onclick="acceptWhatsAppCall()" class="px-8 py-4 rounded-full bg-green-600 hover:bg-green-700 text-white font-bold text-sm cursor-pointer shadow-xl transition flex items-center space-x-2">
-                    <i class="fa-solid fa-phone text-lg"></i><span>Receive</span>
+                <button type="button" onclick="acceptWhatsAppCall()" class="w-16 h-16 rounded-full bg-green-600 hover:bg-green-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition animate-bounce" title="Accept Call">
+                    <i class="fa-solid fa-phone text-xl"></i>
                 </button>
-                <button type="button" onclick="endWhatsAppCall()" class="px-8 py-4 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold text-sm cursor-pointer shadow-xl transition flex items-center space-x-2">
-                    <i class="fa-solid fa-phone-slash text-lg"></i><span>Decline</span>
+                <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition" title="Decline Call">
+                    <i class="fa-solid fa-phone-slash text-xl"></i>
                 </button>
             ` : `
-                <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-12 h-12 rounded-full theme-input hover:brightness-125 text-white flex items-center justify-center shadow-lg cursor-pointer" title="Mute">
-                    <i class="fa-solid fa-microphone"></i>
+                <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-14 h-14 rounded-full theme-input hover:brightness-125 text-white flex items-center justify-center shadow-lg cursor-pointer transition transform hover:scale-110" title="Mute">
+                    <i class="fa-solid fa-microphone text-lg"></i>
                 </button>
-                <button type="button" onclick="toggleVideoSwitch()" class="w-12 h-12 rounded-full theme-input hover:brightness-125 text-amber-300 flex items-center justify-center shadow-lg cursor-pointer" title="Video Switch">
-                    <i class="fa-solid fa-video"></i>
+                <button type="button" onclick="toggleVideoSwitch()" class="w-14 h-14 rounded-full theme-input hover:brightness-125 text-amber-300 flex items-center justify-center shadow-lg cursor-pointer transition transform hover:scale-110" title="Video Switch">
+                    <i class="fa-solid fa-video text-lg"></i>
                 </button>
-                <button type="button" onclick="endWhatsAppCall()" class="px-8 py-4 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold text-sm cursor-pointer shadow-xl transition flex items-center space-x-2">
-                    <i class="fa-solid fa-phone-slash text-lg"></i><span>End Call</span>
+                <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition" title="End Call">
+                    <i class="fa-solid fa-phone-slash text-xl"></i>
                 </button>
             `}
         </div>
     `;
     document.body.appendChild(modal);
+    applyVideoStreamsToDom();
 }
 
 function updateInCallButtons() {
@@ -587,14 +617,14 @@ function updateInCallButtons() {
     
     if (!box) return;
     box.innerHTML = `
-        <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-12 h-12 rounded-full theme-input hover:brightness-125 text-white flex items-center justify-center shadow-lg cursor-pointer" title="Mute">
-            <i class="fa-solid fa-microphone"></i>
+        <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-14 h-14 rounded-full theme-input hover:brightness-125 text-white flex items-center justify-center shadow-lg cursor-pointer transition transform hover:scale-110" title="Mute">
+            <i class="fa-solid fa-microphone text-lg"></i>
         </button>
-        <button type="button" onclick="toggleVideoSwitch()" class="w-12 h-12 rounded-full theme-input hover:brightness-125 text-amber-300 flex items-center justify-center shadow-lg cursor-pointer" title="Video Switch">
-            <i class="fa-solid fa-video"></i>
+        <button type="button" onclick="toggleVideoSwitch()" class="w-14 h-14 rounded-full theme-input hover:brightness-125 text-amber-300 flex items-center justify-center shadow-lg cursor-pointer transition transform hover:scale-110" title="Video Switch">
+            <i class="fa-solid fa-video text-lg"></i>
         </button>
-        <button type="button" onclick="endWhatsAppCall()" class="px-8 py-4 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold text-sm cursor-pointer shadow-xl transition flex items-center space-x-2">
-            <i class="fa-solid fa-phone-slash text-lg"></i><span>End Call</span>
+        <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition" title="End Call">
+            <i class="fa-solid fa-phone-slash text-xl"></i>
         </button>
     `;
 }
@@ -665,7 +695,6 @@ function filterContent() {
     const filtered = deviceContacts.filter(c => c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q));
     
     let directDialHtml = '';
-    // যদি ইনপুটে নাম্বার বা লেখা থাকে কিন্তু কন্টাক্টে হুবহু না মেলে, তবে ডাইরেক্ট চ্যাট/কল করার অপশন দেখাবে
     if (q.length >= 3 && !filtered.some(c => c.phone === q || c.name.toLowerCase() === q.toLowerCase())) {
         directDialHtml = `
         <div class="px-4 py-3 my-1 rounded-2xl theme-card border border-amber-400/40 bg-amber-400/10 flex items-center justify-between">
