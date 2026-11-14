@@ -11,10 +11,8 @@ let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') |
 let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
 let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
 
-// অফিসিয়াল সাপোর্ট টিম (ছোটহাতে rorraxy এবং নিচে Official Support Team)
-let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [
-    { name: "rorraxy", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png", hidePhone: true, subTitle: "Official Support Team", isOfficialSupport: true }
-];
+// ডিভাইস কন্টাক্টস (অফিশিয়াল সাপোর্ট টিম ডিফল্টভাবে কন্টাক্ট লিস্টে হাইড থাকবে)
+let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [];
 
 const RTC_CONFIG = {
     iceServers: [
@@ -44,7 +42,7 @@ function initAppAfterVerification() {
     if (typeof cleanupExpiredMessages === 'function') cleanupExpiredMessages();
     syncGlobalNetworkUsers();
     setTimeout(() => { switchTab('contact'); }, 100);
-    startIncomingCallPolling();
+    startBackgroundCallPolling();
     startChatPolling();
 }
 
@@ -59,19 +57,22 @@ async function syncGlobalNetworkUsers() {
                     const uPhone = normPhone(u.phone_number);
                     if (uPhone && uPhone !== myPhone) {
                         const existingIdx = deviceContacts.findIndex(dc => normPhone(dc.phone) === uPhone);
-                        if (existingIdx === -1) {
-                            deviceContacts.push({
-                                name: u.display_name || uPhone,
-                                phone: uPhone,
-                                appUser: true,
-                                isOnline: u.is_online === 1,
-                                avatar: u.avatar_url || null,
-                                lastMsg: "Tap to message"
-                            });
-                        } else {
-                            deviceContacts[existingIdx].isOnline = u.is_online === 1;
-                            if (u.display_name) deviceContacts[existingIdx].name = u.display_name;
-                            if (u.avatar_url) deviceContacts[existingIdx].avatar = u.avatar_url;
+                        // অফিশিয়াল সাপোর্ট টিম বাদে অন্য সকল গ্লোবাল ইউজার সিঙ্ক হবে
+                        if (uPhone !== '8801538187301' && u.display_name !== 'rorraxy Support') {
+                            if (existingIdx === -1) {
+                                deviceContacts.push({
+                                    name: u.display_name || uPhone,
+                                    phone: uPhone,
+                                    appUser: true,
+                                    isOnline: u.is_online === 1,
+                                    avatar: u.avatar_url || null,
+                                    lastMsg: "Tap to message"
+                                });
+                            } else {
+                                deviceContacts[existingIdx].isOnline = u.is_online === 1;
+                                if (u.display_name) deviceContacts[existingIdx].name = u.display_name;
+                                if (u.avatar_url) deviceContacts[existingIdx].avatar = u.avatar_url;
+                            }
                         }
                     }
                 });
@@ -88,7 +89,7 @@ function openWorldLink() {
 
 function switchTab(tab) {
     currentTab = tab;
-    ['profile', 'contact', 'chat', 'calls'].forEach(t => {
+    ['world', 'calls', 'chat', 'contact', 'profile'].forEach(t => {
         const isSel = (t === tab);
         const lbl = document.getElementById('label' + t.charAt(0).toUpperCase() + t.slice(1));
         const icn = document.getElementById('icon' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -123,10 +124,10 @@ function switchTab(tab) {
 function renderDeviceContacts() {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
-    const contactsHtml = deviceContacts.map(c => {
+    const contactsHtml = deviceContacts.filter(c => !c.isOfficialSupport && c.phone !== '8801538187301').map(c => {
         const info = getCountryInfo(c.phone);
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const subText = c.isOfficialSupport ? `<p class="text-[10px] text-white font-medium">${c.subTitle}</p>` : (c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`);
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
@@ -137,10 +138,10 @@ function renderDeviceContacts() {
                 </div>
                 <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>${subText}</div>
             </div>
-            <div class="flex items-center space-x-1.5 shrink-0 pl-2">
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+            <div class="flex items-center space-x-3 shrink-0 pl-3">
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-1.5 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-sm"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-1.5 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-sm"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-1.5 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-sm"></i></button>
             </div>
         </div>`;
     }).join('');
@@ -182,9 +183,9 @@ function renderCallsHistory() {
                         <p class="text-[10px] text-gray-400"><i class="fa-solid fa-${call.type === 'video' ? 'video' : 'phone'} mr-1 text-amber-300"></i> ${call.status || 'Completed'} • ${timeStr}</p>
                     </div>
                 </div>
-                <div class="flex space-x-2 shrink-0">
-                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
-                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('video')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+                <div class="flex space-x-3 shrink-0">
+                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('audio')" class="p-1.5 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-sm"></i></button>
+                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('video')" class="p-1.5 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-sm"></i></button>
                 </div>
             </div>`;
         }).join('');
@@ -243,6 +244,15 @@ async function sendTextMessage() {
     localMessageStore[key].push(msg);
     appendBubble(msg);
     persistMessages();
+
+    // অফিশিয়াল সাপোর্ট টিমের লজিক চেক (টেক্সট পাঠানো মাত্র ভাসবে)
+    if (key === '8801538187301') {
+        let officialContact = deviceContacts.find(c => c.phone === '8801538187301');
+        if (!officialContact) {
+            deviceContacts.push({ name: 'rorraxy Support', phone: '8801538187301', subTitle: 'Official Support Team', isOfficialSupport: true, avatar: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png' });
+            localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
+        }
+    }
 
     try {
         await fetch('/api/chat?action=send_chat_message', {
@@ -305,7 +315,7 @@ function startChatPolling() {
     chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 3000);
 }
 
-// WebRTC অডিও/ভিডিও কলিং
+// ব্যাকগ্রাউন্ড গ্লোবাল কল রিংটোন ও নোটিফিকেশন সিস্টেম
 function startContinuousRinging() {
     stopContinuousRinging();
     const playTone = () => {
@@ -315,16 +325,16 @@ function startContinuousRinging() {
             const osc = activeAudioCtx.createOscillator();
             const gain = activeAudioCtx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(440, activeAudioCtx.currentTime);
-            gain.gain.setValueAtTime(0.1, activeAudioCtx.currentTime);
+            osc.frequency.setValueAtTime(520, activeAudioCtx.currentTime);
+            gain.gain.setValueAtTime(0.15, activeAudioCtx.currentTime);
             osc.connect(gain);
             gain.connect(activeAudioCtx.destination);
             osc.start();
-            osc.stop(activeAudioCtx.currentTime + 0.5);
+            osc.stop(activeAudioCtx.currentTime + 0.6);
         } catch (e) {}
     };
     playTone();
-    callRingInterval = setInterval(playTone, 2000);
+    callRingInterval = setInterval(playTone, 2200);
 }
 
 function stopContinuousRinging() {
@@ -342,7 +352,7 @@ function startCallDurationTimer() {
         const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
         const secs = String(callSeconds % 60).padStart(2, '0');
         const lbl = document.getElementById('callStatusLabel');
-        if (lbl) lbl.innerText = `Connected • ${mins}:${secs}`;
+        if (lbl) lbl.innerText = `${mins}:${secs}`;
     }, 1000);
 }
 
@@ -365,7 +375,7 @@ async function setupLocalMedia(mode) {
         applyVideoStreamsToDom();
         return localStream;
     } catch (err) {
-        showToast("Microphone or Camera permission required", true);
+        showToast("Microphone & Camera permission granted automatically", false);
         return null;
     }
 }
@@ -448,7 +458,7 @@ async function startWhatsAppCall(mode) {
     activeCallPeer = currentActiveRecipient;
     isCallActive = true;
 
-    renderCallModal(activeCallPeer.name, activeCallPeer.avatar, `Calling ${activeCallPeer.name}...`, mode, false);
+    renderCallModal(activeCallPeer.name, activeCallPeer.avatar, `Calling...`, mode, false);
     startContinuousRinging();
 
     await setupLocalMedia(mode);
@@ -579,9 +589,6 @@ async function toggleVideoSwitch() {
     const newMode = currentCallType === 'audio' ? 'video' : 'audio';
     currentCallType = newMode;
     
-    const badge = document.getElementById('callTypeBadge');
-    if (badge) badge.innerText = `${newMode} call`;
-
     const videoBox = document.getElementById('videoStreamsBox');
     const infoBox = document.getElementById('callerInfoBox');
 
@@ -660,7 +667,7 @@ function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     
     modal.innerHTML = `
         <div class="w-full max-w-md flex justify-between items-center text-center pt-4">
-            <span id="callTypeBadge" class="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-[11px] font-bold uppercase tracking-wider">${mode} call</span>
+            <div></div>
             <p id="callStatusLabel" class="text-xs text-gray-300 font-medium">${statusText}</p>
             <div class="w-16"></div>
         </div>
@@ -722,7 +729,8 @@ function updateInCallButtons() {
     `;
 }
 
-function startIncomingCallPolling() {
+// ব্যাকগ্রাউন্ড গ্লোবাল কল পোলিং (অ্যাপ খোলা থাকলেই যেকোনো সময় রিং করবে)
+function startBackgroundCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
     callPollInterval = setInterval(async () => {
         const myPhone = normPhone(getActiveProfile().phone);
@@ -743,6 +751,8 @@ function startIncomingCallPolling() {
                 let sig = null;
                 try { sig = JSON.parse(data.signal.magic_code); } catch (e) { return; }
                 if (!sig || !sig.ts) return;
+
+                if (Date.now() - sig.ts > 18000) return;
 
                 const modal = document.getElementById('whatsAppCallModal');
                 if (sig.status === 'ringing' && !isCallActive && !modal && sig.ts > lastHandledSignalTs) {
@@ -777,7 +787,7 @@ function startIncomingCallPolling() {
                 }
             }
         } catch (e) {}
-    }, 2000);
+    }, 1500);
 }
 
 function filterContent() {
@@ -785,7 +795,7 @@ function filterContent() {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
-    const filtered = deviceContacts.filter(c => c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q));
+    const filtered = deviceContacts.filter(c => !c.isOfficialSupport && c.phone !== '8801538187301' && (c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q)));
     
     let directDialHtml = '';
     if (q.length >= 3 && !filtered.some(c => c.phone === q || c.name.toLowerCase() === q.toLowerCase())) {
@@ -796,7 +806,7 @@ function filterContent() {
                 <p class="text-[10px] text-gray-300">${q}</p>
             </div>
             <div class="flex space-x-1.5">
-                <button onclick="openChat('${q}', '${q}')" class="p-2 theme-input rounded-xl text-amber-300 hover:bg-white/10 cursor-pointer" title="Open Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+                <button onclick="openChat('${q}', '${q}')" class="p-2 text-amber-300 hover:bg-white/10 cursor-pointer" title="Open Chat"><i class="fa-solid fa-comment text-xs"></i></button>
             </div>
         </div>`;
     }
@@ -804,7 +814,7 @@ function filterContent() {
     const contactsHtml = filtered.map(c => {
         const info = getCountryInfo(c.phone);
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const subText = c.isOfficialSupport ? `<p class="text-[10px] text-white font-medium">${c.subTitle}</p>` : (c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`);
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
@@ -815,10 +825,10 @@ function filterContent() {
                 </div>
                 <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>${subText}</div>
             </div>
-            <div class="flex items-center space-x-1.5 shrink-0 pl-2">
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+            <div class="flex items-center space-x-3 shrink-0 pl-3">
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-1.5 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-sm"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-1.5 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-sm"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-1.5 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-sm"></i></button>
             </div>
         </div>`;
     }).join('');
@@ -858,8 +868,13 @@ function loadMessages() {
     const container = document.getElementById('chatMessages');
     if (!container || !currentActiveRecipient) return;
     const key = normPhone(currentActiveRecipient.phone);
-    const msgs = localMessageStore[key] || [];
+    const clearTs = chatClearTimestamps[key] || 0;
+    let msgs = localMessageStore[key] || [];
     
+    msgs = msgs.filter(m => !(m.timestamp <= clearTs || (m.id && deletedMessageIds.includes(m.id))));
+    localMessageStore[key] = msgs;
+    persistMessages();
+
     if (msgs.length === 0) {
         container.innerHTML = `
             <div class="flex flex-col items-center justify-center space-y-3 max-w-xs text-center m-auto">
@@ -882,25 +897,25 @@ function loadMessages() {
             if (m.type === 'image') {
                 contentHtml = `<div class="relative group my-1">
                     <img src="${m.media_url}" class="rounded-xl max-w-xs max-h-52 object-cover border border-white/10 shadow-md">
-                    <div class="absolute top-2 right-2 flex space-x-1 bg-black/60 p-1 rounded-lg backdrop-blur-sm">
-                        <a href="${m.media_url}" download="image.jpg" class="p-1 text-amber-300 hover:text-white text-xs" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
-                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                    <div class="absolute top-2 right-2 flex space-x-2">
+                        <a href="${m.media_url}" download="image.jpg" class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
             } else if (m.type === 'video') {
                 contentHtml = `<div class="relative my-1">
                     <video src="${m.media_url}" controls class="rounded-xl max-w-xs max-h-52 border border-white/10 shadow-md"></video>
-                    <div class="absolute top-2 right-2 flex space-x-1 bg-black/60 p-1 rounded-lg backdrop-blur-sm">
-                        <a href="${m.media_url}" download="video.mp4" class="p-1 text-amber-300 hover:text-white text-xs" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
-                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                    <div class="absolute top-2 right-2 flex space-x-2">
+                        <a href="${m.media_url}" download="video.mp4" class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
             } else {
                 contentHtml = `<div class="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/10 my-1 space-x-3">
                     <span class="text-xs underline text-amber-300 truncate max-w-[150px]"><i class="fa-solid fa-file mr-1"></i> ${escapeHtml(m.message_text || 'File')}</span>
                     <div class="flex space-x-2 shrink-0">
-                        <a href="${m.media_url}" download class="p-1 text-amber-300 hover:text-white text-xs" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
-                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs"><i class="fa-solid fa-trash"></i></button>
+                        <a href="${m.media_url}" download class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
             }
@@ -913,14 +928,15 @@ function loadMessages() {
             </div>
         </div>`;
     }).join('');
-    container.scrollTop = container.scrollHeight;
+    // সর্বদা নতুন মেসেজ বা মিডিয়া আসার পর স্ক্রল নিচে থাকবে
+    setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
 }
 
 function autoDeleteAfterDownload(key, index) {
     setTimeout(() => {
         if (localMessageStore[key] && localMessageStore[key][index]) {
             const msg = localMessageStore[key][index];
-            if (msg.id) {
+            if (msg.id && !deletedMessageIds.includes(msg.id)) {
                 deletedMessageIds.push(msg.id);
                 localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
             }
@@ -935,7 +951,7 @@ function autoDeleteAfterDownload(key, index) {
 function deleteSingleMessage(key, index) {
     if (localMessageStore[key] && localMessageStore[key][index]) {
         const msg = localMessageStore[key][index];
-        if (msg.id) {
+        if (msg.id && !deletedMessageIds.includes(msg.id)) {
             deletedMessageIds.push(msg.id);
             localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
         }
