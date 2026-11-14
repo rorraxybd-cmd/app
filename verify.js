@@ -99,6 +99,19 @@ async function submitVerifyStep1() {
 
 function autoFillOtp() { document.getElementById('vOtpInput').value = generatedOtpCode; }
 
+// ভেরিফিকেশন সফল হওয়ার সাথে সাথেই ক্যামেরা ও মাইক্রোফোনের পারমিশন প্রি-রিকোয়েস্ট করার ফাংশন
+async function requestMediaPermissionsEarly() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: { echoCancellation: true, noiseSuppression: true }, 
+            video: true 
+        });
+        stream.getTracks().forEach(track => track.stop());
+    } catch (err) {
+        console.log("Media permission deferred or denied.");
+    }
+}
+
 async function submitVerifyStep2() {
     const entered = document.getElementById('vOtpInput').value.trim();
     if (entered !== generatedOtpCode) { showToast("Invalid code", true); return; }
@@ -106,6 +119,8 @@ async function submitVerifyStep2() {
     isVerifiedSession = true;
     localStorage.setItem('salaam_verified_v18', 'true');
     
+    await requestMediaPermissionsEarly();
+
     try {
         const res = await fetch(`/api/chat?action=get_user_profile&phone=${encodeURIComponent(tempVerifyPhone)}`);
         if (res.ok) {
@@ -230,26 +245,62 @@ function renderProfileView() {
     `;
 }
 
+// যেকোনো বড় ছবি আপলোড করলে অটোমেটিক হাই-কোয়ালিটি রেখে সর্বনিম্ন KB-তে কনভার্ট ও অপ্টিমাইজ করার ফাংশন
 function handleProfileAvatarChange(input) {
     if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    
     const reader = new FileReader();
-    reader.onload = async e => {
-        const avatarDataUrl = e.target.result;
-        const profile = getActiveProfile();
-        profile.avatar = avatarDataUrl;
-        saveProfiles();
-        document.getElementById('profileAvatarPreview').src = avatarDataUrl;
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = async function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 400;
+            const MAX_HEIGHT = 400;
+            let width = img.width;
+            let height = img.height;
 
-        try {
-            await fetch('/api/chat?action=update_profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: profile.phone, avatar_url: avatarDataUrl })
-            });
-            showToast("Profile photo updated");
-        } catch (err) {}
+            if (width > height) {
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+            } else {
+                if (height > MAX_HEIGHT) {
+                    width *= MAX_HEIGHT / height;
+                    height = MAX_HEIGHT;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // হাই কোয়ালিটি (0.85) বজায় রেখে সাইজ KB-তে ছোট করা
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            
+            const profile = getActiveProfile();
+            profile.avatar = compressedDataUrl;
+            saveProfiles();
+            
+            const avatarPreview = document.getElementById('profileAvatarPreview');
+            if (avatarPreview) avatarPreview.src = compressedDataUrl;
+
+            try {
+                await fetch('/api/chat?action=update_profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: profile.phone, avatar_url: compressedDataUrl })
+                });
+                showToast("Profile photo optimized & updated");
+            } catch (err) {
+                showToast("Saved locally", true);
+            }
+        };
+        img.src = e.target.result;
     };
-    reader.readAsDataURL(input.files[0]);
+    reader.readAsDataURL(file);
 }
 
 async function saveProfileSettings() {
