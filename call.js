@@ -95,7 +95,12 @@ function switchTab(tab) {
             renderDeviceContacts();
         }
     }
-    if (window.innerWidth < 768) {
+    
+    // রিসেট লেআউট ফর রেসপন্সিভ স্ক্রিন
+    if (window.innerWidth >= 768) {
+        document.getElementById('sidebarSection').style.display = 'flex';
+        document.getElementById('workspaceSection').style.display = 'flex';
+    } else {
         document.getElementById('sidebarSection').style.display = 'flex';
         document.getElementById('workspaceSection').style.display = 'none';
     }
@@ -144,6 +149,9 @@ function openChat(phone, name) {
         document.getElementById('sidebarSection').style.display = 'none';
         document.getElementById('workspaceSection').style.display = 'flex';
         document.getElementById('bottomNavBar').style.display = 'none';
+    } else {
+        document.getElementById('sidebarSection').style.display = 'flex';
+        document.getElementById('workspaceSection').style.display = 'flex';
     }
     loadMessages();
     fetchMessagesFromCloud();
@@ -255,38 +263,59 @@ async function startWhatsAppCall(mode) {
         });
     } catch (e) {}
 
-    showCallModalUI(currentActiveRecipient.name, currentActiveRecipient.avatar, `Calling ${mode}...`, mode);
+    showCallModalUI(currentActiveRecipient.name, currentActiveRecipient.avatar, `Calling ${mode}...`, mode, false);
 }
 
-function showCallModalUI(peerName, avatarUrl, statusText, mode) {
+// আপডেটকৃত কল মডেল যাতে রিসিভ ও রিজেক্ট বাটন থাকে
+function showCallModalUI(peerName, avatarUrl, statusText, mode, isIncoming = false) {
     let modal = document.getElementById('whatsAppCallModal');
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'whatsAppCallModal';
         modal.className = 'fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-4';
-        modal.innerHTML = `
-            <div class="theme-card p-6 rounded-3xl max-w-sm w-full text-center space-y-4 border border-amber-400/30 shadow-2xl">
-                <img id="callModalAvatar" src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-24 h-24 rounded-full object-cover mx-auto border-2 border-amber-400/50 bg-black">
-                <div>
-                    <h2 id="callPeerName" class="text-lg font-bold gold-gradient-text">${peerName}</h2>
-                    <p id="callStatusLabel" class="text-xs text-gray-300 mt-1">${statusText}</p>
-                </div>
-                <div class="flex justify-center space-x-4 pt-2">
-                    <button onclick="endWhatsAppCall()" class="px-6 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center space-x-2">
-                        <i class="fa-solid fa-phone-slash"></i><span>End Call</span>
-                    </button>
-                </div>
-            </div>
-        `;
         document.body.appendChild(modal);
-    } else {
-        document.getElementById('callPeerName').innerText = peerName;
-        document.getElementById('callStatusLabel').innerText = statusText;
-        if(document.getElementById('callModalAvatar')) {
-            document.getElementById('callModalAvatar').src = avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png';
-        }
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+    }
+    
+    modal.innerHTML = `
+        <div class="theme-card p-6 rounded-3xl max-w-sm w-full text-center space-y-4 border border-amber-400/30 shadow-2xl">
+            <img id="callModalAvatar" src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-24 h-24 rounded-full object-cover mx-auto border-2 border-amber-400/50 bg-black">
+            <div>
+                <h2 id="callPeerName" class="text-lg font-bold gold-gradient-text">${peerName}</h2>
+                <p id="callStatusLabel" class="text-xs text-gray-300 mt-1">${statusText}</p>
+            </div>
+            <div class="flex justify-center space-x-4 pt-2">
+                ${isIncoming ? `
+                    <button onclick="acceptWhatsAppCall()" class="px-5 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center space-x-2">
+                        <i class="fa-solid fa-phone"></i><span>Accept</span>
+                    </button>
+                ` : ''}
+                <button onclick="endWhatsAppCall()" class="px-6 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center space-x-2">
+                    <i class="fa-solid fa-phone-slash"></i><span>${isIncoming ? 'Decline' : 'End Call'}</span>
+                </button>
+            </div>
+        </div>
+    `;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+async function acceptWhatsAppCall() {
+    stopContinuousRinging();
+    showToast("Call connected!");
+    if (currentActiveRecipient) {
+        const myPhone = getActiveProfile().phone;
+        try {
+            await fetch('/api/chat?action=send_call_signal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ caller_phone: myPhone, receiver_phone: currentActiveRecipient.phone, call_type: currentCallType, status: 'connected' })
+            });
+        } catch (e) {}
+    }
+    const modal = document.getElementById('whatsAppCallModal');
+    if (modal) {
+        document.getElementById('callStatusLabel').innerText = "Call in progress...";
+        // চাইলে এখানে কল স্ক্রিন বা অ্যাক্টিভ স্টেট রাখতে পারেন
     }
 }
 
@@ -311,7 +340,11 @@ function startIncomingCallPolling() {
                         
                         currentActiveRecipient = callerContact;
                         startContinuousRinging();
-                        showCallModalUI(callerContact.name, callerContact.avatar, `Incoming ${type} Call...`, type);
+                        // রিসিভ করার জন্য isIncoming = true পাঠানো হলো যাতে Accept বাটন দেখায়
+                        showCallModalUI(callerContact.name, callerContact.avatar, `Incoming ${type} Call...`, type, true);
+                    } else if (status === 'connected') {
+                        stopContinuousRinging();
+                        showToast("Call accepted by peer");
                     } else if (status === 'ended') {
                         stopContinuousRinging();
                         if (modal) {
@@ -448,7 +481,7 @@ function escapeHtml(text) {
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
+        .replace(./g, '&quot;')
         .replace(/'/g, '&#039;');
 }
 
@@ -494,3 +527,140 @@ function renderChatStories() {
         </div>`;
     }).join('');
 }
+```[cite: 4]
+
+---
+
+### ২. প্রোফাইল সেভ ও সিঙ্ক ফিক্স (`verify.js` এর সংশ্লিষ্ট অংশ)
+আপনার প্রোফাইল এডিটিং এবং সেটিংস সেভ করার ফাংশনটি যেন নির্ভুলভাবে কাজ করে এবং লোকাল স্টোরেজ আপডেট করার পর ক্লাউডে সিঙ্ক হয়, তার জন্য `verify.js`-এর এই অংশটি নিশ্চিত করুন[cite: 2]:
+
+```javascript
+async function saveProfileSettings() {
+    const newName = document.getElementById('editDisplayName').value.trim();
+    const newUsername = document.getElementById('editUsername').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const newTheme = document.getElementById('editThemeColor').value;
+    
+    if (!newName) { showToast("Display name cannot be empty", true); return; }
+    if (RESERVED_USERNAMES.includes(newUsername)) { showToast("Username is reserved", true); return; }
+
+    const profile = getActiveProfile();
+    profile.name = newName;
+    if (newUsername) profile.username = newUsername;
+    profile.themeColor = newTheme;
+    saveProfiles();
+
+    try {
+        const res = await fetch('/api/chat?action=update_profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                phone: profile.phone,
+                display_name: profile.name,
+                username: profile.username,
+                avatar_url: profile.avatar
+            })
+        });
+        if (res.ok) {
+            showToast("Profile saved & synced with cloud successfully!");
+        } else {
+            showToast("Saved locally (Cloud sync warning)", true);
+        }
+        renderProfileView();
+    } catch (e) {
+        showToast("Saved locally", true);
+    }
+}
+```[cite: 2]
+
+---
+
+### ৩. লেআউট ও স্ক্রিপ্ট কনফ্লিক্ট সমাধানের জন্য `index.html`
+ডেস্কটপ এবং মোবাইল ভিউতে লেআউট যেন এলোমেলো না হয় এবং স্ক্রিপ্ট লোডিংয়ে কোনো ক্যাশিং বা সিনট্যাক্স এরর না থাকে, সেজন্য `index.html`-এর বডি ও স্ক্রিপ্ট সেকশনটি এভাবে সাজিয়ে নিন[cite: 5]:
+
+```html
+    <!-- Main Workspace -->
+    <div class="flex flex-1 overflow-hidden relative min-h-0 w-full">
+        <!-- Sidebar: Always visible on desktop (md), conditional on mobile -->
+        <div id="sidebarSection" class="w-full md:w-[360px] theme-surface flex flex-col justify-between shrink-0 z-20 h-full min-h-0 pb-16">
+            <div class="flex flex-col flex-1 overflow-hidden min-h-0">
+                <div id="searchBarContainer" class="p-3 shrink-0" style="background-color: var(--bg-main);">
+                    <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
+                        <input type="text" id="searchInput" placeholder="Search name or dial number..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="filterContent()">
+                        <button onclick="filterContent()" class="cursor-pointer p-1 shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7.5" stroke="#F5D061" stroke-width="2.2"/><line x1="20.5" y1="20.5" x2="16.35" y2="16.35" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+                    </div>
+                </div>
+                <div id="sidebarContentList" class="flex-1 overflow-y-auto space-y-1.5 p-3 pb-20"></div>
+            </div>
+        </div>
+
+        <!-- Workspace: Chat / Call panel -->
+        <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full min-h-0 z-10 relative" style="background-color: var(--bg-main);">
+            <div id="activeChatHeader" class="theme-surface px-4 py-3 hidden items-center justify-between shrink-0 border-b border-white/5">
+                <div class="flex items-center space-x-3">
+                    <button onclick="backToSidebarMobile()" class="md:hidden p-1.5 rounded-xl theme-card cursor-pointer">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <div onclick="openRecipientInfoModal()" class="flex items-center space-x-3 cursor-pointer group">
+                        <div class="relative"><img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png" class="w-9 h-9 rounded-full object-cover bg-black"><span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#2ed573] rounded-full border-2 border-black"></span></div>
+                        <div>
+                            <div class="flex items-center space-x-1.5">
+                                <span id="activeChatTitle" class="font-semibold text-white text-xs tracking-wide group-hover:text-amber-300 transition">Select a contact</span>
+                                <span id="activeChatHeaderTick"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="startWhatsAppCall('audio')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer" title="Audio Call"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button>
+                    <button onclick="startWhatsAppCall('video')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer" title="Video Call"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg></button>
+                    <button onclick="confirmClearChatHistory()" class="p-2 theme-card rounded-xl hover:bg-pink-950/20 transition cursor-pointer" title="Clear Chat"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#EC4899" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </div>
+            </div>
+
+            <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 flex flex-col justify-start">
+                <div class="flex flex-col items-center justify-center space-y-3 max-w-xs text-center m-auto">
+                    <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center">
+                        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    </div>
+                    <p class="text-sm font-bold gold-gradient-text">Assalamu Alaikum</p>
+                    <p class="text-[11px] text-gray-400">Select a contact to start messaging or calling.</p>
+                </div>
+            </div>
+
+            <div id="chatInputBar" class="theme-surface px-3 py-2.5 hidden items-center shrink-0 z-20">
+                <div class="flex-1 flex items-center theme-input rounded-2xl px-3.5 py-2 space-x-2.5">
+                    <label class="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center shrink-0" title="Attach File">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                        <input type="file" id="universalFileInput" accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.zip,.txt" multiple class="hidden" onchange="handleUniversalFileUpload(this)">
+                    </label>
+                    <input type="text" id="messageInput" placeholder="Write a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1 min-w-0 selectable-text" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
+                    <button id="sendBtn" onclick="sendTextMessage()" class="hidden cursor-pointer hover:scale-110 transition-transform p-1 shrink-0 items-center justify-center">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts with Versioning to prevent cache issues -->
+    <script src="/verify.js?v=2.2"></script>
+    <script src="/call.js?v=2.2"></script>
+    <script src="/p2p_file_transfer.js?v=2.2"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const overlay = document.getElementById('verifyOverlay');
+            if (localStorage.getItem('salaam_verified_v18') === 'true') {
+                if (overlay) overlay.style.display = 'none';
+                if (typeof initAppAfterVerification === 'function') {
+                    initAppAfterVerification();
+                }
+            } else {
+                if (typeof checkInitialVerification === 'function') {
+                    checkInitialVerification();
+                }
+            }
+        });
+    </script>
+```[cite: 5]
+
+এই কোডগুলো আপডেট করার পর ব্রাউজার ক্যাশ ক্লিয়ার করে পেজটি রিফ্রেশ করলে (Ctrl + F5) কল রিসিভ অপশন, প্রোফাইল সেভ এবং ডেস্কটপ-মোবাইল লেআউট সম্পূর্ণ ঠিকভাবে কাজ করবে।
