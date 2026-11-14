@@ -870,8 +870,3 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: corsHeaders });
     }
 }
-```[cite: 3]
-
----
-
-এই আপডেটগুলো করার পর অ্যাপটি রিলোড দিলে আপনার ভেরিফিকেশন, কন্টাক্ট লিস্ট সিঙ্ক, রিয়েল-টাইম চ্যাট এবং ফাইল আদান-প্রদান একদম মসৃণভাবে কাজ করবে।
