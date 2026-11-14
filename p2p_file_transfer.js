@@ -1,6 +1,6 @@
 const CLOUD_SIZE_LIMIT_MB = 50; 
 
-// ৪৮ ঘণ্টা (48 hours) পুরনো মেসেজ ও এটাচমেন্ট অটো রিমুভ করার ফাংশন
+// ৪৮ ঘণ্টা পুরনো মেসেজ বা ফাইল অটো ক্লিনআপ
 function cleanupExpiredMessages() {
     const EXPIRATION_TIME = 48 * 60 * 60 * 1000; 
     const now = Date.now();
@@ -23,7 +23,7 @@ function cleanupExpiredMessages() {
     }
 }
 
-// মাল্টি-ফাইল ও ইউনিভার্সাল আপলোড হ্যান্ডলার
+// ইউনিভার্সাল ফাইল আপলোড হ্যান্ডলার (ছবি, ভিডিও, অডিও, পিডিএফ বা অন্যান্য ফাইল)
 async function handleUniversalFileUpload(input) {
     if (!currentActiveRecipient || !input.files.length) return;
     const key = normPhone(currentActiveRecipient.phone), me = getActiveProfile().phone;
@@ -45,8 +45,13 @@ async function handleUniversalFileUpload(input) {
 async function uploadFileViaCloudStorage(file, recipientKey, senderPhone) {
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
-    const type = isImage ? 'image' : (isVideo ? 'video' : 'file');
+    const isAudio = file.type.startsWith('audio/');
     
+    let type = 'file';
+    if (isImage) type = 'image';
+    else if (isVideo) type = 'video';
+    else if (isAudio) type = 'audio';
+
     if (isImage) {
         compressAndSendImage(file, recipientKey, senderPhone);
         return;
@@ -124,7 +129,7 @@ function compressAndSendImage(file, recipientKey, senderPhone) {
     reader.readAsDataURL(file);
 }
 
-// P2P ট্রান্সফার (বড় ফাইল বা জিবি সাইজ ফাইলের জন্য)
+// P2P ডেটা চ্যানেল ট্রান্সফার (বড় ফাইল বা জিবি সাইজ ফাইলের জন্য)
 async function initiateP2PFileTransfer(file, recipientKey) {
     try {
         const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
