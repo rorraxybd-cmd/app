@@ -36,6 +36,7 @@ function showToast(msg, isErr = false) {
 }
 
 function initAppAfterVerification() {
+    if (typeof cleanupExpiredMessages === 'function') cleanupExpiredMessages();
     syncGlobalNetworkUsers();
     setTimeout(() => { switchTab('contact'); }, 100);
     startIncomingCallPolling();
@@ -123,14 +124,9 @@ function renderDeviceContacts() {
                 </div>
                 <div><p class="text-xs font-semibold gold-gradient-text">${c.name}</p>${phoneDisplay}</div>
             </div>
-            ${getTickBadge(c.isOnline)}
         </div>`;
     }).join('');
     listContainer.innerHTML = `<div id="directDialSlot"></div>` + contactsHtml;
-}
-
-function getTickBadge(on) {
-    return `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full ${on?'bg-[#2ed573]/15 text-[#2ed573]':'bg-amber-400/15 text-amber-300'}"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
 }
 
 function openChat(phone, name) {
@@ -143,7 +139,6 @@ function openChat(phone, name) {
     document.getElementById('chatInputBar').style.display = 'flex';
     document.getElementById('activeChatTitle').innerText = name || cp;
     document.getElementById('activeChatAvatar').src = avatarUrl;
-    document.getElementById('activeChatHeaderTick').innerHTML = getTickBadge(true);
     if (window.innerWidth < 768) {
         document.getElementById('sidebarSection').style.display = 'none';
         document.getElementById('workspaceSection').style.display = 'flex';
@@ -167,7 +162,7 @@ async function sendTextMessage() {
     const key = normPhone(currentActiveRecipient.phone), me = normPhone(getActiveProfile().phone);
     if (!localMessageStore[key]) localMessageStore[key] = [];
     
-    const msg = { id: 'm_' + Date.now(), phone_number: me, message_text: text, media_url: '', type: 'text' };
+    const msg = { id: 'm_' + Date.now(), phone_number: me, message_text: text, media_url: '', type: 'text', timestamp: Date.now() };
     localMessageStore[key].push(msg);
     appendBubble(msg);
     persistMessages();
@@ -210,7 +205,8 @@ async function fetchMessagesFromCloud() {
                             phone_number: sender,
                             message_text: mText,
                             media_url: mUrl,
-                            type: mType
+                            type: mType,
+                            timestamp: Date.now()
                         });
                         updated = true;
                     }
@@ -227,7 +223,7 @@ function startChatPolling() {
 }
 
 // ==========================================
-// নিখুঁত ক্রিস্টাল ক্লিয়ার অডিও ও ফুল-স্ক্রিন ভিডিও কলিং (WebRTC)
+// অডিও ও ভিডিও কলিং (WebRTC)
 // ==========================================
 
 function startContinuousRinging() {
@@ -282,13 +278,8 @@ async function setupLocalMedia(mode) {
         if (localStream) {
             localStream.getTracks().forEach(t => t.stop());
         }
-        // নয়েজ ও ইকো ক্যান্সেলেশনসহ উন্নত অডিও সেটিংস
         localStream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true
-            },
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
             video: mode === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false
         });
         
@@ -297,7 +288,7 @@ async function setupLocalMedia(mode) {
         if (mode === 'video' && localVid && videoContainer) {
             videoContainer.classList.remove('hidden');
             localVid.srcObject = localStream;
-            localVid.muted = true; // লোকাল সাউন্ড মিউট রাখা যাতে ইকো না হয়
+            localVid.muted = true;
         }
         return localStream;
     } catch (err) {
@@ -337,7 +328,6 @@ function createPeerConnection(peerPhone) {
     return peerConnection;
 }
 
-// কল শুরু করা (Caller)
 async function startWhatsAppCall(mode) {
     if (!currentActiveRecipient) {
         showToast("Select a contact first", true);
@@ -393,7 +383,6 @@ async function startWhatsAppCall(mode) {
     } catch (e) {}
 }
 
-// কল রিসিভ করা (Receiver)
 async function acceptWhatsAppCall() {
     if (!activeCallPeer) return;
     stopContinuousRinging();
@@ -444,7 +433,6 @@ async function acceptWhatsAppCall() {
     }
 }
 
-// কল কেটে দেওয়া বা ক্যানসেল করা
 async function endWhatsAppCall() {
     stopContinuousRinging();
     stopCallDurationTimer();
@@ -484,7 +472,6 @@ async function endWhatsAppCall() {
     showToast("Call Ended");
 }
 
-// অডিও থেকে ভিডিও কলে সুইচ করা (অটো ক্যামেরা চালু)
 async function toggleVideoSwitch() {
     const newMode = currentCallType === 'audio' ? 'video' : 'audio';
     currentCallType = newMode;
@@ -514,7 +501,6 @@ async function toggleVideoSwitch() {
     }
 }
 
-// মাইক্রোফোন মিউট টগল
 function toggleMicMute() {
     if (!localStream) return;
     isMicMuted = !isMicMuted;
@@ -526,7 +512,6 @@ function toggleMicMute() {
     showToast(isMicMuted ? "Muted" : "Unmuted");
 }
 
-// হোয়াটসঅ্যাপ স্টাইল আধুনিক ফুল-স্ক্রিন কল মডাল
 function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     let existing = document.getElementById('whatsAppCallModal');
     if (existing) existing.remove();
@@ -598,7 +583,6 @@ function updateInCallButtons() {
     `;
 }
 
-// ইনকামিং কল পোলিং
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
     callPollInterval = setInterval(async () => {
@@ -651,10 +635,6 @@ function startIncomingCallPolling() {
     }, 2000);
 }
 
-// ==========================================
-// চ্যাট ও ইউজার ইন্টারফেস হেল্পারসমূহ
-// ==========================================
-
 function filterContent() {
     const q = document.getElementById('searchInput').value.toLowerCase();
     const filtered = deviceContacts.filter(c => c.name.toLowerCase().includes(q) || c.phone.toLowerCase().includes(q));
@@ -674,7 +654,6 @@ function filterContent() {
                 </div>
                 <div><p class="text-xs font-semibold gold-gradient-text">${c.name}</p>${phoneDisplay}</div>
             </div>
-            ${getTickBadge(c.isOnline)}
         </div>`;
     }).join('');
     listContainer.innerHTML = `<div id="directDialSlot"></div>` + contactsHtml;
@@ -698,6 +677,7 @@ function confirmClearChatHistory() {
 }
 
 function loadMessages() {
+    if (typeof cleanupExpiredMessages === 'function') cleanupExpiredMessages();
     const container = document.getElementById('chatMessages');
     if (!container || !currentActiveRecipient) return;
     const key = normPhone(currentActiveRecipient.phone);
@@ -715,13 +695,35 @@ function loadMessages() {
         return;
     }
 
-    container.innerHTML = msgs.map(m => {
+    container.innerHTML = msgs.map((m, idx) => {
         const isMe = normPhone(m.phone_number) === normPhone(getActiveProfile().phone);
         let contentHtml = `<p class="text-xs text-white">${escapeHtml(m.message_text || '')}</p>`;
         if (m.media_url) {
-            if (m.type === 'image') contentHtml += `<img src="${m.media_url}" class="mt-2 rounded-xl max-w-xs max-h-48 object-cover">`;
-            else if (m.type === 'video') contentHtml += `<video src="${m.media_url}" controls class="mt-2 rounded-xl max-w-xs max-h-48"></video>`;
-            else contentHtml += `<a href="${m.media_url}" target="_blank" class="block mt-2 text-xs underline text-amber-300">Download Attachment</a>`;
+            if (m.type === 'image') {
+                contentHtml += `<div class="relative mt-2">
+                    <img src="${m.media_url}" class="rounded-xl max-w-xs max-h-48 object-cover border border-white/10">
+                    <div class="absolute top-2 right-2 flex space-x-1 bg-black/60 p-1 rounded-lg">
+                        <a href="${m.media_url}" download="image.jpg" class="p-1 text-amber-300 hover:text-white" title="Download"><i class="fa-solid fa-download text-xs"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </div>
+                </div>`;
+            } else if (m.type === 'video') {
+                contentHtml += `<div class="relative mt-2">
+                    <video src="${m.media_url}" controls class="rounded-xl max-w-xs max-h-48 border border-white/10"></video>
+                    <div class="absolute top-2 right-2 flex space-x-1 bg-black/60 p-1 rounded-lg">
+                        <a href="${m.media_url}" download="video.mp4" class="p-1 text-amber-300 hover:text-white" title="Download"><i class="fa-solid fa-download text-xs"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </div>
+                </div>`;
+            } else {
+                contentHtml += `<div class="flex items-center justify-between mt-2 p-2 rounded-xl bg-black/30 border border-white/10">
+                    <a href="${m.media_url}" target="_blank" class="text-xs underline text-amber-300 truncate max-w-[160px]"><i class="fa-solid fa-file mr-1"></i> File Attachment</a>
+                    <div class="flex space-x-2">
+                        <a href="${m.media_url}" download class="text-amber-300 hover:text-white text-xs"><i class="fa-solid fa-download"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="text-red-400 hover:text-red-300 text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>`;
+            }
         }
         return `
         <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1">
@@ -731,6 +733,15 @@ function loadMessages() {
         </div>`;
     }).join('');
     container.scrollTop = container.scrollHeight;
+}
+
+function deleteSingleMessage(key, index) {
+    if (localMessageStore[key]) {
+        localMessageStore[key].splice(index, 1);
+        persistMessages();
+        loadMessages();
+        showToast("Message deleted");
+    }
 }
 
 function appendBubble(m) {
@@ -774,14 +785,6 @@ function toggleSendButton() {
         btn.classList.add('hidden');
         btn.classList.remove('flex');
     }
-}
-
-function openNotificationModal() {
-    showToast("Notifications: " + callHistoryNotifications.length + " calls recorded");
-}
-
-function openLiveBroadcastModal() {
-    showToast("Live broadcast starting...");
 }
 
 function renderChatStories() {
