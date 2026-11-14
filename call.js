@@ -158,7 +158,7 @@ async function sendTextMessage() {
     const key = normPhone(currentActiveRecipient.phone), me = getActiveProfile().phone;
     if (!localMessageStore[key]) localMessageStore[key] = [];
     
-    const msg = { id: 'm_' + Date.now(), phone_number: me, message_text: text, type: 'text' };
+    const msg = { id: 'm_' + Date.now(), phone_number: me, message_text: text, media_url: '', type: 'text' };
     localMessageStore[key].push(msg);
     appendBubble(msg);
     persistMessages();
@@ -184,17 +184,17 @@ async function fetchMessagesFromCloud() {
                 if (!localMessageStore[key]) localMessageStore[key] = [];
                 let updated = false;
                 data.messages.forEach(m => {
-                    const parts = (m.payload || '').split(':');
-                    const mType = parts[0] || 'text';
-                    const mText = parts[1] || '';
-                    const mUrl = parts[2] || null;
-                    const exists = localMessageStore[key].some(existing => existing.message_text === mText && existing.phone_number === m.sender_phone);
+                    const mText = m.message_text || '';
+                    const mUrl = m.media_url && m.media_url !== 'undefined' ? m.media_url : null;
+                    const mType = mUrl ? (mUrl.startsWith('data:video/') ? 'video' : 'image') : 'text';
+                    
+                    const exists = localMessageStore[key].some(existing => existing.message_text === mText && existing.phone_number === m.sender_phone && existing.media_url === mUrl);
                     if (!exists) {
                         localMessageStore[key].push({
                             id: 'm_' + Date.now() + Math.random(),
                             phone_number: m.sender_phone,
                             message_text: mText,
-                            media_url: mUrl && mUrl !== 'undefined' ? mUrl : null,
+                            media_url: mUrl,
                             type: mType
                         });
                         updated = true;
@@ -445,11 +445,11 @@ function appendBubble(m) {
 
 function escapeHtml(text) {
     return String(text || '')
-        .replace(/&/g, '&')
-        .replace(/</g, '<')
-        .replace(/>/g, '>')
-        .replace(/"/g, '"')
-        .replace(/'/g, ''');
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 function toggleSendButton() {
