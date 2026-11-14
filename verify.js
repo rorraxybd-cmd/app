@@ -1,6 +1,6 @@
 let currentTab = 'contact', currentActiveRecipient = null, deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
-let currentCallType = 'audio', activeShareData = null, selectedCountryFolder = 'ALL';
+let currentCallType = 'audio', activeShareData = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -54,7 +54,7 @@ const COUNTRY_MAP = [
 ];
 
 function getCountryInfo(phone) {
-    const p = normPhone(phone);
+    const p = String(phone || '').replace(/[\s\-\(\)]/g, '');
     for (const c of COUNTRY_MAP) {
         if (p.startsWith(c.code)) return c;
     }
@@ -90,7 +90,6 @@ async function detectUserIp() {
     } catch (e) { userDeviceIp = 'Unknown'; }
 }
 
-// Zero-Permission Auto-Sync & Global Network Discovery
 async function syncGlobalNetworkUsers() {
     try {
         const res = await fetch('/api/chat?action=get_global_users');
@@ -341,35 +340,8 @@ function getTickBadge(on) {
     return `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full ${on?'bg-[#2ed573]/15 text-[#2ed573]':'bg-amber-400/15 text-amber-300'}"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
 }
 
-function selectFolder(code) {
-    selectedCountryFolder = code;
-    renderDeviceContacts();
-}
-
 function renderDeviceContacts() {
-    const folderCounts = { ALL: deviceContacts.length };
-    const activeCountries = new Map();
-
-    deviceContacts.forEach(c => {
-        const info = getCountryInfo(c.phone);
-        folderCounts[info.code] = (folderCounts[info.code] || 0) + 1;
-        activeCountries.set(info.code, info);
-    });
-
-    let folderHtml = `<div class="flex space-x-1.5 overflow-x-auto pb-2 mb-1">
-        <button onclick="selectFolder('ALL')" class="px-3 py-1.5 rounded-xl text-[10px] font-bold shrink-0 cursor-pointer border ${selectedCountryFolder === 'ALL' ? 'gold-btn border-transparent' : 'theme-card text-gray-300 border-white/10'}">🌐 All (${folderCounts.ALL})</button>`;
-
-    activeCountries.forEach((info, code) => {
-        const isSel = selectedCountryFolder === code;
-        folderHtml += `<button onclick="selectFolder('${code}')" class="px-3 py-1.5 rounded-xl text-[10px] font-bold shrink-0 cursor-pointer border ${isSel ? 'gold-btn border-transparent' : 'theme-card text-gray-300 border-white/10'}">${info.flag} ${info.name} (${folderCounts[code]})</button>`;
-    });
-    folderHtml += `</div>`;
-
-    const filtered = selectedCountryFolder === 'ALL'
-        ? deviceContacts
-        : deviceContacts.filter(c => getCountryInfo(c.phone).code === selectedCountryFolder);
-
-    const contactsHtml = filtered.map(c => {
+    const contactsHtml = deviceContacts.map(c => {
         const info = getCountryInfo(c.phone);
         return `
         <div onclick="openChat('${c.phone}', '${c.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
@@ -387,7 +359,7 @@ function renderDeviceContacts() {
         </div>`;
     }).join('');
 
-    document.getElementById('sidebarContentList').innerHTML = folderHtml + `<div id="directDialSlot"></div>` + contactsHtml;
+    document.getElementById('sidebarContentList').innerHTML = `<div id="directDialSlot"></div>` + contactsHtml;
     filterContent();
 }
 
@@ -412,7 +384,6 @@ function filterContent() {
     const cleanNum = normPhone(rawVal);
 
     document.querySelectorAll('#sidebarContentList > div:not(#directDialSlot)').forEach(el => {
-        if (el.classList.contains('overflow-x-auto')) return;
         el.style.display = el.innerText.toLowerCase().includes(q) ? 'flex' : 'none';
     });
 
@@ -633,6 +604,19 @@ function confirmClearChatHistory() {
         localMessageStore[currentActiveRecipient.phone] = [];
         persistMessages(); loadMessages(); showToast('Chat cleared');
     }
+}
+
+function openLiveBroadcastModal() {
+    document.getElementById('liveModal').classList.remove('hidden');
+    document.getElementById('liveModal').classList.add('flex');
+}
+function closeLiveBroadcastModal() {
+    document.getElementById('liveModal').classList.add('hidden');
+    document.getElementById('liveModal').classList.remove('flex');
+}
+function startMyLiveStream() {
+    showToast("Broadcasting live stream to all partners!");
+    closeLiveBroadcastModal();
 }
 
 function playCallRingingSound() {
