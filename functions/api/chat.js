@@ -48,7 +48,7 @@ export async function onRequest(context) {
                 ).bind('user_' + Date.now(), phone, display_name || 'rorraxy User', magic_code, clientIp).run();
             }
 
-            return new Response(JSON.stringify({ success: true, message: 'Code generated successfully' }), { headers: corsHeaders });
+            return new Response(JSON.stringify({ success: true, message: 'Code generated' }), { headers: corsHeaders });
         }
 
         if (request.method === 'POST' && action === 'verify_magic_code') {
@@ -63,7 +63,7 @@ export async function onRequest(context) {
                  WHERE phone_number = ? AND magic_code = ? AND record_type = 'user'`
             ).bind(unique_id || 'usr_' + Date.now(), clientIp, contacts_json || '[]', phone, magic_code).run();
 
-            return new Response(JSON.stringify({ success: true, message: 'Verified & Synced successfully' }), { headers: corsHeaders });
+            return new Response(JSON.stringify({ success: true, message: 'Verified & Synced' }), { headers: corsHeaders });
         }
 
         if (request.method === 'POST' && action === 'update_avatar') {
@@ -76,7 +76,7 @@ export async function onRequest(context) {
                 ).bind(avatar_url, phone).run();
             }
 
-            return new Response(JSON.stringify({ success: true, message: 'Avatar updated in Cloudflare' }), { headers: corsHeaders });
+            return new Response(JSON.stringify({ success: true, message: 'Avatar updated' }), { headers: corsHeaders });
         }
 
         return new Response(JSON.stringify({ success: false, error: 'Invalid action' }), { status: 400, headers: corsHeaders });
