@@ -115,7 +115,7 @@ async function submitVerifyStep2() {
                     name: data.user.display_name || tempVerifyName,
                     phone: tempVerifyPhone,
                     username: data.user.username || ('user_' + Math.floor(1000 + Math.random() * 9000)),
-                    themeColor: "emerald",
+                    themeColor: data.user.themeColor || "emerald",
                     avatar: data.user.avatar_url || "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png"
                 };
                 saveProfiles();
@@ -163,7 +163,7 @@ function checkInitialVerification() {
     }
 }
 
-// সেটিংস ও প্রোফাইল রেন্ডার করার ফাংশন (মোবাইল নম্বর গোপন রেখে ফুল নেম, ইউজারনেম ও থিম কালার এডিট অপশন)
+// সেটিংস ও প্রোফাইল পেজ রেন্ডার করার ফাংশন (মোবাইল নম্বর হাইড রেখে ফুল নেম, ইউজারনেম এবং থিম সিলেকশন সহ)
 function renderProfileView() {
     const profile = getActiveProfile();
     const sidebarList = document.getElementById('sidebarContentList');
@@ -181,7 +181,7 @@ function renderProfileView() {
                 </div>
                 <div>
                     <h3 class="text-sm font-bold gold-gradient-text">${profile.name}</h3>
-                    <p class="text-[10px] text-amber-300 font-medium tracking-wider">Verified Secure Account</p>
+                    <p class="text-[10px] text-amber-300 font-medium tracking-wider mt-0.5">Verified Secure Account</p>
                 </div>
             </div>
 
@@ -195,7 +195,7 @@ function renderProfileView() {
                     <input type="text" id="editUsername" value="${profile.username}" class="w-full theme-input text-xs px-3.5 py-2.5 rounded-xl text-white focus:outline-none border border-white/10" placeholder="username">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text">APP THEME COLOR</label>
+                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text">THEME STYLE</label>
                     <select id="editThemeColor" class="w-full theme-input text-xs px-3.5 py-2.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer">
                         <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>Emerald Dark</option>
                         <option value="classic" ${profile.themeColor==='classic'?'selected':''}>Classic Gold</option>
