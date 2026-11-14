@@ -1,7 +1,7 @@
 let currentTab = 'contact', currentActiveRecipient = null, deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let currentCallType = 'audio', activeShareData = null;
-let callRingInterval = null, activeAudioCtx = null, localLiveStream = null, callPollInterval = null;
+let callRingInterval = null, activeAudioCtx = null, localLiveStream = null, callPollInterval = null, chatPollInterval = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -137,6 +137,7 @@ function checkInitialVerification() {
         syncGlobalNetworkUsers();
         switchTab('contact');
         startIncomingCallPolling();
+        startChatPolling();
     }
 }
 
@@ -218,6 +219,7 @@ async function submitVerifyStep2() {
     syncGlobalNetworkUsers();
     switchTab('contact');
     startIncomingCallPolling();
+    startChatPolling();
 }
 
 function switchTab(tab) {
@@ -494,6 +496,7 @@ function openChat(phone, name) {
         document.getElementById('bottomNavBar').style.display = 'none';
     }
     loadMessages();
+    fetchMessagesFromCloud();
 }
 
 function backToSidebarMobile() {
@@ -516,10 +519,20 @@ async function sendTextMessage() {
     inp.value = ''; toggleSendButton();
     const key = normPhone(currentActiveRecipient.phone), me = getActiveProfile().phone;
     if (!localMessageStore[key]) localMessageStore[key] = [];
+    
     const msg = { id: 'm_' + Date.now(), phone_number: me, message_text: text, type: 'text' };
     localMessageStore[key].push(msg);
     appendBubble(msg, localMessageStore[key].length - 1);
     persistMessages();
+
+    try {
+        await fetch('/api/chat?action=send_chat_message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sender_phone: me, receiver_phone: key, message_text: text, media_url: '', message_type: 'text' })
+        });
+    } catch (e) {}
+
     if (currentTab === 'chat') renderChatStories();
     scrollChatToBottom();
 }
@@ -532,10 +545,19 @@ async function sendFilesDirectly(input) {
         const type = f.type.startsWith('image/') ? 'image' : (f.type.startsWith('video/') ? 'video' : 'file');
         await new Promise(res => {
             const r = new FileReader();
-            r.onload = e => {
-                const msg = { id: 'm_' + Date.now() + Math.random(), phone_number: me, message_text: f.name, media_url: e.target.result, type };
+            r.onload = async e => {
+                const mediaUrl = e.target.result;
+                const msg = { id: 'm_' + Date.now() + Math.random(), phone_number: me, message_text: f.name, media_url: mediaUrl, type };
                 localMessageStore[key].push(msg);
                 appendBubble(msg, localMessageStore[key].length - 1);
+                
+                try {
+                    await fetch('/api/chat?action=send_chat_message', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sender_phone: me, receiver_phone: key, message_text: f.name, media_url: mediaUrl, message_type: type })
+                    });
+                } catch (err) {}
                 res();
             };
             r.readAsDataURL(f);
@@ -545,6 +567,49 @@ async function sendFilesDirectly(input) {
     persistMessages();
     if (currentTab === 'chat') renderChatStories();
     scrollChatToBottom();
+}
+
+async function fetchMessagesFromCloud() {
+    if (!currentActiveRecipient) return;
+    const me = getActiveProfile().phone;
+    const key = normPhone(currentActiveRecipient.phone);
+    try {
+        const res = await fetch(`/api/chat?action=get_chat_messages&phone=${encodeURIComponent(key)}&my_phone=${encodeURIComponent(me)}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success && Array.isArray(data.messages)) {
+                if (!localMessageStore[key]) localMessageStore[key] = [];
+                let updated = false;
+                data.messages.forEach(m => {
+                    const [mType, mText, mUrl] = (m.payload || '').split(':');
+                    const exists = localMessageStore[key].some(existing => existing.message_text === mText && existing.phone_number === m.sender_phone);
+                    if (!exists) {
+                        localMessageStore[key].push({
+                            id: 'm_' + Date.now() + Math.random(),
+                            phone_number: m.sender_phone,
+                            message_text: mText || '',
+                            media_url: mUrl && mUrl !== 'undefined' ? mUrl : null,
+                            type: mType || 'text'
+                        });
+                        updated = true;
+                    }
+                });
+                if (updated) {
+                    persistMessages();
+                    loadMessages();
+                }
+            }
+        }
+    } catch (e) {}
+}
+
+function startChatPolling() {
+    if (chatPollInterval) clearInterval(chatPollInterval);
+    chatPollInterval = setInterval(() => {
+        if (currentActiveRecipient && isVerifiedSession) {
+            fetchMessagesFromCloud();
+        }
+    }, 2000);
 }
 
 function openShareModal(url, title) {
@@ -760,7 +825,6 @@ async function startWhatsAppCall(mode) {
     document.getElementById('callStatusLabel').innerText = "Calling...";
 }
 
-// Ultra-fast 1 second polling to instantly trigger incoming call pop-up and ringing
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
     callPollInterval = setInterval(async () => {
