@@ -11,8 +11,9 @@ let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') |
 let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
 let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
 
+// rorraxy অফিশিয়াল সাপোর্ট টিম কন্টাক্ট (কোনো ফোন নম্বর ছাড়াই ব্র্যান্ড ও হোয়াইট সাবটাইটেল সহ)
 let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [
-    { name: "rorraxy Support", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png", hidePhone: true, subTitle: "Official Support Team" }
+    { name: "rorraxy", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png", hidePhone: true, subTitle: "Official Support Team", isOfficialSupport: true }
 ];
 
 const RTC_CONFIG = {
@@ -81,13 +82,17 @@ async function syncGlobalNetworkUsers() {
     } catch (e) {}
 }
 
+function openWorldLink() {
+    window.open('https://chat.rorraxy.com/world', '_blank');
+}
+
 function switchTab(tab) {
     currentTab = tab;
-    ['profile', 'contact', 'chat'].forEach(t => {
+    ['profile', 'contact', 'chat', 'calls'].forEach(t => {
         const isSel = (t === tab);
         const lbl = document.getElementById('label' + t.charAt(0).toUpperCase() + t.slice(1));
         const icn = document.getElementById('icon' + t.charAt(0).toUpperCase() + t.slice(1));
-        if (lbl) lbl.className = `nav-label text-[10px] ${isSel ? 'pink-gradient-text font-bold' : 'gold-gradient-text font-semibold'}`;
+        if (lbl) lbl.className = `nav-label text-[9px] ${isSel ? 'pink-gradient-text font-bold' : 'gold-gradient-text font-semibold'}`;
         if (icn) icn.setAttribute('stroke', isSel ? '#EC4899' : '#F5D061');
     });
 
@@ -95,6 +100,9 @@ function switchTab(tab) {
     if (tab === 'profile') { 
         if (sb) sb.style.display = 'none'; 
         if (typeof renderProfileView === 'function') renderProfileView(); 
+    } else if (tab === 'calls') {
+        if (sb) sb.style.display = 'none';
+        renderCallsHistory();
     } else {
         if (sb) sb.style.display = 'block';
         const searchInput = document.getElementById('searchInput');
@@ -118,7 +126,10 @@ function renderDeviceContacts() {
     const contactsHtml = deviceContacts.map(c => {
         const info = getCountryInfo(c.phone);
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
+        
+        // যদি অফিশিয়াল সাপোর্ট হয়, তবে ফোন নম্বরের পরিবর্তে সাদা রঙের Official Support Team দেখাবে
+        const subText = c.isOfficialSupport ? `<p class="text-[10px] text-white font-medium">${c.subTitle}</p>` : (c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`);
+        
         return `
         <div onclick="openChat('${c.phone}', '${c.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
             <div class="flex items-center space-x-3">
@@ -131,6 +142,44 @@ function renderDeviceContacts() {
         </div>`;
     }).join('');
     listContainer.innerHTML = `<div id="directDialSlot"></div>` + contactsHtml;
+}
+
+function renderCallsHistory() {
+    const listContainer = document.getElementById('sidebarContentList');
+    if (!listContainer) return;
+
+    if (!callHistoryNotifications || callHistoryNotifications.length === 0) {
+        listContainer.innerHTML = `
+            <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 m-auto">
+                <div class="w-12 h-12 rounded-2xl theme-card flex items-center justify-center">
+                    <i class="fa-solid fa-phone-slash text-amber-300 text-lg"></i>
+                </div>
+                <p class="text-xs font-bold gold-gradient-text">No recent calls</p>
+                <p class="text-[10px] text-gray-400">Your audio and video call history will appear here.</p>
+            </div>`;
+        return;
+    }
+
+    listContainer.innerHTML = callHistoryNotifications.map((call, idx) => {
+        const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(call.phone)) || { name: call.phone, avatar: null };
+        const avatarImg = contact.avatar ? `<img src="${contact.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${contact.name.charAt(0)}</div>`;
+        const timeStr = new Date(call.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        return `
+        <div class="flex justify-between items-center px-4 py-3 my-1 theme-card rounded-2xl border border-white/5">
+            <div class="flex items-center space-x-3">
+                ${avatarImg}
+                <div>
+                    <p class="text-xs font-semibold gold-gradient-text">${contact.name}</p>
+                    <p class="text-[10px] text-gray-400"><i class="fa-solid fa-${call.type === 'video' ? 'video' : 'phone'} mr-1 text-amber-300"></i> ${call.status || 'Completed'} • ${timeStr}</p>
+                </div>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('video')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+            </div>
+        </div>`;
+    }).join('');
 }
 
 function openChat(phone, name) {
@@ -241,7 +290,7 @@ function startChatPolling() {
     chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 3000);
 }
 
-// WebRTC অডিও ও কলিং সিস্টেম
+// WebRTC কলিং এবং অডিও/ভিডিও হ্যান্ডলিং
 function startContinuousRinging() {
     stopContinuousRinging();
     const playTone = () => {
@@ -294,17 +343,10 @@ async function setupLocalMedia(mode) {
         if (localStream) {
             localStream.getTracks().forEach(t => t.stop());
         }
-        // মাইক এবং ক্যামেরার জন্য ফুল নয়েজ রিডাকশন ও ইকো ক্যান্সেলেশন কনফিগারেশন
         localStream = await navigator.mediaDevices.getUserMedia({
-            audio: { 
-                echoCancellation: true, 
-                noiseSuppression: true, 
-                autoGainControl: true,
-                channelCount: 1 
-            },
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
             video: mode === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false
         });
-        
         applyVideoStreamsToDom();
         return localStream;
     } catch (err) {
@@ -328,7 +370,6 @@ function applyVideoStreamsToDom() {
     }
 }
 
-// ভিডিও বড় ও ছোট পর্দা (PiP Swap) টগল করার ফাংশন
 function toggleVideoSwap() {
     isLocalMain = !isLocalMain;
     const remoteVid = document.getElementById('callRemoteVideo');
@@ -519,7 +560,6 @@ async function endWhatsAppCall() {
     showToast("Call Ended");
 }
 
-// হোয়াটসঅ্যাপের মতো লাইভ অডিও থেকে ভিডিও / ভিডিও থেকে অডিও সুইচিং লজিক
 async function toggleVideoSwitch() {
     const newMode = currentCallType === 'audio' ? 'video' : 'audio';
     currentCallType = newMode;
@@ -547,7 +587,6 @@ async function toggleVideoSwitch() {
                 peerConnection.addTrack(videoTrack, localStream);
             }
 
-            // অপরপক্ষকে রিয়েল-টাইমে ভিডিও সিগন্যাল পাঠানোর জন্য অফার আপডেট করা
             try {
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
@@ -750,7 +789,8 @@ function filterContent() {
     const contactsHtml = filtered.map(c => {
         const info = getCountryInfo(c.phone);
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
+        const subText = c.isOfficialSupport ? `<p class="text-[10px] text-white font-medium">${c.subTitle}</p>` : (c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`);
+        
         return `
         <div onclick="openChat('${c.phone}', '${c.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
             <div class="flex items-center space-x-3">
