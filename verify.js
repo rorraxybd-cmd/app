@@ -25,20 +25,20 @@ async function installPWAApp() {
 
 let currentTheme = localStorage.getItem('salaam_theme') || 'emerald';
 let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
-let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v15') || '{}');
-let isVerifiedSession = localStorage.getItem('salaam_verified_v15') === 'true';
+let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v16') || '{}');
+let isVerifiedSession = localStorage.getItem('salaam_verified_v16') === 'true';
 
 const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'salaam'];
 
-let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v15') || 'null') || [{
+let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v16') || 'null') || [{
     name: "User",
     phone: "+8801700000000",
-    username: "user",
+    username: "user_" + Math.floor(1000 + Math.random() * 9000),
     privacy: "public",
     avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png"
 }];
 
-let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v15') || 'null') || [
+let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v16') || 'null') || [
     { name: "rorraxy Support", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png", hidePhone: true }
 ];
 
@@ -61,9 +61,9 @@ function getCountryInfo(phone) {
 }
 
 function getActiveProfile() { return savedProfiles[0]; }
-function saveProfiles() { localStorage.setItem('salaam_profiles_v15', JSON.stringify(savedProfiles)); }
+function saveProfiles() { localStorage.setItem('salaam_profiles_v16', JSON.stringify(savedProfiles)); }
 function normPhone(p) { return String(p || '').replace(/[\s\-\(\)]/g, ''); }
-function persistMessages() { localStorage.setItem('salaam_messages_v15', JSON.stringify(localMessageStore)); }
+function persistMessages() { localStorage.setItem('salaam_messages_v16', JSON.stringify(localMessageStore)); }
 
 function showToast(msg, isErr = false) {
     const b = document.getElementById('toastBanner'), dot = document.getElementById('toastDot'), text = document.getElementById('toastText');
@@ -116,7 +116,7 @@ async function syncGlobalNetworkUsers() {
                         }
                     }
                 });
-                localStorage.setItem('salaam_contacts_v15', JSON.stringify(deviceContacts));
+                localStorage.setItem('salaam_contacts_v16', JSON.stringify(deviceContacts));
                 if (currentTab === 'contact' || currentTab === 'chat') renderDeviceContacts();
             }
         }
@@ -175,10 +175,33 @@ async function submitVerifyStep2() {
     if (entered !== generatedOtpCode) { showToast("Invalid code", true); return; }
 
     isVerifiedSession = true;
-    localStorage.setItem('salaam_verified_v15', 'true');
-    const p = getActiveProfile();
-    p.name = tempVerifyName; p.phone = tempVerifyPhone;
-    saveProfiles();
+    localStorage.setItem('salaam_verified_v16', 'true');
+    
+    // Check if profile exists on cloud to restore it
+    try {
+        const res = await fetch(`/api/chat?action=get_user_profile&phone=${encodeURIComponent(tempVerifyPhone)}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.user) {
+                savedProfiles[0] = {
+                    name: data.user.display_name || tempVerifyName,
+                    phone: tempVerifyPhone,
+                    username: data.user.username || ('user_' + Math.floor(1000 + Math.random() * 9000)),
+                    privacy: "public",
+                    avatar: data.user.avatar_url || "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png"
+                };
+                saveProfiles();
+            } else {
+                const p = getActiveProfile();
+                p.name = tempVerifyName; p.phone = tempVerifyPhone;
+                saveProfiles();
+            }
+        }
+    } catch (e) {
+        const p = getActiveProfile();
+        p.name = tempVerifyName; p.phone = tempVerifyPhone;
+        saveProfiles();
+    }
 
     if (userDeviceIp === "Unknown" || userDeviceIp === "Detecting...") { await detectUserIp(); }
 
@@ -192,7 +215,7 @@ async function submitVerifyStep2() {
 
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
     document.getElementById('verifyOverlay').style.display = 'none';
-    showToast("Verified & Connected!");
+    showToast("Verified & Account Restored!");
     syncGlobalNetworkUsers();
     switchTab('contact');
     startIncomingCallPolling();
@@ -276,7 +299,7 @@ function renderProfileView() {
 
             <div class="space-y-3 theme-card p-4 rounded-2xl border border-white/5">
                 <div class="flex justify-between items-center"><span class="font-bold gold-gradient-text">Account Details</span><button onclick="toggleEditProfile()" class="text-[11px] pink-gradient-text font-semibold cursor-pointer">Edit Profile</button></div>
-                <p class="flex justify-between text-gray-400">Phone: <span class="text-amber-300">${p.phone}</span></p>
+                <p class="flex justify-between text-gray-400">Phone (Fixed): <span class="text-amber-300 font-bold">${p.phone}</span></p>
                 <p class="flex justify-between text-gray-400">Username: <span class="text-amber-300">@${p.username}</span></p>
             </div>
 
@@ -312,7 +335,7 @@ function handleProfileAvatarUpload(input) {
                 }
                 return c;
             });
-            localStorage.setItem('salaam_contacts_v15', JSON.stringify(deviceContacts));
+            localStorage.setItem('salaam_contacts_v16', JSON.stringify(deviceContacts));
 
             renderProfileView();
             showToast("Profile picture updated & synced!");
@@ -323,7 +346,7 @@ function handleProfileAvatarUpload(input) {
             }
 
             try {
-                await fetch('/api/chat?action=update_avatar', {
+                await fetch('/api/chat?action=update_profile', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phone: p.phone, avatar_url: compressedDataUrl })
@@ -338,7 +361,7 @@ function toggleEditProfile() {
     f.style.display = f.style.display === 'block' ? 'none' : 'block';
 }
 
-function saveProfileChanges() {
+async function saveProfileChanges() {
     const p = getActiveProfile();
     const newName = document.getElementById('eName').value.trim();
     let newUname = document.getElementById('eUsername').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
@@ -352,6 +375,14 @@ function saveProfileChanges() {
     saveProfiles();
     renderProfileView();
     showToast("Profile updated!");
+
+    try {
+        await fetch('/api/chat?action=update_profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: p.phone, display_name: newName, username: newUname })
+        });
+    } catch (e) {}
 }
 
 function getTickBadge(on) {
@@ -439,7 +470,7 @@ function connectDirectNumber(phone, mode) {
     const cp = normPhone(phone);
     if (!deviceContacts.some(c => normPhone(c.phone) === cp)) {
         deviceContacts.unshift({ name: cp, phone: cp, appUser: true, isOnline: true, lastMsg: "", avatar: null });
-        localStorage.setItem('salaam_contacts_v15', JSON.stringify(deviceContacts));
+        localStorage.setItem('salaam_contacts_v16', JSON.stringify(deviceContacts));
     }
     openChat(cp, cp);
     if (mode === 'audio' || mode === 'video') {
@@ -687,16 +718,16 @@ function startContinuousRinging() {
             const osc = activeAudioCtx.createOscillator();
             const gain = activeAudioCtx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(440, activeAudioCtx.currentTime);
-            gain.gain.setValueAtTime(0.12, activeAudioCtx.currentTime);
+            osc.frequency.setValueAtTime(520, activeAudioCtx.currentTime);
+            gain.gain.setValueAtTime(0.15, activeAudioCtx.currentTime);
             osc.connect(gain);
             gain.connect(activeAudioCtx.destination);
             osc.start();
-            osc.stop(activeAudioCtx.currentTime + 1.0);
+            osc.stop(activeAudioCtx.currentTime + 0.8);
         } catch (e) {}
     };
     playTone();
-    callRingInterval = setInterval(playTone, 2500);
+    callRingInterval = setInterval(playTone, 2000);
 }
 
 function stopContinuousRinging() {
@@ -712,7 +743,6 @@ async function startWhatsAppCall(mode) {
     updateCallModeUI();
     startContinuousRinging();
 
-    // Send Real Cloud Signal to Receiver
     const myPhone = getActiveProfile().phone;
     try {
         await fetch('/api/chat?action=send_call_signal', {
@@ -731,7 +761,6 @@ async function startWhatsAppCall(mode) {
     document.getElementById('callStatusLabel').innerText = "Calling...";
 }
 
-// Poll for incoming calls on other devices (Phone/PC)
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
     callPollInterval = setInterval(async () => {
@@ -753,11 +782,15 @@ function startIncomingCallPolling() {
                         document.getElementById('callStatusLabel').innerText = `Incoming ${type} Call...`;
                         document.getElementById('whatsAppCallModal').classList.remove('hidden');
                         document.getElementById('whatsAppCallModal').classList.add('flex');
+                    } else if (status === 'ended') {
+                        stopContinuousRinging();
+                        document.getElementById('whatsAppCallModal').classList.add('hidden');
+                        document.getElementById('whatsAppCallModal').classList.remove('flex');
                     }
                 }
             }
         } catch (e) {}
-    }, 3000);
+    }, 2500);
 }
 
 function toggleCallMode() {
