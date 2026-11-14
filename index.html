@@ -197,6 +197,33 @@
                 }, 300);
             }
         });
+        <!-- Modular JavaScript Files Connection with Anti-Cache Versioning -->
+    <script src="/verify.js?v=2.0"></script>
+    <script src="/call.js?v=2.0"></script>
+    <script src="/p2p_file_transfer.js?v=2.0"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const overlay = document.getElementById('verifyOverlay');
+            if (overlay) overlay.style.display = 'none';
+            
+            // জোরপূর্বক লোকাল স্টোরেজ ও ইনিশিয়ালাইজেশন চেক
+            localStorage.setItem('salaam_verified_v18', 'true');
+            
+            if (typeof initAppAfterVerification === 'function') {
+                initAppAfterVerification();
+            } else {
+                setTimeout(() => {
+                    if (typeof initAppAfterVerification === 'function') {
+                        initAppAfterVerification();
+                    } else if (typeof switchTab === 'function') {
+                        switchTab('contact');
+                    }
+                }, 300);
+            }
+        });
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
