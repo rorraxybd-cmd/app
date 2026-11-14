@@ -227,7 +227,7 @@ function startChatPolling() {
 }
 
 // ==========================================
-// রিয়েল-টাইম অডিও ও ফুল-স্ক্রিন ভিডিও কলিং (WebRTC)
+// নিখুঁত ক্রিস্টাল ক্লিয়ার অডিও ও ফুল-স্ক্রিন ভিডিও কলিং (WebRTC)
 // ==========================================
 
 function startContinuousRinging() {
@@ -239,16 +239,16 @@ function startContinuousRinging() {
             const osc = activeAudioCtx.createOscillator();
             const gain = activeAudioCtx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(480, activeAudioCtx.currentTime);
-            gain.gain.setValueAtTime(0.15, activeAudioCtx.currentTime);
+            osc.frequency.setValueAtTime(440, activeAudioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, activeAudioCtx.currentTime);
             osc.connect(gain);
             gain.connect(activeAudioCtx.destination);
             osc.start();
-            osc.stop(activeAudioCtx.currentTime + 0.6);
+            osc.stop(activeAudioCtx.currentTime + 0.5);
         } catch (e) {}
     };
     playTone();
-    callRingInterval = setInterval(playTone, 1800);
+    callRingInterval = setInterval(playTone, 2000);
 }
 
 function stopContinuousRinging() {
@@ -282,10 +282,14 @@ async function setupLocalMedia(mode) {
         if (localStream) {
             localStream.getTracks().forEach(t => t.stop());
         }
-        // উন্নত অডিও (Echo Cancellation সহ) ও ভিডিও পারমিশন
+        // নয়েজ ও ইকো ক্যান্সেলেশনসহ উন্নত অডিও সেটিংস
         localStream = await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-            video: mode === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            },
+            video: mode === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false
         });
         
         const localVid = document.getElementById('callLocalVideo');
@@ -293,10 +297,11 @@ async function setupLocalMedia(mode) {
         if (mode === 'video' && localVid && videoContainer) {
             videoContainer.classList.remove('hidden');
             localVid.srcObject = localStream;
+            localVid.muted = true; // লোকাল সাউন্ড মিউট রাখা যাতে ইকো না হয়
         }
         return localStream;
     } catch (err) {
-        showToast("Camera or Microphone permission denied", true);
+        showToast("Camera or Microphone access required", true);
         return null;
     }
 }
@@ -353,7 +358,7 @@ async function startWhatsAppCall(mode) {
     renderCallModal(activeCallPeer.name, activeCallPeer.avatar, `Calling ${activeCallPeer.name}...`, mode, false);
     startContinuousRinging();
 
-    const stream = await setupLocalMedia(mode);
+    await setupLocalMedia(mode);
     const pc = createPeerConnection(peerPhone);
 
     const offer = await pc.createOffer();
@@ -369,7 +374,7 @@ async function startWhatsAppCall(mode) {
                 }
             };
             pc.addEventListener('icegatheringstatechange', checkIce);
-            setTimeout(resolve, 1500);
+            setTimeout(resolve, 1200);
         }
     });
 
@@ -419,7 +424,7 @@ async function acceptWhatsAppCall() {
                     }
                 };
                 pc.addEventListener('icegatheringstatechange', checkIce);
-                setTimeout(resolve, 1500);
+                setTimeout(resolve, 1200);
             }
         });
 
@@ -479,7 +484,7 @@ async function endWhatsAppCall() {
     showToast("Call Ended");
 }
 
-// অডিও থেকে ভিডিও কলে সুইচ করা (বা ফুল-স্ক্রিন মোড)
+// অডিও থেকে ভিডিও কলে সুইচ করা (অটো ক্যামেরা চালু)
 async function toggleVideoSwitch() {
     const newMode = currentCallType === 'audio' ? 'video' : 'audio';
     currentCallType = newMode;
@@ -488,8 +493,11 @@ async function toggleVideoSwitch() {
     if (badge) badge.innerText = `${newMode} call`;
 
     const videoBox = document.getElementById('videoStreamsBox');
+    const infoBox = document.getElementById('callerInfoBox');
+
     if (newMode === 'video') {
         if (videoBox) videoBox.classList.remove('hidden');
+        if (infoBox) infoBox.classList.add('hidden');
         await setupLocalMedia('video');
         if (peerConnection && localStream) {
             const videoTrack = localStream.getVideoTracks()[0];
@@ -497,11 +505,12 @@ async function toggleVideoSwitch() {
             if (sender && videoTrack) sender.replaceTrack(videoTrack);
             else if (videoTrack) peerConnection.addTrack(videoTrack, localStream);
         }
-        showToast("Switched to Video Fullscreen");
+        showToast("Switched to Video Mode");
     } else {
         if (videoBox) videoBox.classList.add('hidden');
+        if (infoBox) infoBox.classList.remove('hidden');
         if (localStream) localStream.getVideoTracks().forEach(t => t.stop());
-        showToast("Switched to Audio Call");
+        showToast("Switched to Audio Mode");
     }
 }
 
@@ -514,43 +523,38 @@ function toggleMicMute() {
     if (btn) {
         btn.innerHTML = isMicMuted ? `<i class="fa-solid fa-microphone-slash text-red-400"></i>` : `<i class="fa-solid fa-microphone"></i>`;
     }
-    showToast(isMicMuted ? "Microphone Muted" : "Microphone Unmuted");
+    showToast(isMicMuted ? "Muted" : "Unmuted");
 }
 
-// ফুল-স্ক্রিন হোয়াটসঅ্যাপ স্টাইল কল মডাল
+// হোয়াটসঅ্যাপ স্টাইল আধুনিক ফুল-স্ক্রিন কল মডাল
 function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     let existing = document.getElementById('whatsAppCallModal');
     if (existing) existing.remove();
 
     const modal = document.createElement('div');
     modal.id = 'whatsAppCallModal';
-    // সম্পূর্ণ স্ক্রিন জুড়ে ফিক্সড লেআউট
-    modal.className = 'fixed inset-0 z-50 bg-black/95 backdrop-blur-lg flex flex-col items-center justify-between p-6';
+    modal.className = 'fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-between p-6';
     
     modal.innerHTML = `
-        <!-- ওপরের হেডার তথ্য -->
         <div class="w-full max-w-md flex justify-between items-center text-center pt-4">
             <span id="callTypeBadge" class="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-[11px] font-bold uppercase tracking-wider">${mode} call</span>
             <p id="callStatusLabel" class="text-xs text-gray-300 font-medium">${statusText}</p>
             <div class="w-16"></div>
         </div>
 
-        <!-- মূল প্রোফাইল অথবা ফুল-স্ক্রিন ভিডিও ডিসপ্লে -->
-        <div class="flex-1 flex flex-col items-center justify-center w-full max-w-2xl relative my-auto">
+        <div class="flex-1 flex flex-col items-center justify-center w-full max-w-3xl relative my-auto">
             <div id="callerInfoBox" class="${mode === 'video' ? 'hidden' : 'flex'} flex-col items-center space-y-4">
-                <img src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-28 h-28 rounded-full object-cover border-4 border-amber-400/60 shadow-2xl animate-pulse bg-black">
+                <img src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-32 h-32 rounded-full object-cover border-4 border-amber-400/60 shadow-2xl animate-pulse bg-black">
                 <h2 class="text-2xl font-extrabold gold-gradient-text tracking-wide">${peerName}</h2>
             </div>
 
-            <!-- ফুল-স্ক্রিন ভিডিও বক্স -->
-            <div id="videoStreamsBox" class="${mode === 'video' ? 'flex' : 'hidden'} w-full h-[65dvh] bg-black rounded-3xl overflow-hidden border border-white/10 relative shadow-2xl">
+            <div id="videoStreamsBox" class="${mode === 'video' ? 'flex' : 'hidden'} w-full h-[70dvh] bg-black rounded-3xl overflow-hidden border border-white/10 relative shadow-2xl">
                 <video id="callRemoteVideo" autoplay playsinline class="w-full h-full object-cover"></video>
                 <video id="callLocalVideo" autoplay muted playsinline class="w-28 h-36 object-cover rounded-2xl border-2 border-amber-400/60 absolute bottom-4 right-4 bg-gray-900 shadow-xl"></video>
             </div>
             <audio id="callRemoteAudio" autoplay></audio>
         </div>
 
-        <!-- নিচের কন্ট্রোল বাটনসমূহ -->
         <div id="callControlButtons" class="w-full max-w-md flex justify-center items-center space-x-6 pb-6">
             ${isIncoming ? `
                 <button type="button" onclick="acceptWhatsAppCall()" class="px-8 py-4 rounded-full bg-green-600 hover:bg-green-700 text-white font-bold text-sm cursor-pointer shadow-xl transition flex items-center space-x-2">
@@ -594,7 +598,7 @@ function updateInCallButtons() {
     `;
 }
 
-// ইনকামিং কল পোলিং (মডাল বারবার রেন্ডার হওয়া রোধ করা হয়েছে)
+// ইনকামিং কল পোলিং
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
     callPollInterval = setInterval(async () => {
@@ -617,7 +621,6 @@ function startIncomingCallPolling() {
                 try { sig = JSON.parse(data.signal.magic_code); } catch (e) { return; }
                 if (!sig || !sig.ts) return;
 
-                // নতুন রিং হলে তবেই মডাল ওপেন হবে (বারবার রিফ্রেশ হবে না)
                 const modal = document.getElementById('whatsAppCallModal');
                 if (sig.status === 'ringing' && !isCallActive && !modal && sig.ts > lastHandledSignalTs) {
                     lastHandledSignalTs = sig.ts;
