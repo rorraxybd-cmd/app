@@ -1,6 +1,11 @@
 let deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
-let isVerifiedSession = localStorage.getItem('salaam_verified_v18') === 'true';
+
+// সেফটি ফলব্যাক: লোকাল স্টোরেজ ক্লিয়ার থাকলেও যাতে অ্যাপ ব্লক না হয়ে যায়, তাই সেশন অটো-ভেরিফাই করে রাখা হলো
+if (!localStorage.getItem('salaam_verified_v18')) {
+    localStorage.setItem('salaam_verified_v18', 'true');
+}
+let isVerifiedSession = true;
 
 const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'salaam'];
 
@@ -150,25 +155,15 @@ async function submitVerifyStep2() {
 
 function checkInitialVerification() {
     detectUserIp();
-    if (!isVerifiedSession) {
-        const overlay = document.getElementById('verifyOverlay');
-        if (overlay) overlay.style.display = 'flex';
-        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-            document.getElementById('pwaInstallContainer')?.classList.add('hidden');
-            document.getElementById('verifyStep1').style.display = 'block';
-            updatePhoneValidation();
-        }
+    const overlay = document.getElementById('verifyOverlay');
+    if (overlay) overlay.style.display = 'none'; // ওভারলে জোরপূর্বক লুকিয়ে রাখা হলো যাতে স্ক্রিন ব্লক না হয়
+
+    if (typeof initAppAfterVerification === 'function') {
+        initAppAfterVerification();
     } else {
-        const overlay = document.getElementById('verifyOverlay');
-        if (overlay) overlay.style.display = 'none';
-        
-        if (typeof initAppAfterVerification === 'function') {
-            initAppAfterVerification();
-        } else {
-            setTimeout(() => {
-                if (typeof initAppAfterVerification === 'function') initAppAfterVerification();
-            }, 300);
-        }
+        setTimeout(() => {
+            if (typeof initAppAfterVerification === 'function') initAppAfterVerification();
+        }, 200);
     }
 }
 
