@@ -7,6 +7,8 @@ let isMicMuted = false, lastHandledSignalTs = 0;
 
 let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
+let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
+
 let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [
     { name: "rorraxy Support", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png", hidePhone: true }
 ];
@@ -162,7 +164,8 @@ async function sendTextMessage() {
     const key = normPhone(currentActiveRecipient.phone), me = normPhone(getActiveProfile().phone);
     if (!localMessageStore[key]) localMessageStore[key] = [];
     
-    const msg = { id: 'm_' + Date.now(), phone_number: me, message_text: text, media_url: '', type: 'text', timestamp: Date.now() };
+    const msgId = 'm_' + Date.now() + '_' + Math.random();
+    const msg = { id: msgId, phone_number: me, message_text: text, media_url: '', type: 'text', timestamp: Date.now() };
     localMessageStore[key].push(msg);
     appendBubble(msg);
     persistMessages();
@@ -189,24 +192,28 @@ async function fetchMessagesFromCloud() {
                 let updated = false;
                 data.messages.forEach(m => {
                     const sender = normPhone(m.sender_phone);
+                    const mId = m.id || ('m_' + (m.timestamp || Date.now()));
+                    
+                    // ডিলিট করা আইডি লিস্টে থাকলে সার্ভার থেকে আনা হলেও ইগ্নোর করবে
+                    if (deletedMessageIds.includes(mId)) return;
+
                     const mText = (m.message_text || '').trim();
                     const mUrl = m.media_url && m.media_url !== 'undefined' ? m.media_url : '';
                     const mType = mUrl ? (mUrl.startsWith('data:video/') ? 'video' : 'image') : 'text';
                     
                     const exists = localMessageStore[key].some(existing => 
-                        normPhone(existing.phone_number) === sender &&
-                        (existing.message_text || '').trim() === mText && 
-                        (existing.media_url || '') === mUrl
+                        (existing.id && existing.id === mId) || 
+                        (normPhone(existing.phone_number) === sender && (existing.message_text || '').trim() === mText && (existing.media_url || '') === mUrl)
                     );
 
                     if (!exists && (mText || mUrl)) {
                         localMessageStore[key].push({
-                            id: 'm_' + Date.now() + Math.random(),
+                            id: mId,
                             phone_number: sender,
                             message_text: mText,
                             media_url: mUrl,
                             type: mType,
-                            timestamp: Date.now()
+                            timestamp: m.timestamp || Date.now()
                         });
                         updated = true;
                     }
@@ -222,10 +229,7 @@ function startChatPolling() {
     chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 3000);
 }
 
-// ==========================================
-// অডিও ও ভিডিও কলিং (WebRTC)
-// ==========================================
-
+// WebRTC কলিং ও মডাল ফাংশনসমূহ...
 function startContinuousRinging() {
     stopContinuousRinging();
     const playTone = () => {
@@ -669,13 +673,21 @@ function confirmClearChatHistory() {
     if (!currentActiveRecipient) return;
     if (confirm("Clear chat history with this contact?")) {
         const key = normPhone(currentActiveRecipient.phone);
+        // চ্যাট ক্লিয়ার করার সময় সমস্ত মেসেজের আইডি ডিলিট লিস্টে যোগ করে দেওয়া
+        if (localMessageStore[key]) {
+            localMessageStore[key].forEach(m => {
+                if (m.id && !deletedMessageIds.includes(m.id)) deletedMessageIds.push(m.id);
+            });
+            localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+        }
         delete localMessageStore[key];
         persistMessages();
         loadMessages();
-        showToast("Chat cleared");
+        showToast("Chat cleared successfully");
     }
 }
 
+// পরিষ্কার ও ত্রুটিমুক্ত মেসেজ রেন্ডারিং (ইউআরএল বা ফাইলের নাম হাইড করে শুধু প্রিভিউ ও বাটন দেখানো)
 function loadMessages() {
     if (typeof cleanupExpiredMessages === 'function') cleanupExpiredMessages();
     const container = document.getElementById('chatMessages');
@@ -697,37 +709,41 @@ function loadMessages() {
 
     container.innerHTML = msgs.map((m, idx) => {
         const isMe = normPhone(m.phone_number) === normPhone(getActiveProfile().phone);
-        let contentHtml = `<p class="text-xs text-white">${escapeHtml(m.message_text || '')}</p>`;
-        if (m.media_url) {
+        let contentHtml = '';
+        
+        if (m.type === 'text' || !m.media_url) {
+            contentHtml = `<p class="text-xs text-white leading-relaxed">${escapeHtml(m.message_text || '')}</p>`;
+        } else {
             if (m.type === 'image') {
-                contentHtml += `<div class="relative mt-2">
-                    <img src="${m.media_url}" class="rounded-xl max-w-xs max-h-48 object-cover border border-white/10">
-                    <div class="absolute top-2 right-2 flex space-x-1 bg-black/60 p-1 rounded-lg">
-                        <a href="${m.media_url}" download="image.jpg" class="p-1 text-amber-300 hover:text-white" title="Download"><i class="fa-solid fa-download text-xs"></i></a>
-                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
+                contentHtml = `<div class="relative group my-1">
+                    <img src="${m.media_url}" class="rounded-xl max-w-xs max-h-52 object-cover border border-white/10 shadow-md">
+                    <div class="absolute top-2 right-2 flex space-x-1 bg-black/70 p-1 rounded-lg backdrop-blur-sm">
+                        <a href="${m.media_url}" download="image.jpg" class="p-1.5 text-amber-300 hover:text-white" title="Download"><i class="fa-solid fa-download text-xs"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1.5 text-red-400 hover:text-red-300" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
                     </div>
                 </div>`;
             } else if (m.type === 'video') {
-                contentHtml += `<div class="relative mt-2">
-                    <video src="${m.media_url}" controls class="rounded-xl max-w-xs max-h-48 border border-white/10"></video>
-                    <div class="absolute top-2 right-2 flex space-x-1 bg-black/60 p-1 rounded-lg">
-                        <a href="${m.media_url}" download="video.mp4" class="p-1 text-amber-300 hover:text-white" title="Download"><i class="fa-solid fa-download text-xs"></i></a>
-                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
+                contentHtml = `<div class="relative my-1">
+                    <video src="${m.media_url}" controls class="rounded-xl max-w-xs max-h-52 border border-white/10 shadow-md"></video>
+                    <div class="absolute top-2 right-2 flex space-x-1 bg-black/70 p-1 rounded-lg backdrop-blur-sm">
+                        <a href="${m.media_url}" download="video.mp4" class="p-1.5 text-amber-300 hover:text-white" title="Download"><i class="fa-solid fa-download text-xs"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1.5 text-red-400 hover:text-red-300" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
                     </div>
                 </div>`;
             } else {
-                contentHtml += `<div class="flex items-center justify-between mt-2 p-2 rounded-xl bg-black/30 border border-white/10">
-                    <a href="${m.media_url}" target="_blank" class="text-xs underline text-amber-300 truncate max-w-[160px]"><i class="fa-solid fa-file mr-1"></i> File Attachment</a>
-                    <div class="flex space-x-2">
-                        <a href="${m.media_url}" download class="text-amber-300 hover:text-white text-xs"><i class="fa-solid fa-download"></i></a>
-                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="text-red-400 hover:text-red-300 text-xs"><i class="fa-solid fa-trash"></i></button>
+                contentHtml = `<div class="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/10 my-1 space-x-3">
+                    <span class="text-xs underline text-amber-300 truncate max-w-[150px]"><i class="fa-solid fa-file mr-1"></i> ${escapeHtml(m.message_text || 'File')}</span>
+                    <div class="flex space-x-2 shrink-0">
+                        <a href="${m.media_url}" download class="p-1 text-amber-300 hover:text-white text-xs"><i class="fa-solid fa-download"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
             }
         }
+
         return `
         <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1">
-            <div class="max-w-[75%] px-3.5 py-2.5 rounded-2xl ${isMe ? 'theme-card border border-amber-400/20' : 'theme-surface border border-white/10'} shadow-md">
+            <div class="max-w-[75%] px-3.5 py-2.5 rounded-2xl ${isMe ? 'chat-bubble-me' : 'chat-bubble-them'} shadow-md relative">
                 ${contentHtml}
             </div>
         </div>`;
@@ -736,33 +752,21 @@ function loadMessages() {
 }
 
 function deleteSingleMessage(key, index) {
-    if (localMessageStore[key]) {
+    if (localMessageStore[key] && localMessageStore[key][index]) {
+        const msg = localMessageStore[key][index];
+        if (msg.id) {
+            deletedMessageIds.push(msg.id);
+            localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+        }
         localMessageStore[key].splice(index, 1);
         persistMessages();
         loadMessages();
-        showToast("Message deleted");
+        showToast("Deleted successfully");
     }
 }
 
 function appendBubble(m) {
-    const container = document.getElementById('chatMessages');
-    if (!container) return;
-    if (container.querySelector('.m-auto')) container.innerHTML = '';
-    const isMe = normPhone(m.phone_number) === normPhone(getActiveProfile().phone);
-    let contentHtml = `<p class="text-xs text-white">${escapeHtml(m.message_text || '')}</p>`;
-    if (m.media_url) {
-        if (m.type === 'image') contentHtml += `<img src="${m.media_url}" class="mt-2 rounded-xl max-w-xs max-h-48 object-cover">`;
-        else if (m.type === 'video') contentHtml += `<video src="${m.media_url}" controls class="mt-2 rounded-xl max-w-xs max-h-48"></video>`;
-        else contentHtml += `<a href="${m.media_url}" target="_blank" class="block mt-2 text-xs underline text-amber-300">Download Attachment</a>`;
-    }
-    const div = document.createElement('div');
-    div.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1`;
-    div.innerHTML = `
-        <div class="max-w-[75%] px-3.5 py-2.5 rounded-2xl ${isMe ? 'theme-card border border-amber-400/20' : 'theme-surface border border-white/10'} shadow-md">
-            ${contentHtml}
-        </div>`;
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
+    loadMessages(); // তাৎক্ষণিকভাবে রেন্ডার করার জন্য loadMessages কল করা হলো
 }
 
 function escapeHtml(text) {
