@@ -1,6 +1,6 @@
 let currentTab = 'contact', currentActiveRecipient = null, deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
-let currentCallType = 'audio', activeShareData = null;
+let currentCallType = 'audio', activeShareData = null, selectedCountryFolder = 'ALL';
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -39,8 +39,27 @@ let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v12') || 'n
 
 let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v12') || 'null') || [
     { name: "rorraxy", phone: "+8801711111111", appUser: true, isOnline: true, lastMsg: "" },
-    { name: "Mamun Rashid", phone: "+8801800000000", appUser: true, isOnline: true, lastMsg: "" }
+    { name: "Mamun Rashid", phone: "+8801800000000", appUser: true, isOnline: true, lastMsg: "" },
+    { name: "Saudi Support", phone: "+966500000000", appUser: true, isOnline: true, lastMsg: "" }
 ];
+
+const COUNTRY_MAP = [
+    { code: '+880', name: 'Bangladesh', flag: '🇧🇩' },
+    { code: '+966', name: 'Saudi Arabia', flag: '🇸🇦' },
+    { code: '+971', name: 'UAE', flag: '🇦🇪' },
+    { code: '+91', name: 'India', flag: '🇮🇳' },
+    { code: '+92', name: 'Pakistan', flag: '🇵🇰' },
+    { code: '+1', name: 'USA / Canada', flag: '🇺🇸' },
+    { code: '+44', name: 'UK', flag: '🇬🇧' }
+];
+
+function getCountryInfo(phone) {
+    const p = normPhone(phone);
+    for (const c of COUNTRY_MAP) {
+        if (p.startsWith(c.code)) return c;
+    }
+    return { code: 'OTHER', name: 'Global / Other', flag: '🌍' };
+}
 
 function getActiveProfile() { return savedProfiles[0]; }
 function saveProfiles() { localStorage.setItem('salaam_profiles_v12', JSON.stringify(savedProfiles)); }
@@ -71,39 +90,38 @@ async function detectUserIp() {
     } catch (e) { userDeviceIp = 'Unknown'; }
 }
 
-// Direct Auto-Sync Contacts (No Gmail/Account prompt interference)
-async function syncDeviceContactsDirectly() {
-    // Inject standard default global network contacts directly to ensure zero-loss & instant visibility
-    const defaultGlobalContacts = [
-        { name: "rorraxy", phone: "+8801711111111", appUser: true, isOnline: true, lastMsg: "" },
-        { name: "Mamun Rashid", phone: "+8801800000000", appUser: true, isOnline: true, lastMsg: "" },
-        { name: "Support Team", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "" }
-    ];
-    
-    defaultGlobalContacts.forEach(dc => {
-        if (!deviceContacts.some(existing => normPhone(existing.phone) === normPhone(dc.phone))) {
-            deviceContacts.push(dc);
-        }
-    });
-
-    if ('contacts' in navigator && 'ContactsManager' in window) {
-        try {
-            const contacts = await navigator.contacts.select(['name', 'tel'], { multiple: true });
-            if (contacts && contacts.length) {
-                contacts.forEach(contact => {
-                    const cName = contact.name ? contact.name[0] : 'Unknown';
-                    const cPhone = contact.tel ? contact.tel[0] : '';
-                    if (cPhone) {
-                        const norm = normPhone(cPhone);
-                        if (!deviceContacts.some(dc => normPhone(dc.phone) === norm)) {
-                            deviceContacts.push({ name: cName, phone: cPhone, appUser: true, isOnline: true, lastMsg: "" });
+// Zero-Permission Auto-Sync & Global Network Discovery
+async function syncGlobalNetworkUsers() {
+    try {
+        const res = await fetch('/api/chat?action=get_global_users');
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success && Array.isArray(data.users)) {
+                const myPhone = normPhone(getActiveProfile().phone);
+                data.users.forEach(u => {
+                    const uPhone = normPhone(u.phone_number);
+                    if (uPhone && uPhone !== myPhone) {
+                        const existingIdx = deviceContacts.findIndex(dc => normPhone(dc.phone) === uPhone);
+                        if (existingIdx === -1) {
+                            deviceContacts.push({
+                                name: u.display_name || uPhone,
+                                phone: uPhone,
+                                appUser: true,
+                                isOnline: u.is_online === 1,
+                                avatar: u.avatar_url || null,
+                                lastMsg: ""
+                            });
+                        } else {
+                            deviceContacts[existingIdx].isOnline = u.is_online === 1;
+                            if (u.display_name) deviceContacts[existingIdx].name = u.display_name;
                         }
                     }
                 });
+                localStorage.setItem('salaam_contacts_v12', JSON.stringify(deviceContacts));
+                if (currentTab === 'contact') renderDeviceContacts();
             }
-        } catch (e) {}
-    }
-    localStorage.setItem('salaam_contacts_v12', JSON.stringify(deviceContacts));
+        }
+    } catch (e) {}
 }
 
 function checkInitialVerification() {
@@ -117,6 +135,7 @@ function checkInitialVerification() {
         }
     } else {
         document.getElementById('verifyOverlay').style.display = 'none';
+        syncGlobalNetworkUsers();
         switchTab('contact');
     }
 }
@@ -146,7 +165,7 @@ async function submitVerifyStep1() {
     document.getElementById('verifyStep1').style.display = 'none';
     document.getElementById('verifyStep2').style.display = 'block';
     document.getElementById('vDisplayCode').innerText = generatedOtpCode;
-    showToast("6-digit verification code generated!");
+    showToast("Code generated instantly!");
 }
 
 function autoFillOtp() { document.getElementById('vOtpInput').value = generatedOtpCode; }
@@ -163,8 +182,6 @@ async function submitVerifyStep2() {
 
     if (userDeviceIp === "Unknown" || userDeviceIp === "Detecting...") { await detectUserIp(); }
 
-    await syncDeviceContactsDirectly();
-
     try {
         await fetch('/api/chat?action=verify_magic_code', {
             method: 'POST',
@@ -175,7 +192,7 @@ async function submitVerifyStep2() {
 
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
     document.getElementById('verifyOverlay').style.display = 'none';
-    showToast("Verified & Synced Successfully!");
+    showToast("Successfully Connected & Auto-Synced!");
     switchTab('contact');
 }
 
@@ -195,7 +212,11 @@ function switchTab(tab) {
     else {
         sb.style.display = 'block';
         document.getElementById('searchInput').value = '';
-        tab === 'chat' ? renderChatStories() : renderDeviceContacts();
+        if (tab === 'chat') renderChatStories();
+        else {
+            syncGlobalNetworkUsers();
+            renderDeviceContacts();
+        }
     }
     if (window.innerWidth < 768) {
         document.getElementById('sidebarSection').style.display = 'flex';
@@ -265,10 +286,11 @@ function renderProfileView() {
             </div>
 
             <div class="space-y-2 theme-card p-4 rounded-2xl border border-white/5">
-                <div class="flex items-center justify-between"><span class="font-bold gold-gradient-text">Theme</span><span class="text-[10px] text-gray-400">${currentTheme === 'emerald' ? 'Emerald (Default)' : 'Pure Black'}</span></div>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="applyTheme('emerald')" class="py-2 px-3 rounded-xl text-[11px] font-semibold flex items-center justify-center space-x-2 cursor-pointer ${currentTheme === 'emerald' ? 'bg-emerald-500/20 text-white' : 'bg-[#04120b]/70 text-gray-400'}"><span>Emerald</span></button>
-                    <button onclick="applyTheme('black')" class="py-2 px-3 rounded-xl text-[11px] font-semibold flex items-center justify-center space-x-2 cursor-pointer ${currentTheme === 'black' ? 'bg-amber-500/20 text-white' : 'bg-black/50 text-gray-400'}"><span>Pure Black</span></button>
+                <div class="flex items-center justify-between"><span class="font-bold gold-gradient-text">Select Theme</span><span class="text-[10px] text-gray-400 capitalize">${currentTheme}</span></div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="applyTheme('emerald')" class="py-2 px-2 rounded-xl text-[10px] font-semibold flex items-center justify-center cursor-pointer ${currentTheme === 'emerald' ? 'bg-emerald-500/20 text-white border border-emerald-500' : 'bg-black/50 text-gray-400'}"><span>Emerald</span></button>
+                    <button onclick="applyTheme('black')" class="py-2 px-2 rounded-xl text-[10px] font-semibold flex items-center justify-center cursor-pointer ${currentTheme === 'black' ? 'bg-amber-500/20 text-white border border-amber-500' : 'bg-black/50 text-gray-400'}"><span>Pure Black</span></button>
+                    <button onclick="applyTheme('luxury')" class="py-2 px-2 rounded-xl text-[10px] font-semibold flex items-center justify-center cursor-pointer ${currentTheme === 'luxury' ? 'bg-amber-600/20 text-white border border-amber-500' : 'bg-black/50 text-gray-400'}"><span>Luxury Gold</span></button>
                 </div>
             </div>
         </div>`;
@@ -319,15 +341,54 @@ function getTickBadge(on) {
     return `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full ${on?'bg-[#2ed573]/15 text-[#2ed573]':'bg-amber-400/15 text-amber-300'}"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
 }
 
+function selectFolder(code) {
+    selectedCountryFolder = code;
+    renderDeviceContacts();
+}
+
 function renderDeviceContacts() {
-    document.getElementById('sidebarContentList').innerHTML = deviceContacts.map(c => `
+    const folderCounts = { ALL: deviceContacts.length };
+    const activeCountries = new Map();
+
+    deviceContacts.forEach(c => {
+        const info = getCountryInfo(c.phone);
+        folderCounts[info.code] = (folderCounts[info.code] || 0) + 1;
+        activeCountries.set(info.code, info);
+    });
+
+    let folderHtml = `<div class="flex space-x-1.5 overflow-x-auto pb-2 mb-1">
+        <button onclick="selectFolder('ALL')" class="px-3 py-1.5 rounded-xl text-[10px] font-bold shrink-0 cursor-pointer border ${selectedCountryFolder === 'ALL' ? 'gold-btn border-transparent' : 'theme-card text-gray-300 border-white/10'}">🌐 All (${folderCounts.ALL})</button>`;
+
+    activeCountries.forEach((info, code) => {
+        const isSel = selectedCountryFolder === code;
+        folderHtml += `<button onclick="selectFolder('${code}')" class="px-3 py-1.5 rounded-xl text-[10px] font-bold shrink-0 cursor-pointer border ${isSel ? 'gold-btn border-transparent' : 'theme-card text-gray-300 border-white/10'}">${info.flag} ${info.name} (${folderCounts[code]})</button>`;
+    });
+    folderHtml += `</div>`;
+
+    const filtered = selectedCountryFolder === 'ALL'
+        ? deviceContacts
+        : deviceContacts.filter(c => getCountryInfo(c.phone).code === selectedCountryFolder);
+
+    const contactsHtml = filtered.map(c => {
+        const info = getCountryInfo(c.phone);
+        return `
         <div onclick="openChat('${c.phone}', '${c.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
             <div class="flex items-center space-x-3">
-                <div class="relative w-10 h-10 rounded-full theme-card flex items-center justify-center text-xs font-bold gold-gradient-text">${c.name.charAt(0)}<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span></div>
-                <div><p class="text-xs font-semibold gold-gradient-text">${c.name}</p><p class="text-[10px] text-gray-400">${c.phone}</p></div>
+                <div class="relative w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span></div>
+                <div>
+                    <div class="flex items-center space-x-1.5">
+                        <p class="text-xs font-semibold gold-gradient-text">${c.name}</p>
+                        <span class="text-[10px]">${info.flag}</span>
+                    </div>
+                    <p class="text-[10px] text-gray-400">${c.phone}</p>
+                </div>
             </div>
             ${getTickBadge(c.isOnline)}
-        </div>`).join('');
+        </div>`;
+    }).join('');
+
+    document.getElementById('sidebarContentList').innerHTML = folderHtml + `<div id="directDialSlot"></div>` + contactsHtml;
+    filterContent();
 }
 
 function renderChatStories() {
@@ -346,10 +407,47 @@ function renderChatStories() {
 }
 
 function filterContent() {
-    const q = document.getElementById('searchInput').value.toLowerCase();
-    document.querySelectorAll('#sidebarContentList > div').forEach(el => {
+    const rawVal = document.getElementById('searchInput').value.trim();
+    const q = rawVal.toLowerCase();
+    const cleanNum = normPhone(rawVal);
+
+    document.querySelectorAll('#sidebarContentList > div:not(#directDialSlot)').forEach(el => {
+        if (el.classList.contains('overflow-x-auto')) return;
         el.style.display = el.innerText.toLowerCase().includes(q) ? 'flex' : 'none';
     });
+
+    const slot = document.getElementById('directDialSlot');
+    if (slot) {
+        if (/^\+?[0-9]{7,15}$/.test(cleanNum)) {
+            const formattedPhone = cleanNum.startsWith('+') ? cleanNum : '+' + cleanNum;
+            const info = getCountryInfo(formattedPhone);
+            slot.innerHTML = `
+                <div class="p-3.5 my-2 rounded-2xl theme-card border border-amber-400/40 flex items-center justify-between shadow-lg">
+                    <div>
+                        <p class="text-xs font-bold gold-gradient-text">${info.flag} ${formattedPhone}</p>
+                        <p class="text-[10px] text-[#2ed573]">Direct Global P2P Ready</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="connectDirectNumber('${formattedPhone}', 'chat')" class="gold-btn px-3 py-1.5 rounded-xl text-[10px] font-bold cursor-pointer">Chat</button>
+                        <button onclick="connectDirectNumber('${formattedPhone}', 'audio')" class="pink-btn p-2 rounded-xl cursor-pointer" title="Direct Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                    </div>
+                </div>`;
+        } else {
+            slot.innerHTML = '';
+        }
+    }
+}
+
+function connectDirectNumber(phone, mode) {
+    const cp = normPhone(phone);
+    if (!deviceContacts.some(c => normPhone(c.phone) === cp)) {
+        deviceContacts.unshift({ name: cp, phone: cp, appUser: true, isOnline: true, lastMsg: "" });
+        localStorage.setItem('salaam_contacts_v12', JSON.stringify(deviceContacts));
+    }
+    openChat(cp, cp);
+    if (mode === 'audio' || mode === 'video') {
+        startWhatsAppCall(mode);
+    }
 }
 
 function openChat(phone, name) {
@@ -521,7 +619,7 @@ function loadMessages() {
         msgs.forEach((m, i) => appendBubble(m, i));
         scrollChatToBottom();
     } else {
-        c.innerHTML = `<div class="empty-placeholder flex flex-col items-center justify-center space-y-3 text-center m-auto"><p class="text-sm font-bold gold-gradient-text">Start Conversation</p></div>`;
+        c.innerHTML = `<div class="empty-placeholder flex flex-col items-center justify-center space-y-3 text-center m-auto"><p class="text-sm font-bold gold-gradient-text">Start Secure Chat</p></div>`;
     }
 }
 
@@ -567,6 +665,16 @@ function toggleCallMode() {
     currentCallType = currentCallType === 'audio' ? 'video' : 'audio';
     updateCallModeUI();
     showToast(`Switched to ${currentCallType} call`);
+}
+
+function updateCallModeUI() {
+    const btn = document.getElementById('callModeSwitchBtn');
+    if (!btn) return;
+    if (currentCallType === 'audio') {
+        btn.innerHTML = `<i class="fa-solid fa-video text-amber-300"></i><span>Switch to Video</span>`;
+    } else {
+        btn.innerHTML = `<i class="fa-solid fa-phone text-amber-300"></i><span>Switch to Audio</span>`;
+    }
 }
 
 function endWhatsAppCall() {
