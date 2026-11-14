@@ -240,18 +240,15 @@ async function startWhatsAppCall(mode) {
     callHistoryNotifications.unshift({ text: `${mode === 'video' ? 'Video' : 'Audio'} call with ${currentActiveRecipient.name}`, time: Date.now() });
     updateNotificationBadge();
     
-    // Ensure call modal exists or prompt properly
     showCallModalUI(currentActiveRecipient.name, currentActiveRecipient.avatar, `Calling ${mode}...`, mode);
 }
 
 function showCallModalUI(peerName, avatarUrl, statusText, mode) {
-    // Check if modal container exists, if not create or display standard UI
     let modal = document.getElementById('whatsAppCallModal');
     if (!modal) {
-        // Create modal dynamically if missing from HTML layout
         modal = document.createElement('div');
         modal.id = 'whatsAppCallModal';
-        modal.className = 'fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-4';
+        modal.className = 'fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-4';
         modal.innerHTML = `
             <div class="theme-card p-6 rounded-3xl max-w-sm w-full text-center space-y-4 border border-amber-400/30 shadow-2xl">
                 <img id="callModalAvatar" src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-24 h-24 rounded-full object-cover mx-auto border-2 border-amber-400/50 bg-black">
@@ -437,7 +434,7 @@ function appendBubble(m) {
 
 function escapeHtml(text) {
     const map = { '&': '&', '<': '<', '>': '>', '"': '"', "'": ''' };
-    return text.replace(/[&<>"']/g, m => map[m]);
+    return String(text || '').replace(/[&<>"']/g, m => map[m]);
 }
 
 function toggleSendButton() {
