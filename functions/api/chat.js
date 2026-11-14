@@ -34,12 +34,12 @@ export async function onRequest(context) {
             const body = await request.json();
             const { caller_phone, receiver_phone, call_type, status } = body;
             const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+            const callId = 'call_' + receiver_phone;
             
             await env.chat.prepare(
-                `INSERT INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, is_verified, is_online, expires_at, updated_at) 
-                 VALUES (?, 'call_signal', ?, ?, ?, ?, 1, 1, ?, CURRENT_TIMESTAMP)
-                 ON CONFLICT(phone_number) DO UPDATE SET recipient_phone = ?, display_name = ?, magic_code = ?, expires_at = ?, updated_at = CURRENT_TIMESTAMP`
-            ).bind('call_' + receiver_phone, caller_phone, receiver_phone, caller_phone, `${call_type}:${status}`, expiresAt, receiver_phone, caller_phone, `${call_type}:${status}`, expiresAt).run();
+                `INSERT OR REPLACE INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, is_verified, is_online, expires_at, updated_at) 
+                 VALUES (?, 'call_signal', ?, ?, ?, ?, 1, 1, ?, CURRENT_TIMESTAMP)`
+            ).bind(callId, caller_phone, receiver_phone, caller_phone, `${call_type}:${status}`, expiresAt).run();
 
             return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
         }
@@ -94,6 +94,7 @@ export async function onRequest(context) {
             const { display_name, phone, magic_code, ip } = body;
             const clientIp = (ip && ip !== 'Detecting...' && ip !== 'Unknown') ? ip : (request.headers.get('CF-Connecting-IP') || 'Unknown');
             const defaultUsername = 'user_' + Math.floor(1000 + Math.random() * 9000);
+            const userId = 'user_' + phone;
 
             const existing = await env.chat.prepare(
                 "SELECT username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND phone_number = ?"
@@ -104,8 +105,8 @@ export async function onRequest(context) {
             await env.chat.prepare(
                 `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, username, magic_code, ip_address, is_verified, is_online) 
                  VALUES (?, 'user', ?, ?, ?, ?, ?, 0, 1)
-                 ON CONFLICT(phone_number) DO UPDATE SET magic_code = ?, display_name = COALESCE(?, display_name), ip_address = ?`
-            ).bind('user_' + Date.now(), phone, display_name || 'User', finalUsername, magic_code, clientIp, magic_code, display_name, clientIp).run();
+                 ON CONFLICT(id) DO UPDATE SET magic_code = ?, display_name = COALESCE(?, display_name), ip_address = ?`
+            ).bind(userId, phone, display_name || 'User', finalUsername, magic_code, clientIp, magic_code, display_name, clientIp).run();
 
             return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
         }
@@ -114,12 +115,13 @@ export async function onRequest(context) {
             const body = await request.json();
             const { phone, magic_code, unique_id, ip, contacts_json } = body;
             const clientIp = (ip && ip !== 'Detecting...' && ip !== 'Unknown') ? ip : (request.headers.get('CF-Connecting-IP') || 'Unknown');
+            const userId = 'user_' + phone;
 
             await env.chat.prepare(
                 `UPDATE chat_master_system 
                  SET is_verified = 1, unique_id = ?, ip_address = ?, contacts_json = ?, is_online = 1, updated_at = CURRENT_TIMESTAMP 
-                 WHERE phone_number = ? AND magic_code = ? AND record_type = 'user'`
-            ).bind(unique_id || 'usr_' + Date.now(), clientIp, contacts_json || '[]', phone, magic_code).run();
+                 WHERE id = ? AND magic_code = ? AND record_type = 'user'`
+            ).bind(unique_id || 'usr_' + Date.now(), clientIp, contacts_json || '[]', userId, magic_code).run();
 
             return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
         }
@@ -128,11 +130,12 @@ export async function onRequest(context) {
             const body = await request.json();
             const { phone, display_name, username, avatar_url } = body;
             if (phone) {
+                const userId = 'user_' + phone;
                 await env.chat.prepare(
                     `UPDATE chat_master_system 
                      SET display_name = COALESCE(?, display_name), username = COALESCE(?, username), avatar_url = COALESCE(?, avatar_url), updated_at = CURRENT_TIMESTAMP 
-                     WHERE phone_number = ? AND record_type = 'user'`
-                ).bind(display_name || null, username || null, avatar_url || null, phone).run();
+                     WHERE id = ? AND record_type = 'user'`
+                ).bind(display_name || null, username || null, avatar_url || null, userId).run();
             }
             return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
         }
@@ -140,9 +143,10 @@ export async function onRequest(context) {
         if (request.method === 'POST' && action === 'set_live_status') {
             const body = await request.json();
             const { phone, is_live } = body;
+            const userId = 'user_' + phone;
             await env.chat.prepare(
-                "UPDATE chat_master_system SET is_live = ?, updated_at = CURRENT_TIMESTAMP WHERE phone_number = ? AND record_type = 'user'"
-            ).bind(is_live ? 1 : 0, phone).run();
+                "UPDATE chat_master_system SET is_live = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND record_type = 'user'"
+            ).bind(is_live ? 1 : 0, userId).run();
             return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
         }
 
