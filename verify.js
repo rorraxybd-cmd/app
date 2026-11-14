@@ -8,7 +8,7 @@ let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v18') || 'n
     name: "User",
     phone: "+8801700000000",
     username: "user_" + Math.floor(1000 + Math.random() * 9000),
-    privacy: "public",
+    themeColor: "emerald",
     avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png"
 }];
 
@@ -115,7 +115,7 @@ async function submitVerifyStep2() {
                     name: data.user.display_name || tempVerifyName,
                     phone: tempVerifyPhone,
                     username: data.user.username || ('user_' + Math.floor(1000 + Math.random() * 9000)),
-                    privacy: "public",
+                    themeColor: "emerald",
                     avatar: data.user.avatar_url || "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png"
                 };
                 saveProfiles();
@@ -163,6 +163,7 @@ function checkInitialVerification() {
     }
 }
 
+// সেটিংস ও প্রোফাইল রেন্ডার করার মূল ফাংশন (মোবাইল নম্বর হাইড রেখে ফুল নেম, ইউজারনেম এবং থিম অপশনসহ)
 function renderProfileView() {
     const profile = getActiveProfile();
     const sidebarList = document.getElementById('sidebarContentList');
@@ -180,19 +181,25 @@ function renderProfileView() {
                 </div>
                 <div>
                     <h3 class="text-sm font-bold gold-gradient-text">${profile.name}</h3>
-                    <p class="text-[11px] text-gray-400 font-medium">${profile.phone}</p>
-                    <span class="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-[#2ed573]/15 text-[#2ed573] text-[10px] font-semibold">Verified Account</span>
+                    <p class="text-[10px] text-amber-300 font-medium tracking-wider">Verified Secure Account</p>
                 </div>
             </div>
 
             <div class="space-y-3 theme-card p-4 rounded-2xl border border-white/5">
                 <div class="space-y-1">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text">DISPLAY NAME</label>
+                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text">FULL NAME</label>
                     <input type="text" id="editDisplayName" value="${profile.name}" class="w-full theme-input text-xs px-3.5 py-2.5 rounded-xl text-white focus:outline-none border border-white/10">
                 </div>
                 <div class="space-y-1">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text">USERNAME</label>
                     <input type="text" id="editUsername" value="${profile.username}" class="w-full theme-input text-xs px-3.5 py-2.5 rounded-xl text-white focus:outline-none border border-white/10" placeholder="username">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text">APP THEME COLOR</label>
+                    <select id="editThemeColor" class="w-full theme-input text-xs px-3.5 py-2.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer">
+                        <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>Emerald Dark</option>
+                        <option value="classic" ${profile.themeColor==='classic'?'selected':''}>Classic Gold</option>
+                    </select>
                 </div>
                 <button onclick="saveProfileSettings()" class="w-full py-3 gold-btn text-xs rounded-xl font-bold cursor-pointer shadow-lg mt-1">
                     SAVE & SYNC PROFILE
@@ -227,6 +234,7 @@ function handleProfileAvatarChange(input) {
 async function saveProfileSettings() {
     const newName = document.getElementById('editDisplayName').value.trim();
     const newUsername = document.getElementById('editUsername').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const newTheme = document.getElementById('editThemeColor').value;
     
     if (!newName) { showToast("Display name cannot be empty", true); return; }
     if (RESERVED_USERNAMES.includes(newUsername)) { showToast("Username is reserved", true); return; }
@@ -234,6 +242,7 @@ async function saveProfileSettings() {
     const profile = getActiveProfile();
     profile.name = newName;
     if (newUsername) profile.username = newUsername;
+    profile.themeColor = newTheme;
     saveProfiles();
 
     try {
