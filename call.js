@@ -7,21 +7,27 @@ let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || '
     { name: "rorraxy Support", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png", hidePhone: true }
 ];
 
-function persistMessages() { localStorage.setItem('salaam_messages_v18', JSON.stringify(localMessageStore)); }
+function persistMessages() { 
+    localStorage.setItem('salaam_messages_v18', JSON.stringify(localMessageStore)); 
+}
 
 function showToast(msg, isErr = false) {
     const b = document.getElementById('toastBanner'), dot = document.getElementById('toastDot'), text = document.getElementById('toastText');
     if (!b) return;
     dot.style.backgroundColor = isErr ? '#ff2e7e' : '#2ed573';
     text.innerText = msg;
-    b.classList.remove('hidden'); b.classList.add('flex');
-    setTimeout(() => { b.classList.add('hidden'); b.classList.remove('flex'); }, 2200);
+    b.classList.remove('hidden'); 
+    b.classList.add('flex');
+    setTimeout(() => { 
+        b.classList.add('hidden'); 
+        b.classList.remove('flex'); 
+    }, 2200);
 }
 
 function initAppAfterVerification() {
     syncGlobalNetworkUsers();
     setTimeout(() => {
-        switchTab('contact'); // অ্যাপ ভেরিফাই হওয়ার পর কন্টাক্ট ট্যাব রেন্ডার করবে
+        switchTab('contact');
     }, 100);
     startIncomingCallPolling();
     startChatPolling();
@@ -178,15 +184,18 @@ async function fetchMessagesFromCloud() {
                 if (!localMessageStore[key]) localMessageStore[key] = [];
                 let updated = false;
                 data.messages.forEach(m => {
-                    const [mType, mText, mUrl] = (m.payload || '').split(':');
+                    const parts = (m.payload || '').split(':');
+                    const mType = parts[0] || 'text';
+                    const mText = parts[1] || '';
+                    const mUrl = parts[2] || null;
                     const exists = localMessageStore[key].some(existing => existing.message_text === mText && existing.phone_number === m.sender_phone);
                     if (!exists) {
                         localMessageStore[key].push({
                             id: 'm_' + Date.now() + Math.random(),
                             phone_number: m.sender_phone,
-                            message_text: mText || '',
+                            message_text: mText,
                             media_url: mUrl && mUrl !== 'undefined' ? mUrl : null,
-                            type: mType || 'text'
+                            type: mType
                         });
                         updated = true;
                     }
@@ -290,7 +299,9 @@ function startIncomingCallPolling() {
             if (res.ok) {
                 const data = await res.json();
                 if (data.success && data.signal && data.signal.magic_code) {
-                    const [type, status] = data.signal.magic_code.split(':');
+                    const parts = data.signal.magic_code.split(':');
+                    const type = parts[0] || 'audio';
+                    const status = parts[1] || '';
                     const modal = document.getElementById('whatsAppCallModal');
                     const isModalHidden = !modal || modal.classList.contains('hidden');
 
@@ -433,8 +444,12 @@ function appendBubble(m) {
 }
 
 function escapeHtml(text) {
-    const map = { '&': '&', '<': '<', '>': '>', '"': '"', "'": ''' };
-    return String(text || '').replace(/[&<>"']/g, m => map[m]);
+    return String(text || '')
+        .replace(/&/g, '&')
+        .replace(/</g, '<')
+        .replace(/>/g, '>')
+        .replace(/"/g, '"')
+        .replace(/'/g, ''');
 }
 
 function toggleSendButton() {
