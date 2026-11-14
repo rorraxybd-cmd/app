@@ -195,21 +195,16 @@ function checkInitialVerification() {
     }
 }
 
-// ----------------------------------------------------
-// সেটিংস / প্রোফাইল ভিউ (প্রিমিয়াম কার্ড ও এডিট অপশনসহ)
-// ----------------------------------------------------
 function renderProfileView() {
     const profile = getActiveProfile();
     const sidebarList = document.getElementById('sidebarContentList');
     if (!sidebarList) return;
 
-    // ফোন নম্বর সিক্রেট আকারে দেখানো (যেমন: +88017******50)
     const phoneStr = profile.phone || '';
     const maskedPhone = phoneStr.length > 6 ? phoneStr.substring(0, 5) + '******' + phoneStr.slice(-2) : phoneStr;
 
     sidebarList.innerHTML = `
         <div class="p-4 space-y-4">
-            <!-- প্রোফাইল কার্ড -->
             <div class="text-center space-y-2 theme-card p-5 rounded-3xl border border-amber-400/20 shadow-xl">
                 <div class="relative w-24 h-24 mx-auto">
                     <img id="profileAvatarPreview" src="${profile.avatar}" class="w-24 h-24 rounded-full object-cover border-2 border-amber-400/60 bg-black shadow-lg">
@@ -224,7 +219,6 @@ function renderProfileView() {
                 </div>
             </div>
 
-            <!-- সেটিংস এডিট ফর্ম -->
             <div class="space-y-3.5 theme-card p-5 rounded-3xl border border-amber-400/20 shadow-xl">
                 <div class="space-y-1">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text">FULL NAME</label>
@@ -257,7 +251,6 @@ function previewThemeStyle(theme) {
     saveProfiles();
 }
 
-// যেকোনো বড় ছবি আপলোড করলে অটোমেটিক হাই-কোয়ালিটি রেখে সর্বনিম্ন KB-তে কনভার্ট করা
 function handleProfileAvatarChange(input) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
@@ -342,9 +335,6 @@ async function saveProfileSettings() {
     }
 }
 
-// ----------------------------------------------------
-// নোটিফিকেশন টগল প্যানেল ও অল/সিলেক্টিভ ডিলিট লজিক
-// ----------------------------------------------------
 let notificationStore = JSON.parse(localStorage.getItem('salaam_notifications_v1') || '[]');
 
 function toggleNotificationPanel() {
@@ -399,7 +389,6 @@ function deleteSingleNotification(idx) {
 }
 
 function deleteAllNotifications() {
-    // শুধু আনপিন্ড (অগুরুত্বপূর্ণ) নোটিফিকেশনগুলো ডিলিট হবে, পিন করাগুলো থেকে যাবে
     notificationStore = notificationStore.filter(n => n.keepPinned);
     localStorage.setItem('salaam_notifications_v1', JSON.stringify(notificationStore));
     renderNotificationsDropdown();
