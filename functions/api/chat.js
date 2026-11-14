@@ -22,7 +22,6 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ success: true, users: results || [] }), { headers: corsHeaders });
         }
 
-        // Get Existing User Profile by Phone (Account Recovery on Re-login)
         if (request.method === 'GET' && action === 'get_user_profile') {
             const phone = url.searchParams.get('phone');
             const user = await env.chat.prepare(
@@ -31,49 +30,49 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ success: true, user: user || null }), { headers: corsHeaders });
         }
 
-        // Send Call Signal
+        // Send Call Signal with proper recipient binding
         if (request.method === 'POST' && action === 'send_call_signal') {
             const body = await request.json();
             const { caller_phone, receiver_phone, call_type, status } = body;
             
             await env.chat.prepare(
-                `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, magic_code, is_verified, is_online, updated_at) 
-                 VALUES (?, 'call_signal', ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)
-                 ON CONFLICT(phone_number) DO UPDATE SET display_name = ?, magic_code = ?, updated_at = CURRENT_TIMESTAMP`
-            ).bind('call_' + receiver_phone, receiver_phone, caller_phone, `${call_type}:${status}`, caller_phone, `${call_type}:${status}`).run();
+                `INSERT INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, is_verified, is_online, updated_at) 
+                 VALUES (?, 'call_signal', ?, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)
+                 ON CONFLICT(phone_number) DO UPDATE SET recipient_phone = ?, display_name = ?, magic_code = ?, updated_at = CURRENT_TIMESTAMP`
+            ).bind('call_' + receiver_phone, caller_phone, receiver_phone, caller_phone, `${call_type}:${status}`, receiver_phone, caller_phone, `${call_type}:${status}`).run();
 
             return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
         }
 
-        // Check Call Signal
         if (request.method === 'GET' && action === 'check_call_signal') {
             const phone = url.searchParams.get('phone');
             const res = await env.chat.prepare(
-                "SELECT display_name, magic_code FROM chat_master_system WHERE record_type = 'call_signal' AND phone_number = ?"
+                "SELECT display_name, magic_code FROM chat_master_system WHERE record_type = 'call_signal' AND recipient_phone = ?"
             ).bind(phone).first();
 
             return new Response(JSON.stringify({ success: true, signal: res || null }), { headers: corsHeaders });
         }
 
-        // Send Chat Message to D1 Database
+        // Send Chat Message with recipient tracking
         if (request.method === 'POST' && action === 'send_chat_message') {
             const body = await request.json();
             const { sender_phone, receiver_phone, message_text, media_url, message_type } = body;
             
             await env.chat.prepare(
-                `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, magic_code, is_verified, is_online, updated_at) 
-                 VALUES (?, 'chat_msg', ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)`
-            ).bind('msg_' + Date.now() + Math.random(), receiver_phone, sender_phone, `${message_type || 'text'}:${message_text || ''}:${media_url || ''}`).run();
+                `INSERT INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, is_verified, is_online, updated_at) 
+                 VALUES (?, 'chat_msg', ?, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)`
+            ).bind('msg_' + Date.now() + Math.random(), sender_phone, receiver_phone, sender_phone, `${message_type || 'text'}:${message_text || ''}:${media_url || ''}`).run();
 
             return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
         }
 
-        // Get Chat Messages from D1 Database
+        // Get Chat Messages for specific recipient
         if (request.method === 'GET' && action === 'get_chat_messages') {
             const phone = url.searchParams.get('phone');
+            const myPhone = url.searchParams.get('my_phone');
             const { results } = await env.chat.prepare(
-                "SELECT display_name as sender_phone, magic_code as payload FROM chat_master_system WHERE record_type = 'chat_msg' AND phone_number = ? ORDER BY updated_at ASC"
-            ).bind(phone).all();
+                "SELECT phone_number as sender_phone, magic_code as payload FROM chat_master_system WHERE record_type = 'chat_msg' AND ((phone_number = ? AND recipient_phone = ?) OR (phone_number = ? AND recipient_phone = ?)) ORDER BY updated_at ASC"
+            ).bind(phone, myPhone, myPhone, phone).all();
 
             return new Response(JSON.stringify({ success: true, messages: results || [] }), { headers: corsHeaders });
         }
