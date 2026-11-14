@@ -176,7 +176,8 @@
     <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40 border-t border-white/5">
         <div class="flex items-center justify-around w-full px-3">
             <button onclick="openWorldLink()" id="tabWorld" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none">
-                <svg id="iconWorld" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8" fill="#F5D061"></polygon></svg>
+                <!-- প্রিমিয়াম ব্রডকাস্ট/সিগন্যাল লাইভ আইকন -->
+                <svg id="iconWorld" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2" fill="#F5D061"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m12.72-2.83a10 10 0 0 1 0 14.14m-16.97 0a10 10 0 0 1 0-14.14"></path></svg>
                 <span id="labelWorld" class="nav-label text-[9px] gold-gradient-text font-semibold">Live</span>
             </button>
             <button onclick="switchTab('calls')" id="tabCalls" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none">
@@ -204,9 +205,9 @@
     </div>
 
     <!-- Modular JavaScript Files Connection -->
-    <script src="/verify.js?v=4.5"></script>
-    <script src="/call.js?v=4.5"></script>
-    <script src="/p2p_file_transfer.js?v=4.5"></script>
+    <script src="/verify.js?v=4.6"></script>
+    <script src="/call.js?v=4.6"></script>
+    <script src="/p2p_file_transfer.js?v=4.6"></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('verifyOverlay');
