@@ -15,7 +15,6 @@ export async function onRequest(context) {
     }
 
     try {
-        // গ্লোবাল নেটওয়ার্ক ইউজারদের তালিকা ফেচ করা (যারা অ্যাপ ইনস্টল ও ভেরিফাই করেছে)
         if (request.method === 'GET' && action === 'get_global_users') {
             const { results } = await env.chat.prepare(
                 "SELECT phone_number, display_name, avatar_url, is_online FROM chat_master_system WHERE record_type = 'user' AND is_verified = 1 ORDER BY updated_at DESC LIMIT 200"
