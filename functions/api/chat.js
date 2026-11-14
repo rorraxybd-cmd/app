@@ -58,17 +58,15 @@ export async function onRequest(context) {
             const { sender_phone, receiver_phone, message_text, media_url, message_type, file_size } = body;
             
             const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-            const payload = `${message_type || 'text'}:${message_text || ''}:${media_url || ''}`;
 
             await env.chat.prepare(
                 `INSERT INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, message_text, media_url, message_status, file_size, expires_at, is_verified, is_online, updated_at) 
-                 VALUES (?, 'chat_msg', ?, ?, ?, ?, ?, ?, 'sent', ?, ?, 1, 1, CURRENT_TIMESTAMP)`
+                 VALUES (?, 'chat_msg', ?, ?, ?, '', ?, ?, 'sent', ?, ?, 1, 1, CURRENT_TIMESTAMP)`
             ).bind(
                 'msg_' + Date.now() + Math.random(), 
                 sender_phone, 
                 receiver_phone, 
                 sender_phone, 
-                payload, 
                 message_text || '', 
                 media_url || '', 
                 file_size || 0,
@@ -83,7 +81,7 @@ export async function onRequest(context) {
             const myPhone = url.searchParams.get('my_phone');
             
             const { results } = await env.chat.prepare(
-                "SELECT phone_number as sender_phone, magic_code as payload, media_url, message_text, created_at FROM chat_master_system WHERE record_type = 'chat_msg' AND ((phone_number = ? AND recipient_phone = ?) OR (phone_number = ? AND recipient_phone = ?)) ORDER BY updated_at ASC"
+                "SELECT phone_number as sender_phone, message_text, media_url, created_at FROM chat_master_system WHERE record_type = 'chat_msg' AND ((phone_number = ? AND recipient_phone = ?) OR (phone_number = ? AND recipient_phone = ?)) ORDER BY updated_at ASC"
             ).bind(phone, myPhone, myPhone, phone).all();
 
             return new Response(JSON.stringify({ success: true, messages: results || [] }), { headers: corsHeaders });
