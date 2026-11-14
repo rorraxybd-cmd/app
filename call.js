@@ -1,12 +1,22 @@
 let currentTab = 'contact', currentActiveRecipient = null;
-let currentCallType = 'audio', activeShareData = null;
-let callRingInterval = null, activeAudioCtx = null, localLiveStream = null, callPollInterval = null, chatPollInterval = null;
+let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
+let callRingInterval = null, activeAudioCtx = null, callPollInterval = null, chatPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
+let peerConnection = null, localStream = null, remoteStream = null;
+let isMicMuted = false, lastHandledSignalTs = 0;
+
 let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
 let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [
     { name: "rorraxy Support", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png", hidePhone: true }
 ];
+
+const RTC_CONFIG = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+};
 
 function persistMessages() { 
     localStorage.setItem('salaam_messages_v18', JSON.stringify(localMessageStore)); 
@@ -163,7 +173,9 @@ async function sendTextMessage() {
     const text = inp.value.trim();
     if (!text) return;
     inp.value = '';
-    const key = normPhone(currentActiveRecipient.phone), me = getActiveProfile().phone;
+    toggleSendButton();
+    
+    const key = normPhone(currentActiveRecipient.phone), me = normPhone(getActiveProfile().phone);
     if (!localMessageStore[key]) localMessageStore[key] = [];
     
     const msg = { id: 'm_' + Date.now(), phone_number: me, message_text: text, media_url: '', type: 'text' };
@@ -182,7 +194,7 @@ async function sendTextMessage() {
 
 async function fetchMessagesFromCloud() {
     if (!currentActiveRecipient) return;
-    const me = getActiveProfile().phone;
+    const me = normPhone(getActiveProfile().phone);
     const key = normPhone(currentActiveRecipient.phone);
     try {
         const res = await fetch(`/api/chat?action=get_chat_messages&phone=${encodeURIComponent(key)}&my_phone=${encodeURIComponent(me)}`);
@@ -191,21 +203,24 @@ async function fetchMessagesFromCloud() {
             if (data.success && Array.isArray(data.messages)) {
                 if (!localMessageStore[key]) localMessageStore[key] = [];
                 let updated = false;
+                
                 data.messages.forEach(m => {
-                    const mText = m.message_text || '';
-                    const mUrl = m.media_url && m.media_url !== 'undefined' ? m.media_url : null;
+                    const sender = normPhone(m.sender_phone);
+                    const mText = (m.message_text || '').trim();
+                    const mUrl = m.media_url && m.media_url !== 'undefined' ? m.media_url : '';
                     const mType = mUrl ? (mUrl.startsWith('data:video/') ? 'video' : 'image') : 'text';
                     
+                    // ডাবল বা ডুপ্লিকেট মেসেজ কঠোরভাবে ফিল্টার করা হচ্ছে
                     const exists = localMessageStore[key].some(existing => 
-                        existing.message_text === mText && 
-                        existing.phone_number === m.sender_phone && 
-                        existing.media_url === mUrl
+                        normPhone(existing.phone_number) === sender &&
+                        (existing.message_text || '').trim() === mText && 
+                        (existing.media_url || '') === mUrl
                     );
 
-                    if (!exists) {
+                    if (!exists && (mText || mUrl)) {
                         localMessageStore[key].push({
                             id: 'm_' + Date.now() + Math.random(),
-                            phone_number: m.sender_phone,
+                            phone_number: sender,
                             message_text: mText,
                             media_url: mUrl,
                             type: mType
@@ -224,11 +239,11 @@ async function fetchMessagesFromCloud() {
 
 function startChatPolling() {
     if (chatPollInterval) clearInterval(chatPollInterval);
-    chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 2000);
+    chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 2500);
 }
 
 // ==========================================
-// সম্পূর্ণ কলিং ও সুইচিং সিস্টেম (Audio & Video Call)
+// রিয়েল-টাইম অডিও ও ভিডিও কলিং সিস্টেম (WebRTC)
 // ==========================================
 
 function startContinuousRinging() {
@@ -241,15 +256,15 @@ function startContinuousRinging() {
             const gain = activeAudioCtx.createGain();
             osc.type = 'sine';
             osc.frequency.setValueAtTime(520, activeAudioCtx.currentTime);
-            gain.gain.setValueAtTime(0.2, activeAudioCtx.currentTime);
+            gain.gain.setValueAtTime(0.18, activeAudioCtx.currentTime);
             osc.connect(gain);
             gain.connect(activeAudioCtx.destination);
             osc.start();
-            osc.stop(activeAudioCtx.currentTime + 0.8);
+            osc.stop(activeAudioCtx.currentTime + 0.7);
         } catch (e) {}
     };
     playTone();
-    callRingInterval = setInterval(playTone, 1500);
+    callRingInterval = setInterval(playTone, 1600);
 }
 
 function stopContinuousRinging() {
@@ -278,162 +293,316 @@ function stopCallDurationTimer() {
     }
 }
 
+async function setupLocalMedia(mode) {
+    try {
+        if (localStream) {
+            localStream.getTracks().forEach(t => t.stop());
+        }
+        localStream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: mode === 'video'
+        });
+        const localVid = document.getElementById('callLocalVideo');
+        const videoContainer = document.getElementById('videoStreamsBox');
+        if (mode === 'video' && localVid && videoContainer) {
+            videoContainer.classList.remove('hidden');
+            localVid.srcObject = localStream;
+        }
+        return localStream;
+    } catch (err) {
+        showToast("Please allow Microphone/Camera permission", true);
+        return null;
+    }
+}
+
+function createPeerConnection(peerPhone) {
+    if (peerConnection) {
+        peerConnection.close();
+    }
+    peerConnection = new RTCPeerConnection(RTC_CONFIG);
+
+    if (localStream) {
+        localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+        });
+    }
+
+    peerConnection.ontrack = (event) => {
+        const remoteVid = document.getElementById('callRemoteVideo');
+        const remoteAud = document.getElementById('callRemoteAudio');
+        if (event.streams && event.streams[0]) {
+            remoteStream = event.streams[0];
+            if (remoteVid) remoteVid.srcObject = remoteStream;
+            if (remoteAud) remoteAud.srcObject = remoteStream;
+        }
+    };
+
+    return peerConnection;
+}
+
+// ১. কলার হিসেবে কল শুরু করা
 async function startWhatsAppCall(mode) {
     if (!currentActiveRecipient) {
         showToast("Select a contact first", true);
         return;
     }
-    currentCallType = mode;
-    startContinuousRinging();
-
     const myPhone = normPhone(getActiveProfile().phone);
     const peerPhone = normPhone(currentActiveRecipient.phone);
+
+    if (myPhone === peerPhone) {
+        showToast("You cannot call your own number", true);
+        return;
+    }
+
+    currentCallType = mode;
+    activeCallPeer = currentActiveRecipient;
+    isCallActive = true;
+
+    renderCallModal(activeCallPeer.name, activeCallPeer.avatar, `Calling ${activeCallPeer.name}...`, mode, false);
+    startContinuousRinging();
+
+    const stream = await setupLocalMedia(mode);
+    const pc = createPeerConnection(peerPhone);
+
+    // ICE Candidate সংগ্রহ শেষ হওয়ার জন্য সংক্ষিপ্ত অপেক্ষা
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    await new Promise(resolve => {
+        if (pc.iceGatheringState === 'complete') resolve();
+        else {
+            const checkIce = () => {
+                if (pc.iceGatheringState === 'complete') {
+                    pc.removeEventListener('icegatheringstatechange', checkIce);
+                    resolve();
+                }
+            };
+            pc.addEventListener('icegatheringstatechange', checkIce);
+            setTimeout(resolve, 1500);
+        }
+    });
 
     try {
         await fetch('/api/chat?action=send_call_signal', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                caller_phone: myPhone, 
-                receiver_phone: peerPhone, 
-                call_type: mode, 
-                status: 'ringing' 
+            body: JSON.stringify({
+                caller_phone: myPhone,
+                receiver_phone: peerPhone,
+                call_type: mode,
+                status: 'ringing',
+                rtc_data: pc.localDescription
             })
         });
     } catch (e) {}
-
-    showCallModalUI(currentActiveRecipient.name, currentActiveRecipient.avatar, `Calling (${mode})...`, mode, false);
 }
 
-function showCallModalUI(peerName, avatarUrl, statusText, mode, isIncoming = false) {
-    let modal = document.getElementById('whatsAppCallModal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'whatsAppCallModal';
-        modal.className = 'fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4';
-        document.body.appendChild(modal);
-    }
-    
-    modal.innerHTML = `
-        <div class="theme-card p-6 rounded-3xl max-w-sm w-full text-center space-y-4 border border-amber-400/30 shadow-2xl">
-            <div class="relative w-24 h-24 mx-auto">
-                <img id="callModalAvatar" src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-24 h-24 rounded-full object-cover border-2 border-amber-400/60 bg-black shadow-lg">
-                <span class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-black animate-pulse"></span>
-            </div>
-            <div>
-                <span id="callTypeBadge" class="px-2.5 py-0.5 rounded-full bg-amber-400/15 text-amber-300 text-[10px] font-bold uppercase tracking-wider">${mode} call</span>
-                <h2 id="callPeerName" class="text-xl font-bold gold-gradient-text mt-2">${peerName}</h2>
-                <p id="callStatusLabel" class="text-xs text-gray-300 mt-1 font-medium">${statusText}</p>
-            </div>
-            <div id="localVideoPreviewBox" class="hidden w-full h-40 bg-black rounded-2xl overflow-hidden border border-white/10 relative">
-                <video id="callLocalVideo" autoplay muted playsinline class="w-full h-full object-cover"></video>
-            </div>
-            <div id="callModalActions" class="flex justify-center items-center space-x-3 pt-2">
-                <button onclick="switchCallModeToVideo()" id="switchToVideoBtn" class="p-3 rounded-2xl theme-input hover:brightness-125 text-amber-300 text-xs font-bold cursor-pointer shadow-md transition flex items-center space-x-1.5" title="Switch to Video">
-                    <i class="fa-solid fa-video"></i>
-                </button>
-
-                ${isIncoming ? `
-                    <button onclick="acceptWhatsAppCall()" class="px-5 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center space-x-1.5">
-                        <i class="fa-solid fa-phone"></i><span>Accept</span>
-                    </button>
-                ` : ''}
-
-                <button onclick="endWhatsAppCall()" class="px-6 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center space-x-1.5">
-                    <i class="fa-solid fa-phone-slash"></i><span>${isIncoming ? 'Decline' : 'End'}</span>
-                </button>
-            </div>
-        </div>
-    `;
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-
-    if (!isIncoming && mode === 'video') {
-        enableLocalCameraPreview();
-    }
-}
-
-async function enableLocalCameraPreview() {
-    try {
-        localLiveStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        const box = document.getElementById('localVideoPreviewBox');
-        const vid = document.getElementById('callLocalVideo');
-        if (box && vid) {
-            box.classList.remove('hidden');
-            vid.srcObject = localLiveStream;
-        }
-    } catch (e) {
-        showToast("Camera/Mic permission required", true);
-    }
-}
-
-function stopLocalMediaTracks() {
-    if (localLiveStream) {
-        localLiveStream.getTracks().forEach(track => track.stop());
-        localLiveStream = null;
-    }
-}
-
-async function switchCallModeToVideo() {
-    currentCallType = 'video';
-    const badge = document.getElementById('callTypeBadge');
-    if (badge) badge.innerText = "video call";
-    showToast("Switched to Video Call");
-    await enableLocalCameraPreview();
-    
-    if (currentActiveRecipient) {
-        const myPhone = normPhone(getActiveProfile().phone);
-        const peerPhone = normPhone(currentActiveRecipient.phone);
-        try {
-            await fetch('/api/chat?action=send_call_signal', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ caller_phone: myPhone, receiver_phone: peerPhone, call_type: 'video', status: 'connected' })
-            });
-        } catch (e) {}
-    }
-}
-
+// ২. রিসিভার হিসেবে কল গ্রহণ করা
 async function acceptWhatsAppCall() {
+    if (!activeCallPeer) return;
     stopContinuousRinging();
+    isCallActive = true;
     startCallDurationTimer();
-    showToast("Call connected!");
+    showToast("Call Connected!");
 
-    const actionsDiv = document.getElementById('callModalActions');
-    if (actionsDiv) {
-        actionsDiv.innerHTML = `
-            <button onclick="endWhatsAppCall()" class="px-7 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center space-x-2">
-                <i class="fa-solid fa-phone-slash"></i><span>End Call</span>
-            </button>
-        `;
-    }
+    const myPhone = normPhone(getActiveProfile().phone);
+    const peerPhone = normPhone(activeCallPeer.phone);
 
-    if (currentCallType === 'video') {
-        enableLocalCameraPreview();
-    } else {
-        try {
-            localLiveStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        } catch (e) {}
-    }
+    // বাটন আপডেট (Accept বাটন সরিয়ে ইন-কল কন্ট্রোল দেখানো)
+    updateInCallButtons();
 
-    if (currentActiveRecipient) {
-        const myPhone = normPhone(getActiveProfile().phone);
-        const peerPhone = normPhone(currentActiveRecipient.phone);
+    await setupLocalMedia(currentCallType);
+    const pc = createPeerConnection(peerPhone);
+
+    if (window.pendingIncomingOffer) {
+        await pc.setRemoteDescription(new RTCSessionDescription(window.pendingIncomingOffer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+
+        await new Promise(resolve => {
+            if (pc.iceGatheringState === 'complete') resolve();
+            else {
+                const checkIce = () => {
+                    if (pc.iceGatheringState === 'complete') {
+                        pc.removeEventListener('icegatheringstatechange', checkIce);
+                        resolve();
+                    }
+                };
+                pc.addEventListener('icegatheringstatechange', checkIce);
+                setTimeout(resolve, 1500);
+            }
+        });
+
         try {
             await fetch('/api/chat?action=send_call_signal', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    caller_phone: myPhone, 
-                    receiver_phone: peerPhone, 
-                    call_type: currentCallType, 
-                    status: 'connected' 
+                body: JSON.stringify({
+                    caller_phone: myPhone,
+                    receiver_phone: peerPhone,
+                    call_type: currentCallType,
+                    status: 'answered',
+                    rtc_data: pc.localDescription
                 })
             });
         } catch (e) {}
     }
 }
 
+// ৩. কল কেটে দেওয়া বা ক্যানসেল করা (উভয় প্রান্তের জন্য)
+async function endWhatsAppCall() {
+    stopContinuousRinging();
+    stopCallDurationTimer();
+    isCallActive = false;
+    window.pendingIncomingOffer = null;
+
+    if (localStream) {
+        localStream.getTracks().forEach(t => t.stop());
+        localStream = null;
+    }
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
+
+    const modal = document.getElementById('whatsAppCallModal');
+    if (modal) {
+        modal.remove();
+    }
+
+    const myPhone = normPhone(getActiveProfile().phone);
+    const peerPhone = activeCallPeer ? normPhone(activeCallPeer.phone) : '';
+    activeCallPeer = null;
+
+    if (peerPhone) {
+        try {
+            await fetch('/api/chat?action=send_call_signal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    caller_phone: myPhone,
+                    receiver_phone: peerPhone,
+                    call_type: currentCallType,
+                    status: 'ended'
+                })
+            });
+        } catch (e) {}
+    }
+    showToast("Call Ended");
+}
+
+// ৪. কল চলাকালীন অডিও থেকে ভিডিওতে সুইচ করা
+async function toggleVideoSwitch() {
+    const newMode = currentCallType === 'audio' ? 'video' : 'audio';
+    currentCallType = newMode;
+    
+    const badge = document.getElementById('callTypeBadge');
+    if (badge) badge.innerText = `${newMode} call`;
+
+    const videoBox = document.getElementById('videoStreamsBox');
+    if (newMode === 'video') {
+        if (videoBox) videoBox.classList.remove('hidden');
+        await setupLocalMedia('video');
+        if (peerConnection && localStream) {
+            const videoTrack = localStream.getVideoTracks()[0];
+            const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+            if (sender && videoTrack) sender.replaceTrack(videoTrack);
+            else if (videoTrack) peerConnection.addTrack(videoTrack, localStream);
+        }
+        showToast("Switched to Video");
+    } else {
+        if (videoBox) videoBox.classList.add('hidden');
+        if (localStream) {
+            localStream.getVideoTracks().forEach(t => t.stop());
+        }
+        showToast("Switched to Audio");
+    }
+}
+
+// ৫. মাইক্রোফোন মিউট/আনমিউট টগল
+function toggleMicMute() {
+    if (!localStream) return;
+    isMicMuted = !isMicMuted;
+    localStream.getAudioTracks().forEach(t => t.enabled = !isMicMuted);
+    const btn = document.getElementById('muteMicBtn');
+    if (btn) {
+        btn.innerHTML = isMicMuted ? `<i class="fa-solid fa-microphone-slash text-red-400"></i>` : `<i class="fa-solid fa-microphone"></i>`;
+    }
+    showToast(isMicMuted ? "Microphone Muted" : "Microphone Unmuted");
+}
+
+// সুন্দর কলিং মডাল রেন্ডার করা
+function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
+    let existing = document.getElementById('whatsAppCallModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'whatsAppCallModal';
+    modal.className = 'fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4';
+    
+    modal.innerHTML = `
+        <div class="theme-card p-6 rounded-3xl max-w-sm w-full text-center space-y-5 border border-amber-400/30 shadow-2xl">
+            <div class="relative w-24 h-24 mx-auto">
+                <img src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-24 h-24 rounded-full object-cover border-2 border-amber-400/60 bg-black shadow-lg">
+                <span class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-black animate-pulse"></span>
+            </div>
+            
+            <div>
+                <span id="callTypeBadge" class="px-3 py-1 rounded-full bg-amber-400/15 text-amber-300 text-[10px] font-bold uppercase tracking-wider">${mode} call</span>
+                <h2 class="text-xl font-bold gold-gradient-text mt-2">${peerName}</h2>
+                <p id="callStatusLabel" class="text-xs text-gray-300 mt-1 font-medium">${statusText}</p>
+            </div>
+
+            <!-- ভিডিও স্ট্রিম বক্স -->
+            <div id="videoStreamsBox" class="${mode === 'video' ? '' : 'hidden'} relative w-full h-52 bg-black rounded-2xl overflow-hidden border border-white/10">
+                <video id="callRemoteVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+                <video id="callLocalVideo" autoplay muted playsinline class="w-24 h-32 object-cover rounded-xl border border-amber-400/50 absolute bottom-2 right-2 bg-gray-900 shadow-lg"></video>
+            </div>
+            <audio id="callRemoteAudio" autoplay></audio>
+
+            <!-- কল কন্ট্রোল বাটনসমূহ -->
+            <div id="callControlButtons" class="flex justify-center items-center space-x-3 pt-2">
+                ${isIncoming ? `
+                    <button type="button" onclick="acceptWhatsAppCall()" class="px-6 py-3.5 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center space-x-2">
+                        <i class="fa-solid fa-phone"></i><span>Receive</span>
+                    </button>
+                    <button type="button" onclick="endWhatsAppCall()" class="px-6 py-3.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center space-x-2">
+                        <i class="fa-solid fa-phone-slash"></i><span>Cancel</span>
+                    </button>
+                ` : `
+                    <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="p-3.5 rounded-2xl theme-input hover:brightness-125 text-white text-xs cursor-pointer shadow-md" title="Mute/Unmute">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                    <button type="button" onclick="toggleVideoSwitch()" class="p-3.5 rounded-2xl theme-input hover:brightness-125 text-amber-300 text-xs cursor-pointer shadow-md" title="Switch Audio/Video">
+                        <i class="fa-solid fa-video"></i>
+                    </button>
+                    <button type="button" onclick="endWhatsAppCall()" class="px-6 py-3.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center space-x-2">
+                        <i class="fa-solid fa-phone-slash"></i><span>Cancel Call</span>
+                    </button>
+                `}
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function updateInCallButtons() {
+    const box = document.getElementById('callControlButtons');
+    if (!box) return;
+    box.innerHTML = `
+        <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="p-3.5 rounded-2xl theme-input hover:brightness-125 text-white text-xs cursor-pointer shadow-md" title="Mute/Unmute">
+            <i class="fa-solid fa-microphone"></i>
+        </button>
+        <button type="button" onclick="toggleVideoSwitch()" class="p-3.5 rounded-2xl theme-input hover:brightness-125 text-amber-300 text-xs cursor-pointer shadow-md" title="Switch Audio/Video">
+            <i class="fa-solid fa-video"></i>
+        </button>
+        <button type="button" onclick="endWhatsAppCall()" class="px-6 py-3.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center space-x-2">
+            <i class="fa-solid fa-phone-slash"></i><span>End Call</span>
+        </button>
+    `;
+}
+
+// ৬. ইনকামিং কল ও অ্যানসার সিগন্যাল পোলিং
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
     callPollInterval = setInterval(async () => {
@@ -444,73 +613,54 @@ function startIncomingCallPolling() {
             const res = await fetch(`/api/chat?action=check_call_signal&phone=${encodeURIComponent(myPhone)}`);
             if (res.ok) {
                 const data = await res.json();
-                if (data.success && data.signal && data.signal.magic_code) {
-                    const parts = data.signal.magic_code.split(':');
-                    const type = parts[0] || 'audio';
-                    const status = parts[1] || '';
-                    const modal = document.getElementById('whatsAppCallModal');
-                    const isModalHidden = !modal || modal.classList.contains('hidden');
+                
+                // যদি ডাটাবেসে কোনো কল না থাকে কিন্তু লোকাল মডাল খোলা থাকে, তবে কল বন্ধ করা হবে
+                if (!data.signal || !data.signal.magic_code) {
+                    if (isCallActive && callSeconds > 0) {
+                        endWhatsAppCall();
+                    }
+                    return;
+                }
 
-                    if (status === 'ringing' && isModalHidden) {
-                        const callerPhone = normPhone(data.signal.display_name);
-                        const callerContact = deviceContacts.find(c => normPhone(c.phone) === callerPhone) || { name: callerPhone, phone: callerPhone };
-                        
-                        currentActiveRecipient = callerContact;
-                        currentCallType = type;
-                        startContinuousRinging();
-                        showCallModalUI(callerContact.name, callerContact.avatar, `Incoming ${type} Call...`, type, true);
-                    } else if (status === 'connected' && !isModalHidden) {
-                        stopContinuousRinging();
-                        if (!callTimerInterval) {
-                            startCallDurationTimer();
-                            showToast("Call connected!");
-                        }
-                    } else if (status === 'ended') {
-                        stopContinuousRinging();
-                        stopCallDurationTimer();
-                        stopLocalMediaTracks();
-                        if (modal) {
-                            modal.classList.add('hidden');
-                            modal.classList.remove('flex');
-                        }
+                let sig = null;
+                try {
+                    sig = JSON.parse(data.signal.magic_code);
+                } catch (e) { return; }
+
+                if (!sig || !sig.ts) return;
+
+                // পুরনো বা ইতোমধ্যে হ্যান্ডেল করা সিগন্যাল ইগনোর করা
+                if (sig.status === 'ringing' && !isCallActive && sig.ts > lastHandledSignalTs) {
+                    lastHandledSignalTs = sig.ts;
+                    const callerPhone = normPhone(sig.caller);
+                    if (callerPhone === myPhone) return;
+
+                    const callerContact = deviceContacts.find(c => normPhone(c.phone) === callerPhone) || { name: callerPhone, phone: callerPhone };
+                    activeCallPeer = callerContact;
+                    currentCallType = sig.type || 'audio';
+                    window.pendingIncomingOffer = sig.rtc;
+
+                    startContinuousRinging();
+                    renderCallModal(callerContact.name, callerContact.avatar, `Incoming ${currentCallType} call from ${callerContact.name}...`, currentCallType, true);
+                } 
+                else if (sig.status === 'answered' && isCallActive && sig.ts > lastHandledSignalTs) {
+                    lastHandledSignalTs = sig.ts;
+                    stopContinuousRinging();
+                    if (!callTimerInterval) {
+                        startCallDurationTimer();
+                        showToast("Call Connected!");
+                    }
+                    if (peerConnection && sig.rtc && peerConnection.signalingState !== 'stable') {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(sig.rtc));
                     }
                 }
             }
         } catch (e) {}
-    }, 1200);
-}
-
-async function endWhatsAppCall() {
-    stopContinuousRinging();
-    stopCallDurationTimer();
-    stopLocalMediaTracks();
-
-    if (currentActiveRecipient) {
-        const myPhone = normPhone(getActiveProfile().phone);
-        const peerPhone = normPhone(currentActiveRecipient.phone);
-        try {
-            await fetch('/api/chat?action=send_call_signal', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    caller_phone: myPhone, 
-                    receiver_phone: peerPhone, 
-                    call_type: currentCallType, 
-                    status: 'ended' 
-                })
-            });
-        } catch (e) {}
-    }
-    const modal = document.getElementById('whatsAppCallModal');
-    if (modal) {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-    }
-    showToast('Call ended');
+    }, 1500);
 }
 
 // ==========================================
-// চ্যাট ও ইউজার ইন্টারফেস ফাংশনসমূহ
+// চ্যাট ও ইউজার ইন্টারফেস হেল্পারসমূহ
 // ==========================================
 
 function filterContent() {
@@ -574,7 +724,7 @@ function loadMessages() {
     }
 
     container.innerHTML = msgs.map(m => {
-        const isMe = m.phone_number === getActiveProfile().phone;
+        const isMe = normPhone(m.phone_number) === normPhone(getActiveProfile().phone);
         let contentHtml = `<p class="text-xs text-white">${escapeHtml(m.message_text || '')}</p>`;
         if (m.media_url) {
             if (m.type === 'image') contentHtml += `<img src="${m.media_url}" class="mt-2 rounded-xl max-w-xs max-h-48 object-cover">`;
@@ -594,7 +744,10 @@ function loadMessages() {
 function appendBubble(m) {
     const container = document.getElementById('chatMessages');
     if (!container) return;
-    const isMe = m.phone_number === getActiveProfile().phone;
+    if (container.querySelector('.m-auto')) {
+        container.innerHTML = '';
+    }
+    const isMe = normPhone(m.phone_number) === normPhone(getActiveProfile().phone);
     let contentHtml = `<p class="text-xs text-white">${escapeHtml(m.message_text || '')}</p>`;
     if (m.media_url) {
         if (m.type === 'image') contentHtml += `<img src="${m.media_url}" class="mt-2 rounded-xl max-w-xs max-h-48 object-cover">`;
