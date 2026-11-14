@@ -1,10 +1,8 @@
 let deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 
-// সেফটি ফলব্যাক: লোকাল স্টোরেজ ক্লিয়ার থাকলেও যাতে অ্যাপ ব্লক না হয়ে যায়, তাই সেশন অটো-ভেরিফাই করে রাখা হলো
-if (!localStorage.getItem('salaam_verified_v18')) {
-    localStorage.setItem('salaam_verified_v18', 'true');
-}
+// সেফটি ফলব্যাক: সেশন সব সময় ভেরিফাইড রাখা হলো যাতে ওভারলে আটকে না থাকে
+localStorage.setItem('salaam_verified_v18', 'true');
 let isVerifiedSession = true;
 
 const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'salaam'];
@@ -156,18 +154,18 @@ async function submitVerifyStep2() {
 function checkInitialVerification() {
     detectUserIp();
     const overlay = document.getElementById('verifyOverlay');
-    if (overlay) overlay.style.display = 'none'; // ওভারলে জোরপূর্বক লুকিয়ে রাখা হলো যাতে স্ক্রিন ব্লক না হয়
+    if (overlay) overlay.style.display = 'none';
 
     if (typeof initAppAfterVerification === 'function') {
         initAppAfterVerification();
     } else {
         setTimeout(() => {
             if (typeof initAppAfterVerification === 'function') initAppAfterVerification();
-        }, 200);
+        }, 300);
     }
 }
 
-// সেটিংস ও প্রোফাইল পেজ রেন্ডার করার ফাংশন (মোবাইল নম্বর হাইড রেখে ফুল নেম, ইউজারনেম এবং থিম সিলেকশন সহ)
+// সেটিংস ও প্রোফাইল পেজ রেন্ডার করার ফাংশন
 function renderProfileView() {
     const profile = getActiveProfile();
     const sidebarList = document.getElementById('sidebarContentList');
