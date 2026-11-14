@@ -2,7 +2,7 @@ const CLOUD_SIZE_LIMIT_MB = 50;
 
 // ৪৮ ঘণ্টা (48 hours) পুরনো মেসেজ ও এটাচমেন্ট অটো রিমুভ করার ফাংশন
 function cleanupExpiredMessages() {
-    const EXPIRATION_TIME = 48 * 60 * 60 * 1000; // ৪৮ ঘণ্টা মিলিসেকেন্ডে
+    const EXPIRATION_TIME = 48 * 60 * 60 * 1000; 
     const now = Date.now();
     let updated = false;
 
@@ -23,7 +23,7 @@ function cleanupExpiredMessages() {
     }
 }
 
-// ইউনিভার্সাল ফাইল আপলোড হ্যান্ডলার (ক্লাউড বনাম P2P রাউটিং)
+// মাল্টি-ফাইল ও ইউনিভার্সাল আপলোড হ্যান্ডলার
 async function handleUniversalFileUpload(input) {
     if (!currentActiveRecipient || !input.files.length) return;
     const key = normPhone(currentActiveRecipient.phone), me = getActiveProfile().phone;
@@ -33,10 +33,8 @@ async function handleUniversalFileUpload(input) {
         const fileSizeMB = f.size / (1024 * 1024);
 
         if (fileSizeMB <= CLOUD_SIZE_LIMIT_MB) {
-            // ৫০ এমবির নিচে হলে ক্লাউড স্টোরেজ ও ইমেজ কম্প্রেশন
             await uploadFileViaCloudStorage(f, key, me);
         } else {
-            // ৫০ এমবি থেকে কয়েক জিবি (GB) পর্যন্ত ফাইল হলে সরাসরি P2P ট্রান্সফার
             showToast(`Large file (${fileSizeMB.toFixed(1)}MB). Initiating direct P2P transfer...`, true);
             await initiateP2PFileTransfer(f, key);
         }
@@ -46,9 +44,9 @@ async function handleUniversalFileUpload(input) {
 
 async function uploadFileViaCloudStorage(file, recipientKey, senderPhone) {
     const isImage = file.type.startsWith('image/');
-    const type = isImage ? 'image' : (file.type.startsWith('video/') ? 'video' : 'file');
+    const isVideo = file.type.startsWith('video/');
+    const type = isImage ? 'image' : (isVideo ? 'video' : 'file');
     
-    // ছবি হলে কম্প্রেস করে সর্বনিম্ন KB-তে নামিয়ে আনা
     if (isImage) {
         compressAndSendImage(file, recipientKey, senderPhone);
         return;
@@ -57,8 +55,9 @@ async function uploadFileViaCloudStorage(file, recipientKey, senderPhone) {
     const reader = new FileReader();
     reader.onload = async e => {
         const mediaUrl = e.target.result;
+        const msgId = 'm_' + Date.now() + '_' + Math.random();
         const msg = { 
-            id: 'm_' + Date.now() + Math.random(), 
+            id: msgId, 
             phone_number: senderPhone, 
             message_text: file.name, 
             media_url: mediaUrl, 
@@ -66,7 +65,7 @@ async function uploadFileViaCloudStorage(file, recipientKey, senderPhone) {
             timestamp: Date.now() 
         };
         localMessageStore[recipientKey].push(msg);
-        appendBubble(msg);
+        loadMessages();
         persistMessages();
 
         try {
@@ -86,7 +85,7 @@ function compressAndSendImage(file, recipientKey, senderPhone) {
         const img = new Image();
         img.onload = async function() {
             const canvas = document.createElement('canvas');
-            const MAX_DIM = 500;
+            const MAX_DIM = 600;
             let width = img.width, height = img.height;
             if (width > height) {
                 if (width > MAX_DIM) { height *= MAX_DIM / width; width = MAX_DIM; }
@@ -98,10 +97,10 @@ function compressAndSendImage(file, recipientKey, senderPhone) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             
-            // হাই কোয়ালিটি রেখে KB-তে রূপান্তর
-            const compressedUrl = canvas.toDataURL('image/jpeg', 0.8);
+            const compressedUrl = canvas.toDataURL('image/jpeg', 0.82);
+            const msgId = 'm_' + Date.now() + '_' + Math.random();
             const msg = { 
-                id: 'm_' + Date.now() + Math.random(), 
+                id: msgId, 
                 phone_number: senderPhone, 
                 message_text: file.name, 
                 media_url: compressedUrl, 
@@ -109,7 +108,7 @@ function compressAndSendImage(file, recipientKey, senderPhone) {
                 timestamp: Date.now() 
             };
             localMessageStore[recipientKey].push(msg);
-            appendBubble(msg);
+            loadMessages();
             persistMessages();
 
             try {
@@ -125,7 +124,7 @@ function compressAndSendImage(file, recipientKey, senderPhone) {
     reader.readAsDataURL(file);
 }
 
-// নিখুঁত P2P ডেটা চ্যানেল ফাইল ট্রান্সফার (বড় ফাইলের জন্য সার্ভার স্টোরেজ বাইপাস)
+// P2P ট্রান্সফার (বড় ফাইল বা জিবি সাইজ ফাইলের জন্য)
 async function initiateP2PFileTransfer(file, recipientKey) {
     try {
         const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
@@ -133,8 +132,8 @@ async function initiateP2PFileTransfer(file, recipientKey) {
         
         channel.binaryType = "arraybuffer";
         channel.onopen = () => {
-            showToast("P2P Tunnel connected! Sending large file directly...");
-            const CHUNK_SIZE = 16384; // ১৬KB চংক সাইজ
+            showToast("P2P Tunnel connected! Sending file directly...");
+            const CHUNK_SIZE = 16384;
             const reader = new FileReader();
             let offset = 0;
 
@@ -158,6 +157,6 @@ async function initiateP2PFileTransfer(file, recipientKey) {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
     } catch (err) {
-        showToast("P2P transfer failed. Try smaller file.", true);
+        showToast("P2P transfer error occurred.", true);
     }
 }
