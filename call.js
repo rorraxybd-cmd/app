@@ -20,7 +20,7 @@ function showToast(msg, isErr = false) {
 
 function initAppAfterVerification() {
     syncGlobalNetworkUsers();
-    switchTab('contact');
+    switchTab('contact'); // পেজ ভেরিফাই হওয়ার পর সরাসরি কন্টাক্ট ট্যাব রেন্ডার করবে
     startIncomingCallPolling();
     startChatPolling();
 }
@@ -62,6 +62,7 @@ async function syncGlobalNetworkUsers() {
 function switchTab(tab) {
     if (!isVerifiedSession) { checkInitialVerification(); return; }
     currentTab = tab;
+    
     ['profile', 'contact', 'chat'].forEach(t => {
         const isSel = (t === tab);
         const lbl = document.getElementById('label' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -72,11 +73,12 @@ function switchTab(tab) {
 
     const sb = document.getElementById('searchBarContainer');
     if (tab === 'profile') { 
-        sb.style.display = 'none'; 
+        if (sb) sb.style.display = 'none'; 
         if (typeof renderProfileView === 'function') renderProfileView(); 
     } else {
-        sb.style.display = 'block';
-        document.getElementById('searchInput').value = '';
+        if (sb) sb.style.display = 'block';
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) searchInput.value = '';
         if (tab === 'chat') renderChatStories();
         else {
             syncGlobalNetworkUsers();
@@ -90,6 +92,9 @@ function switchTab(tab) {
 }
 
 function renderDeviceContacts() {
+    const listContainer = document.getElementById('sidebarContentList');
+    if (!listContainer) return;
+
     const contactsHtml = deviceContacts.map(c => {
         const info = getCountryInfo(c.phone);
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
@@ -107,7 +112,7 @@ function renderDeviceContacts() {
         </div>`;
     }).join('');
 
-    document.getElementById('sidebarContentList').innerHTML = `<div id="directDialSlot"></div>` + contactsHtml;
+    listContainer.innerHTML = `<div id="directDialSlot"></div>` + contactsHtml;
 }
 
 function getTickBadge(on) {
@@ -237,9 +242,6 @@ async function startWhatsAppCall(mode) {
         });
     } catch (e) {}
 
-    callHistoryNotifications.unshift({ text: `${mode === 'video' ? 'Video' : 'Audio'} call with ${currentActiveRecipient.name}`, time: Date.now() });
-    updateNotificationBadge();
-    
     showCallModalUI(currentActiveRecipient.name, currentActiveRecipient.avatar, `Calling ${mode}...`, mode);
 }
 
@@ -329,17 +331,12 @@ async function endWhatsAppCall() {
     showToast('Call ended');
 }
 
-function updateNotificationBadge() {
-    const badge = document.getElementById('headerNotifBadge');
-    if (badge && callHistoryNotifications.length > 0) {
-        badge.innerText = callHistoryNotifications.length;
-        badge.classList.remove('hidden');
-    }
-}
-
 function filterContent() {
     const q = document.getElementById('searchInput').value.toLowerCase();
     const filtered = deviceContacts.filter(c => c.name.toLowerCase().includes(q) || c.phone.toLowerCase().includes(q));
+    const listContainer = document.getElementById('sidebarContentList');
+    if (!listContainer) return;
+
     const contactsHtml = filtered.map(c => {
         const info = getCountryInfo(c.phone);
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
@@ -356,7 +353,7 @@ function filterContent() {
             ${getTickBadge(c.isOnline)}
         </div>`;
     }).join('');
-    document.getElementById('sidebarContentList').innerHTML = `<div id="directDialSlot"></div>` + contactsHtml;
+    listContainer.innerHTML = `<div id="directDialSlot"></div>` + contactsHtml;
 }
 
 function backToSidebarMobile() {
