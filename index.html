@@ -21,7 +21,7 @@
 <body class="h-[100dvh] w-full flex flex-col overflow-hidden fixed inset-0">
 
     <!-- Auto-Verify & Install Overlay -->
-    <div id="verifyOverlay" style="display: none;">
+    <div id="verifyOverlay" style="display: flex;">
         <div class="verify-card space-y-4 text-center shadow-2xl">
             <div class="space-y-2">
                 <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png" alt="Logo" class="header-logo-clean mx-auto">
@@ -184,9 +184,9 @@
     </div>
 
     <!-- Modular JavaScript Files Connection -->
-    <script src="/verify.js"></script>
-    <script src="/call.js"></script>
-    <script src="/p2p_file_transfer.js"></script>
+    <script src="/verify.js?v=2.0"></script>
+    <script src="/call.js?v=2.0"></script>
+    <script src="/p2p_file_transfer.js?v=2.0"></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             if (typeof checkInitialVerification === 'function') {
@@ -197,33 +197,6 @@
                 }, 300);
             }
         });
-        <!-- Modular JavaScript Files Connection with Anti-Cache Versioning -->
-    <script src="/verify.js?v=2.0"></script>
-    <script src="/call.js?v=2.0"></script>
-    <script src="/p2p_file_transfer.js?v=2.0"></script>
-    <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            const overlay = document.getElementById('verifyOverlay');
-            if (overlay) overlay.style.display = 'none';
-            
-            // জোরপূর্বক লোকাল স্টোরেজ ও ইনিশিয়ালাইজেশন চেক
-            localStorage.setItem('salaam_verified_v18', 'true');
-            
-            if (typeof initAppAfterVerification === 'function') {
-                initAppAfterVerification();
-            } else {
-                setTimeout(() => {
-                    if (typeof initAppAfterVerification === 'function') {
-                        initAppAfterVerification();
-                    } else if (typeof switchTab === 'function') {
-                        switchTab('contact');
-                    }
-                }, 300);
-            }
-        });
-    </script>
-</body>
-</html>
     </script>
 </body>
 </html>
