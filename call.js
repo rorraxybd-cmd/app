@@ -4,14 +4,13 @@ let callRingInterval = null, activeAudioCtx = null, callPollInterval = null, cha
 let callTimerInterval = null, callSeconds = 0;
 let peerConnection = null, localStream = null, remoteStream = null;
 let isMicMuted = false, lastHandledSignalTs = 0;
-let isLocalMain = false; // PiP Video Swap
+let isLocalMain = false; 
 
 let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
 let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
 let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
 
-// ডিভাইস কন্টাক্টস (অফিশিয়াল সাপোর্ট টিম ডিফল্টভাবে কন্টাক্ট লিস্টে হাইড থাকবে)
 let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [];
 
 const RTC_CONFIG = {
@@ -57,7 +56,6 @@ async function syncGlobalNetworkUsers() {
                     const uPhone = normPhone(u.phone_number);
                     if (uPhone && uPhone !== myPhone) {
                         const existingIdx = deviceContacts.findIndex(dc => normPhone(dc.phone) === uPhone);
-                        // অফিশিয়াল সাপোর্ট টিম বাদে অন্য সকল গ্লোবাল ইউজার সিঙ্ক হবে
                         if (uPhone !== '8801538187301' && u.display_name !== 'rorraxy Support') {
                             if (existingIdx === -1) {
                                 deviceContacts.push({
@@ -245,7 +243,6 @@ async function sendTextMessage() {
     appendBubble(msg);
     persistMessages();
 
-    // অফিশিয়াল সাপোর্ট টিমের লজিক চেক (টেক্সট পাঠানো মাত্র ভাসবে)
     if (key === '8801538187301') {
         let officialContact = deviceContacts.find(c => c.phone === '8801538187301');
         if (!officialContact) {
@@ -315,7 +312,6 @@ function startChatPolling() {
     chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 3000);
 }
 
-// ব্যাকগ্রাউন্ড গ্লোবাল কল রিংটোন ও নোটিফিকেশন সিস্টেম
 function startContinuousRinging() {
     stopContinuousRinging();
     const playTone = () => {
@@ -729,7 +725,6 @@ function updateInCallButtons() {
     `;
 }
 
-// ব্যাকগ্রাউন্ড গ্লোবাল কল পোলিং (অ্যাপ খোলা থাকলেই যেকোনো সময় রিং করবে)
 function startBackgroundCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
     callPollInterval = setInterval(async () => {
@@ -928,7 +923,6 @@ function loadMessages() {
             </div>
         </div>`;
     }).join('');
-    // সর্বদা নতুন মেসেজ বা মিডিয়া আসার পর স্ক্রল নিচে থাকবে
     setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
 }
 
