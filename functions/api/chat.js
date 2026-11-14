@@ -17,7 +17,7 @@ export async function onRequest(context) {
     try {
         if (request.method === 'GET' && action === 'get_global_users') {
             const { results } = await env.chat.prepare(
-                "SELECT phone_number, display_name, username, avatar_url, is_online FROM chat_master_system WHERE record_type = 'user' AND is_verified = 1 ORDER BY updated_at DESC LIMIT 200"
+                "SELECT phone_number, display_name, username, avatar_url, is_online, is_live FROM chat_master_system WHERE record_type = 'user' AND is_verified = 1 ORDER BY updated_at DESC LIMIT 500"
             ).all();
             return new Response(JSON.stringify({ success: true, users: results || [] }), { headers: corsHeaders });
         }
@@ -25,21 +25,21 @@ export async function onRequest(context) {
         if (request.method === 'GET' && action === 'get_user_profile') {
             const phone = url.searchParams.get('phone');
             const user = await env.chat.prepare(
-                "SELECT display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND phone_number = ?"
+                "SELECT display_name, username, avatar_url, is_live FROM chat_master_system WHERE record_type = 'user' AND phone_number = ?"
             ).bind(phone).first();
             return new Response(JSON.stringify({ success: true, user: user || null }), { headers: corsHeaders });
         }
 
-        // Send Call Signal with proper recipient binding
         if (request.method === 'POST' && action === 'send_call_signal') {
             const body = await request.json();
             const { caller_phone, receiver_phone, call_type, status } = body;
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
             
             await env.chat.prepare(
-                `INSERT INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, is_verified, is_online, updated_at) 
-                 VALUES (?, 'call_signal', ?, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)
-                 ON CONFLICT(phone_number) DO UPDATE SET recipient_phone = ?, display_name = ?, magic_code = ?, updated_at = CURRENT_TIMESTAMP`
-            ).bind('call_' + receiver_phone, caller_phone, receiver_phone, caller_phone, `${call_type}:${status}`, receiver_phone, caller_phone, `${call_type}:${status}`).run();
+                `INSERT INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, is_verified, is_online, expires_at, updated_at) 
+                 VALUES (?, 'call_signal', ?, ?, ?, ?, 1, 1, ?, CURRENT_TIMESTAMP)
+                 ON CONFLICT(phone_number) DO UPDATE SET recipient_phone = ?, display_name = ?, magic_code = ?, expires_at = ?, updated_at = CURRENT_TIMESTAMP`
+            ).bind('call_' + receiver_phone, caller_phone, receiver_phone, caller_phone, `${call_type}:${status}`, expiresAt, receiver_phone, caller_phone, `${call_type}:${status}`, expiresAt).run();
 
             return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
         }
@@ -53,25 +53,37 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ success: true, signal: res || null }), { headers: corsHeaders });
         }
 
-        // Send Chat Message with recipient tracking
         if (request.method === 'POST' && action === 'send_chat_message') {
             const body = await request.json();
-            const { sender_phone, receiver_phone, message_text, media_url, message_type } = body;
+            const { sender_phone, receiver_phone, message_text, media_url, message_type, file_size } = body;
             
+            const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+            const payload = `${message_type || 'text'}:${message_text || ''}:${media_url || ''}`;
+
             await env.chat.prepare(
-                `INSERT INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, is_verified, is_online, updated_at) 
-                 VALUES (?, 'chat_msg', ?, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)`
-            ).bind('msg_' + Date.now() + Math.random(), sender_phone, receiver_phone, sender_phone, `${message_type || 'text'}:${message_text || ''}:${media_url || ''}`).run();
+                `INSERT INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, message_text, media_url, message_status, file_size, expires_at, is_verified, is_online, updated_at) 
+                 VALUES (?, 'chat_msg', ?, ?, ?, ?, ?, ?, 'sent', ?, ?, 1, 1, CURRENT_TIMESTAMP)`
+            ).bind(
+                'msg_' + Date.now() + Math.random(), 
+                sender_phone, 
+                receiver_phone, 
+                sender_phone, 
+                payload, 
+                message_text || '', 
+                media_url || '', 
+                file_size || 0,
+                expiresAt
+            ).run();
 
             return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
         }
 
-        // Get Chat Messages for specific recipient
         if (request.method === 'GET' && action === 'get_chat_messages') {
             const phone = url.searchParams.get('phone');
             const myPhone = url.searchParams.get('my_phone');
+            
             const { results } = await env.chat.prepare(
-                "SELECT phone_number as sender_phone, magic_code as payload FROM chat_master_system WHERE record_type = 'chat_msg' AND ((phone_number = ? AND recipient_phone = ?) OR (phone_number = ? AND recipient_phone = ?)) ORDER BY updated_at ASC"
+                "SELECT phone_number as sender_phone, magic_code as payload, media_url, message_text, created_at FROM chat_master_system WHERE record_type = 'chat_msg' AND ((phone_number = ? AND recipient_phone = ?) OR (phone_number = ? AND recipient_phone = ?)) ORDER BY updated_at ASC"
             ).bind(phone, myPhone, myPhone, phone).all();
 
             return new Response(JSON.stringify({ success: true, messages: results || [] }), { headers: corsHeaders });
@@ -122,6 +134,15 @@ export async function onRequest(context) {
                      WHERE phone_number = ? AND record_type = 'user'`
                 ).bind(display_name || null, username || null, avatar_url || null, phone).run();
             }
+            return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+        }
+
+        if (request.method === 'POST' && action === 'set_live_status') {
+            const body = await request.json();
+            const { phone, is_live } = body;
+            await env.chat.prepare(
+                "UPDATE chat_master_system SET is_live = ?, updated_at = CURRENT_TIMESTAMP WHERE phone_number = ? AND record_type = 'user'"
+            ).bind(is_live ? 1 : 0, phone).run();
             return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
         }
 
