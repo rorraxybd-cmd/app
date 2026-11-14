@@ -1,7 +1,7 @@
 let currentTab = 'contact', currentActiveRecipient = null, deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let currentCallType = 'audio', activeShareData = null;
-let callRingInterval = null, activeAudioCtx = null, localLiveStream = null;
+let callRingInterval = null, activeAudioCtx = null, localLiveStream = null, callPollInterval = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -25,12 +25,12 @@ async function installPWAApp() {
 
 let currentTheme = localStorage.getItem('salaam_theme') || 'emerald';
 let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
-let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v14') || '{}');
-let isVerifiedSession = localStorage.getItem('salaam_verified_v14') === 'true';
+let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v15') || '{}');
+let isVerifiedSession = localStorage.getItem('salaam_verified_v15') === 'true';
 
 const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'salaam'];
 
-let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v14') || 'null') || [{
+let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v15') || 'null') || [{
     name: "User",
     phone: "+8801700000000",
     username: "user",
@@ -38,7 +38,7 @@ let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v14') || 'n
     avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png"
 }];
 
-let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v14') || 'null') || [
+let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v15') || 'null') || [
     { name: "rorraxy Support", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png", hidePhone: true }
 ];
 
@@ -61,9 +61,9 @@ function getCountryInfo(phone) {
 }
 
 function getActiveProfile() { return savedProfiles[0]; }
-function saveProfiles() { localStorage.setItem('salaam_profiles_v14', JSON.stringify(savedProfiles)); }
+function saveProfiles() { localStorage.setItem('salaam_profiles_v15', JSON.stringify(savedProfiles)); }
 function normPhone(p) { return String(p || '').replace(/[\s\-\(\)]/g, ''); }
-function persistMessages() { localStorage.setItem('salaam_messages_v14', JSON.stringify(localMessageStore)); }
+function persistMessages() { localStorage.setItem('salaam_messages_v15', JSON.stringify(localMessageStore)); }
 
 function showToast(msg, isErr = false) {
     const b = document.getElementById('toastBanner'), dot = document.getElementById('toastDot'), text = document.getElementById('toastText');
@@ -116,7 +116,7 @@ async function syncGlobalNetworkUsers() {
                         }
                     }
                 });
-                localStorage.setItem('salaam_contacts_v14', JSON.stringify(deviceContacts));
+                localStorage.setItem('salaam_contacts_v15', JSON.stringify(deviceContacts));
                 if (currentTab === 'contact' || currentTab === 'chat') renderDeviceContacts();
             }
         }
@@ -136,6 +136,7 @@ function checkInitialVerification() {
         document.getElementById('verifyOverlay').style.display = 'none';
         syncGlobalNetworkUsers();
         switchTab('contact');
+        startIncomingCallPolling();
     }
 }
 
@@ -174,7 +175,7 @@ async function submitVerifyStep2() {
     if (entered !== generatedOtpCode) { showToast("Invalid code", true); return; }
 
     isVerifiedSession = true;
-    localStorage.setItem('salaam_verified_v14', 'true');
+    localStorage.setItem('salaam_verified_v15', 'true');
     const p = getActiveProfile();
     p.name = tempVerifyName; p.phone = tempVerifyPhone;
     saveProfiles();
@@ -194,6 +195,7 @@ async function submitVerifyStep2() {
     showToast("Verified & Connected!");
     syncGlobalNetworkUsers();
     switchTab('contact');
+    startIncomingCallPolling();
 }
 
 function switchTab(tab) {
@@ -310,7 +312,7 @@ function handleProfileAvatarUpload(input) {
                 }
                 return c;
             });
-            localStorage.setItem('salaam_contacts_v14', JSON.stringify(deviceContacts));
+            localStorage.setItem('salaam_contacts_v15', JSON.stringify(deviceContacts));
 
             renderProfileView();
             showToast("Profile picture updated & synced!");
@@ -437,7 +439,7 @@ function connectDirectNumber(phone, mode) {
     const cp = normPhone(phone);
     if (!deviceContacts.some(c => normPhone(c.phone) === cp)) {
         deviceContacts.unshift({ name: cp, phone: cp, appUser: true, isOnline: true, lastMsg: "", avatar: null });
-        localStorage.setItem('salaam_contacts_v14', JSON.stringify(deviceContacts));
+        localStorage.setItem('salaam_contacts_v15', JSON.stringify(deviceContacts));
     }
     openChat(cp, cp);
     if (mode === 'audio' || mode === 'video') {
@@ -704,11 +706,22 @@ function stopContinuousRinging() {
     }
 }
 
-function startWhatsAppCall(mode) {
+async function startWhatsAppCall(mode) {
     if (!currentActiveRecipient) return;
     currentCallType = mode;
     updateCallModeUI();
     startContinuousRinging();
+
+    // Send Real Cloud Signal to Receiver
+    const myPhone = getActiveProfile().phone;
+    try {
+        await fetch('/api/chat?action=send_call_signal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ caller_phone: myPhone, receiver_phone: currentActiveRecipient.phone, call_type: mode, status: 'ringing' })
+        });
+    } catch (e) {}
+
     callHistoryNotifications.unshift({ text: `${mode === 'video' ? 'Video' : 'Audio'} call with ${currentActiveRecipient.name}`, time: Date.now() });
     updateNotificationBadge();
     document.getElementById('whatsAppCallModal').classList.remove('hidden');
@@ -716,6 +729,35 @@ function startWhatsAppCall(mode) {
     document.getElementById('callPeerName').innerText = currentActiveRecipient.name;
     document.getElementById('callModalAvatar').src = currentActiveRecipient.avatar || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png';
     document.getElementById('callStatusLabel').innerText = "Calling...";
+}
+
+// Poll for incoming calls on other devices (Phone/PC)
+function startIncomingCallPolling() {
+    if (callPollInterval) clearInterval(callPollInterval);
+    callPollInterval = setInterval(async () => {
+        if (!isVerifiedSession) return;
+        const myPhone = getActiveProfile().phone;
+        try {
+            const res = await fetch(`/api/chat?action=check_call_signal&phone=${encodeURIComponent(myPhone)}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && data.signal && data.signal.magic_code) {
+                    const [type, status] = data.signal.magic_code.split(':');
+                    if (status === 'ringing' && document.getElementById('whatsAppCallModal').classList.contains('hidden')) {
+                        const callerPhone = data.signal.display_name;
+                        const callerContact = deviceContacts.find(c => normPhone(c.phone) === normPhone(callerPhone)) || { name: callerPhone, phone: callerPhone };
+                        
+                        currentActiveRecipient = callerContact;
+                        startContinuousRinging();
+                        document.getElementById('callPeerName').innerText = callerContact.name;
+                        document.getElementById('callStatusLabel').innerText = `Incoming ${type} Call...`;
+                        document.getElementById('whatsAppCallModal').classList.remove('hidden');
+                        document.getElementById('whatsAppCallModal').classList.add('flex');
+                    }
+                }
+            }
+        } catch (e) {}
+    }, 3000);
 }
 
 function toggleCallMode() {
@@ -734,8 +776,18 @@ function updateCallModeUI() {
     }
 }
 
-function endWhatsAppCall() {
+async function endWhatsAppCall() {
     stopContinuousRinging();
+    if (currentActiveRecipient) {
+        const myPhone = getActiveProfile().phone;
+        try {
+            await fetch('/api/chat?action=send_call_signal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ caller_phone: myPhone, receiver_phone: currentActiveRecipient.phone, call_type: currentCallType, status: 'ended' })
+            });
+        } catch (e) {}
+    }
     document.getElementById('whatsAppCallModal').classList.add('hidden');
     document.getElementById('whatsAppCallModal').classList.remove('flex');
     showToast('Call ended');
