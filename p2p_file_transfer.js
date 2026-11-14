@@ -1,6 +1,5 @@
 const CLOUD_SIZE_LIMIT_MB = 50; 
 
-// ৪৮ ঘণ্টা পুরনো মেসেজ বা ফাইল অটো ক্লিনআপ
 function cleanupExpiredMessages() {
     const EXPIRATION_TIME = 48 * 60 * 60 * 1000; 
     const now = Date.now();
@@ -23,7 +22,6 @@ function cleanupExpiredMessages() {
     }
 }
 
-// ইউনিভার্সাল ফাইল আপলোড হ্যান্ডলার (ছবি, ভিডিও, অডিও, পিডিএফ বা অন্যান্য ফাইল)
 async function handleUniversalFileUpload(input) {
     if (!currentActiveRecipient || !input.files.length) return;
     const key = normPhone(currentActiveRecipient.phone), me = getActiveProfile().phone;
@@ -129,15 +127,29 @@ function compressAndSendImage(file, recipientKey, senderPhone) {
     reader.readAsDataURL(file);
 }
 
-// P2P ডেটা চ্যানেল ট্রান্সফার (বড় ফাইল বা জিবি সাইজ ফাইলের জন্য)
+// অপ্টিমাইজড P2P ডেটা চ্যানেল ট্রান্সফার (রিসিভার অনলাইন চেকসহ)
 async function initiateP2PFileTransfer(file, recipientKey) {
+    const recipient = deviceContacts.find(c => normPhone(c.phone) === normPhone(recipientKey));
+    if (!recipient || !recipient.isOnline) {
+        showToast("প্রাপক (Receiver) বর্তমানে অফলাইনে আছেন। P2P ফাইল পাঠানোর জন্য তাকে অনলাইনে থাকতে হবে।", true);
+        return;
+    }
+
     try {
+        showToast("Establishing direct P2P connection...");
         const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+        
+        pc.oniceconnectionstatechange = () => {
+            if (pc.iceconnectionstate === 'failed' || pc.iceconnectionstate === 'disconnected') {
+                showToast("P2P কানেকশন স্থাপন করা যায়নি। প্রাপক হয়তো চ্যাট স্ক্রিন থেকে বের হয়ে গেছেন।", true);
+            }
+        };
+
         const channel = pc.createDataChannel("salaam-p2p-file", { ordered: true });
         
         channel.binaryType = "arraybuffer";
         channel.onopen = () => {
-            showToast("P2P Tunnel connected! Sending file directly...");
+            showToast("P2P টানেল সংযুক্ত হয়েছে! সরাসরি ফাইল পাঠানো হচ্ছে...");
             const CHUNK_SIZE = 16384;
             const reader = new FileReader();
             let offset = 0;
@@ -148,7 +160,7 @@ async function initiateP2PFileTransfer(file, recipientKey) {
                 if (offset < file.size) {
                     readNextChunk();
                 } else {
-                    showToast("P2P File Transfer Completed Successfully!");
+                    showToast("P2P ফাইল ট্রান্সফার সফলভাবে সম্পন্ন হয়েছে!");
                 }
             };
 
@@ -162,6 +174,6 @@ async function initiateP2PFileTransfer(file, recipientKey) {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
     } catch (err) {
-        showToast("P2P transfer error occurred.", true);
+        showToast("P2P ট্রান্সফারে ত্রুটি ঘটেছে। আবার চেষ্টা করুন।", true);
     }
 }
