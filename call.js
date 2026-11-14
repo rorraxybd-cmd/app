@@ -241,7 +241,7 @@ function startChatPolling() {
     chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 3000);
 }
 
-// WebRTC কলিং ফাংশনসমূহ
+// WebRTC অডিও ও কলিং সিস্টেম
 function startContinuousRinging() {
     stopContinuousRinging();
     const playTone = () => {
@@ -294,16 +294,21 @@ async function setupLocalMedia(mode) {
         if (localStream) {
             localStream.getTracks().forEach(t => t.stop());
         }
-        // মোবাইল ফ্রন্ট ক্যামেরা প্রাধান্য দেওয়ার জন্য facingMode ব্যবহার করা হয়েছে
+        // মাইক এবং ক্যামেরার জন্য ফুল নয়েজ রিডাকশন ও ইকো ক্যান্সেলেশন কনফিগারেশন
         localStream = await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+            audio: { 
+                echoCancellation: true, 
+                noiseSuppression: true, 
+                autoGainControl: true,
+                channelCount: 1 
+            },
             video: mode === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false
         });
         
         applyVideoStreamsToDom();
         return localStream;
     } catch (err) {
-        showToast("Camera or Microphone access required", true);
+        showToast("Microphone or Camera permission required", true);
         return null;
     }
 }
@@ -331,13 +336,11 @@ function toggleVideoSwap() {
     if (!remoteVid || !localVid) return;
 
     if (isLocalMain) {
-        // লোকাল ভিডিও বড় স্ক্রিনে এবং রিমোট ভিডিও ছোট স্ক্রিনে চলে যাবে
         localVid.className = "w-full h-full object-cover";
         remoteVid.className = "w-28 h-36 object-cover rounded-2xl border-2 border-amber-400/60 absolute bottom-4 right-4 bg-gray-900 shadow-xl cursor-pointer hover:scale-105 transition-all z-20";
         localVid.onclick = null;
         remoteVid.onclick = toggleVideoSwap;
     } else {
-        // রিমোট ভিডিও বড় স্ক্রিনে এবং লোকাল ভিডিও ছোট স্ক্রিনে থাকবে
         remoteVid.className = "w-full h-full object-cover";
         localVid.className = "w-28 h-36 object-cover rounded-2xl border-2 border-amber-400/60 absolute bottom-4 right-4 bg-gray-900 shadow-xl cursor-pointer hover:scale-105 transition-all z-20";
         remoteVid.onclick = null;
@@ -516,6 +519,7 @@ async function endWhatsAppCall() {
     showToast("Call Ended");
 }
 
+// হোয়াটসঅ্যাপের মতো লাইভ অডিও থেকে ভিডিও / ভিডিও থেকে অডিও সুইচিং লজিক
 async function toggleVideoSwitch() {
     const newMode = currentCallType === 'audio' ? 'video' : 'audio';
     currentCallType = newMode;
@@ -529,18 +533,54 @@ async function toggleVideoSwitch() {
     if (newMode === 'video') {
         if (videoBox) videoBox.classList.remove('hidden');
         if (infoBox) infoBox.classList.add('hidden');
+        
         await setupLocalMedia('video');
+        
         if (peerConnection && localStream) {
             const videoTrack = localStream.getVideoTracks()[0];
-            const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
-            if (sender && videoTrack) sender.replaceTrack(videoTrack);
-            else if (videoTrack) peerConnection.addTrack(videoTrack, localStream);
+            const senders = peerConnection.getSenders();
+            let videoSender = senders.find(s => s.track && s.track.kind === 'video');
+            
+            if (videoSender && videoTrack) {
+                videoSender.replaceTrack(videoTrack);
+            } else if (videoTrack) {
+                peerConnection.addTrack(videoTrack, localStream);
+            }
+
+            // অপরপক্ষকে রিয়েল-টাইমে ভিডিও সিগন্যাল পাঠানোর জন্য অফার আপডেট করা
+            try {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                const myPhone = normPhone(getActiveProfile().phone);
+                const peerPhone = normPhone(activeCallPeer.phone);
+                await fetch('/api/chat?action=send_call_signal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        caller_phone: myPhone,
+                        receiver_phone: peerPhone,
+                        call_type: 'video',
+                        status: 'answered',
+                        rtc_data: peerConnection.localDescription
+                    })
+                });
+            } catch (e) {}
         }
         showToast("Switched to Video Mode");
     } else {
         if (videoBox) videoBox.classList.add('hidden');
         if (infoBox) infoBox.classList.remove('hidden');
-        if (localStream) localStream.getVideoTracks().forEach(t => t.stop());
+        
+        if (localStream) {
+            localStream.getVideoTracks().forEach(t => t.stop());
+        }
+        if (peerConnection) {
+            const senders = peerConnection.getSenders();
+            const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+            if (videoSender) {
+                peerConnection.removeTrack(videoSender);
+            }
+        }
         showToast("Switched to Audio Mode");
     }
 }
@@ -556,7 +596,6 @@ function toggleMicMute() {
     showToast(isMicMuted ? "Muted" : "Unmuted");
 }
 
-// সুন্দর অ্যানিমেটেড ও আইকনযুক্ত কল মডাল (কোনো বিশ্রী টেক্সট বা লেবেল নেই)
 function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     let existing = document.getElementById('whatsAppCallModal');
     if (existing) existing.remove();
