@@ -8,6 +8,7 @@ let isMicMuted = false, lastHandledSignalTs = 0;
 let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
 let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
+let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
 
 let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [
     { name: "rorraxy Support", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png", hidePhone: true }
@@ -190,11 +191,15 @@ async function fetchMessagesFromCloud() {
             if (data.success && Array.isArray(data.messages)) {
                 if (!localMessageStore[key]) localMessageStore[key] = [];
                 let updated = false;
+                const clearTs = chatClearTimestamps[key] || 0;
+
                 data.messages.forEach(m => {
                     const sender = normPhone(m.sender_phone);
                     const mId = m.id || ('m_' + (m.timestamp || Date.now()));
+                    const mTimestamp = m.timestamp || Date.now();
                     
-                    if (deletedMessageIds.includes(mId)) return;
+                    // চ্যাট ক্লিয়ার করার সময়ের আগের বা ডিলিট করা মেসেজ হলে পুরোপুরি ইগ্নোর করবে
+                    if (mTimestamp <= clearTs || deletedMessageIds.includes(mId)) return;
 
                     const mText = (m.message_text || '').trim();
                     const mUrl = m.media_url && m.media_url !== 'undefined' ? m.media_url : '';
@@ -212,7 +217,7 @@ async function fetchMessagesFromCloud() {
                             message_text: mText,
                             media_url: mUrl,
                             type: mType,
-                            timestamp: m.timestamp || Date.now()
+                            timestamp: mTimestamp
                         });
                         updated = true;
                     }
@@ -228,7 +233,7 @@ function startChatPolling() {
     chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 3000);
 }
 
-// WebRTC কলিং ও মডাল ফাংশনসমূহ
+// WebRTC কলিং ও অন্যান্য ফাংশনসমূহ অপরিবর্তিত রাখা হয়েছে...
 function startContinuousRinging() {
     stopContinuousRinging();
     const playTone = () => {
@@ -668,9 +673,15 @@ function backToSidebarMobile() {
     document.getElementById('bottomNavBar').style.display = 'flex';
 }
 
+// চ্যাট ক্লিয়ার করার সাথে সাথে ক্লিয়ার টাইমস্ট্যাম্প রেকর্ড করা হবে যাতে পোলিং আর পুরোনো মেসেজ না আনে
 function confirmClearChatHistory() {
     if (!currentActiveRecipient) return;
     const key = normPhone(currentActiveRecipient.phone);
+    
+    // বর্তমান সময়কে ক্লিয়ার টাইমস্ট্যাম্প হিসেবে সেভ করা হলো
+    chatClearTimestamps[key] = Date.now();
+    localStorage.setItem('salaam_clear_ts_v18', JSON.stringify(chatClearTimestamps));
+
     if (localMessageStore[key]) {
         localMessageStore[key].forEach(m => {
             if (m.id && !deletedMessageIds.includes(m.id)) {
@@ -817,7 +828,7 @@ function renderChatStories() {
         const last = msgs[msgs.length - 1] || {};
         const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(k)) || { name: k, avatar: '' };
         return `
-        /div onclick="openChat('${k}', '${contact.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
+        <div onclick="openChat('${k}', '${contact.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
             <div class="flex items-center space-x-3">
                 <img src="${contact.avatar || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-10 h-10 rounded-full object-cover bg-black">
                 <div><p class="text-xs font-semibold gold-gradient-text">${contact.name}</p><p class="text-[10px] text-gray-400 truncate max-w-[180px]">${last.message_text || 'Media attachment'}</p></div>
