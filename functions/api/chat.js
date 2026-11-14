@@ -1,178 +1,1002 @@
-export async function onRequest(context) {
-    const { request, env } = context;
-    const url = new URL(request.url);
-    const action = url.searchParams.get('action');
+let currentTab = 'contact', currentActiveRecipient = null;
+let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
+let callRingInterval = null, activeAudioCtx = null, callPollInterval = null, chatPollInterval = null;
+let callTimerInterval = null, callSeconds = 0;
+let peerConnection = null, localStream = null, remoteStream = null;
+let isMicMuted = false, lastHandledSignalTs = 0;
+let isLocalMain = false; // PiP Video Swap
 
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Content-Type': 'application/json'
-    };
+let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
+let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
+let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
+let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
 
-    if (request.method === 'OPTIONS') {
-        return new Response(null, { headers: corsHeaders });
+// ডিভাইস কন্টাক্টস (অফিশিয়াল সাপোর্ট টিম ডিফল্টভাবে কন্টাক্ট লিস্টে হাইড থাকবে, কোডিং বা মেসেজের মাধ্যমে ডায়নামিক আসবে)
+let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [];
+
+const RTC_CONFIG = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+};
+
+function persistMessages() { 
+    localStorage.setItem('salaam_messages_v18', JSON.stringify(localMessageStore)); 
+}
+
+function showToast(msg, isErr = false) {
+    const b = document.getElementById('toastBanner'), dot = document.getElementById('toastDot'), text = document.getElementById('toastText');
+    if (!b) return;
+    dot.style.backgroundColor = isErr ? '#ff2e7e' : '#2ed573';
+    text.innerText = msg;
+    b.classList.remove('hidden'); 
+    b.classList.add('flex');
+    setTimeout(() => { 
+        b.classList.add('hidden'); 
+        b.classList.remove('flex'); 
+    }, 2200);
+}
+
+function initAppAfterVerification() {
+    if (typeof cleanupExpiredMessages === 'function') cleanupExpiredMessages();
+    syncGlobalNetworkUsers();
+    setTimeout(() => { switchTab('contact'); }, 100);
+    startIncomingCallPolling();
+    startChatPolling();
+}
+
+async function syncGlobalNetworkUsers() {
+    try {
+        const res = await fetch('/api/chat?action=get_global_users');
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success && Array.isArray(data.users)) {
+                const myPhone = normPhone(getActiveProfile().phone);
+                data.users.forEach(u => {
+                    const uPhone = normPhone(u.phone_number);
+                    if (uPhone && uPhone !== myPhone) {
+                        const existingIdx = deviceContacts.findIndex(dc => normPhone(dc.phone) === uPhone);
+                        if (existingIdx === -1) {
+                            deviceContacts.push({
+                                name: u.display_name || uPhone,
+                                phone: uPhone,
+                                appUser: true,
+                                isOnline: u.is_online === 1,
+                                avatar: u.avatar_url || null,
+                                lastMsg: "Tap to message"
+                            });
+                        } else {
+                            deviceContacts[existingIdx].isOnline = u.is_online === 1;
+                            if (u.display_name) deviceContacts[existingIdx].name = u.display_name;
+                            if (u.avatar_url) deviceContacts[existingIdx].avatar = u.avatar_url;
+                        }
+                    }
+                });
+                localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
+                if (currentTab === 'contact' || currentTab === 'chat') renderDeviceContacts();
+            }
+        }
+    } catch (e) {}
+}
+
+function openWorldLink() {
+    window.open('https://rorraxy.com', '_blank');
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+    ['profile', 'calls', 'chat', 'contact', 'world'].forEach(t => {
+        const isSel = (t === tab);
+        const lbl = document.getElementById('label' + t.charAt(0).toUpperCase() + t.slice(1));
+        const icn = document.getElementById('icon' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (lbl) lbl.className = `nav-label text-[9px] ${isSel ? 'pink-gradient-text font-bold' : 'gold-gradient-text font-semibold'}`;
+        if (icn) icn.setAttribute('stroke', isSel ? '#EC4899' : '#F5D061');
+    });
+
+    const sb = document.getElementById('searchBarContainer');
+    if (tab === 'profile') { 
+        if (sb) sb.style.display = 'none'; 
+        if (typeof renderProfileView === 'function') renderProfileView(); 
+    } else if (tab === 'calls') {
+        if (sb) sb.style.display = 'none';
+        renderCallsHistory();
+    } else {
+        if (sb) sb.style.display = 'block';
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) searchInput.value = '';
+        if (tab === 'chat') renderChatStories();
+        else { syncGlobalNetworkUsers(); renderDeviceContacts(); }
     }
+    
+    if (window.innerWidth >= 768) {
+        document.getElementById('sidebarSection').style.display = 'flex';
+        document.getElementById('workspaceSection').style.display = 'flex';
+    } else {
+        document.getElementById('sidebarSection').style.display = 'flex';
+        document.getElementById('workspaceSection').style.display = 'none';
+    }
+}
+
+function renderDeviceContacts() {
+    const listContainer = document.getElementById('sidebarContentList');
+    if (!listContainer) return;
+    const contactsHtml = deviceContacts.filter(c => !c.isOfficialSupport).map(c => {
+        const info = getCountryInfo(c.phone);
+        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
+        
+        return `
+        <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
+            <div onclick="openChat('${c.phone}', '${c.name}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
+                <div class="relative shrink-0">
+                    ${avatarImg}
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span>
+                </div>
+                <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>${subText}</div>
+            </div>
+            <div class="flex items-center space-x-1.5 shrink-0 pl-2">
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+            </div>
+        </div>`;
+    }).join('');
+    listContainer.innerHTML = `<div id="directDialSlot"></div>` + contactsHtml;
+}
+
+function renderCallsHistory() {
+    const listContainer = document.getElementById('sidebarContentList');
+    if (!listContainer) return;
+
+    if (!callHistoryNotifications || callHistoryNotifications.length === 0) {
+        listContainer.innerHTML = `
+            <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 m-auto">
+                <div class="w-12 h-12 rounded-2xl theme-card flex items-center justify-center">
+                    <i class="fa-solid fa-phone-slash text-amber-300 text-lg"></i>
+                </div>
+                <p class="text-xs font-bold gold-gradient-text">No recent calls</p>
+                <p class="text-[10px] text-gray-400">Your audio and video call history will appear here.</p>
+            </div>`;
+        return;
+    }
+
+    listContainer.innerHTML = `
+        <div class="flex justify-between items-center px-3 py-1">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Recent Calls</span>
+            <button onclick="clearAllCallHistory()" class="text-[10px] text-red-400 hover:underline font-semibold cursor-pointer">Clear All</button>
+        </div>` + 
+        callHistoryNotifications.map((call, idx) => {
+            const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(call.phone)) || { name: call.phone, avatar: null };
+            const avatarImg = contact.avatar ? `<img src="${contact.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${contact.name.charAt(0)}</div>`;
+            const timeStr = new Date(call.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            return `
+            <div class="flex justify-between items-center px-4 py-3 my-1 theme-card rounded-2xl border border-white/5">
+                <div class="flex items-center space-x-3 min-w-0">
+                    ${avatarImg}
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold gold-gradient-text truncate">${contact.name}</p>
+                        <p class="text-[10px] text-gray-400"><i class="fa-solid fa-${call.type === 'video' ? 'video' : 'phone'} mr-1 text-amber-300"></i> ${call.status || 'Completed'} • ${timeStr}</p>
+                    </div>
+                </div>
+                <div class="flex space-x-2 shrink-0">
+                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+                </div>
+            </div>`;
+        }).join('');
+}
+
+function clearAllCallHistory() {
+    callHistoryNotifications = [];
+    localStorage.removeItem('salaam_call_notifications');
+    renderCallsHistory();
+    showToast("Call history cleared");
+}
+
+function openChat(phone, name) {
+    const cp = normPhone(phone);
+    let targetContact = deviceContacts.find(c => normPhone(c.phone) === cp);
+    
+    if (!targetContact) {
+        targetContact = { name: name || cp, phone: cp, appUser: true, isOnline: true, avatar: null };
+        deviceContacts.push(targetContact);
+        localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
+    }
+
+    const avatarUrl = targetContact.avatar ? targetContact.avatar : 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png';
+
+    currentActiveRecipient = { phone: cp, name: targetContact.name, isOnline: true, avatar: avatarUrl };
+    document.getElementById('activeChatHeader').style.display = 'flex';
+    document.getElementById('chatInputBar').style.display = 'flex';
+    document.getElementById('activeChatTitle').innerText = targetContact.name;
+    document.getElementById('activeChatAvatar').src = avatarUrl;
+    
+    if (window.innerWidth < 768) {
+        document.getElementById('sidebarSection').style.display = 'none';
+        document.getElementById('workspaceSection').style.display = 'flex';
+        document.getElementById('bottomNavBar').style.display = 'none';
+    } else {
+        document.getElementById('sidebarSection').style.display = 'flex';
+        document.getElementById('workspaceSection').style.display = 'flex';
+    }
+    loadMessages();
+    fetchMessagesFromCloud();
+}
+
+async function sendTextMessage() {
+    if (!currentActiveRecipient) return;
+    const inp = document.getElementById('messageInput');
+    const text = inp.value.trim();
+    if (!text) return;
+    inp.value = '';
+    toggleSendButton();
+    
+    const key = normPhone(currentActiveRecipient.phone), me = normPhone(getActiveProfile().phone);
+    if (!localMessageStore[key]) localMessageStore[key] = [];
+    
+    const msgId = 'm_' + Date.now() + '_' + Math.random();
+    const msg = { id: msgId, phone_number: me, message_text: text, media_url: '', type: 'text', timestamp: Date.now() };
+    localMessageStore[key].push(msg);
+    appendBubble(msg);
+    persistMessages();
 
     try {
-        if (request.method === 'GET' && action === 'get_global_users') {
-            const { results } = await env.chat.prepare(
-                "SELECT phone_number, display_name, username, avatar_url, is_online, is_live FROM chat_master_system WHERE record_type = 'user' AND is_verified = 1 ORDER BY updated_at DESC LIMIT 500"
-            ).all();
-            return new Response(JSON.stringify({ success: true, users: results || [] }), { headers: corsHeaders });
-        }
+        await fetch('/api/chat?action=send_chat_message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sender_phone: me, receiver_phone: key, message_text: text, media_url: '', message_type: 'text' })
+        });
+    } catch (e) {}
+}
 
-        if (request.method === 'GET' && action === 'get_user_profile') {
-            const phone = url.searchParams.get('phone');
-            const user = await env.chat.prepare(
-                "SELECT display_name, username, avatar_url, is_live FROM chat_master_system WHERE record_type = 'user' AND phone_number = ?"
-            ).bind(phone).first();
-            return new Response(JSON.stringify({ success: true, user: user || null }), { headers: corsHeaders });
-        }
+async function fetchMessagesFromCloud() {
+    if (!currentActiveRecipient) return;
+    const me = normPhone(getActiveProfile().phone);
+    const key = normPhone(currentActiveRecipient.phone);
+    try {
+        const res = await fetch(`/api/chat?action=get_chat_messages&phone=${encodeURIComponent(key)}&my_phone=${encodeURIComponent(me)}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success && Array.isArray(data.messages)) {
+                if (!localMessageStore[key]) localMessageStore[key] = [];
+                let updated = false;
+                const clearTs = chatClearTimestamps[key] || 0;
 
-        // উন্নত কল ও WebRTC সিগন্যালিং সিস্টেম
-        if (request.method === 'POST' && action === 'send_call_signal') {
-            const body = await request.json();
-            const { caller_phone, receiver_phone, call_type, status, rtc_data } = body;
-            
-            // কল কেটে দিলে ডাটাবেস থেকে রিংং সিগন্যাল সাথে সাথে ক্লিয়ার করা হবে
-            if (status === 'ended') {
-                await env.chat.prepare(
-                    "DELETE FROM chat_master_system WHERE record_type = 'call_signal' AND (recipient_phone = ? OR recipient_phone = ? OR phone_number = ? OR phone_number = ?)"
-                ).bind(receiver_phone, caller_phone, caller_phone, receiver_phone).run();
-                return new Response(JSON.stringify({ success: true, cleared: true }), { headers: corsHeaders });
+                data.messages.forEach(m => {
+                    const sender = normPhone(m.sender_phone);
+                    const mId = m.id || ('m_' + (m.timestamp || Date.now()));
+                    const mTimestamp = m.timestamp || Date.now();
+                    
+                    if (mTimestamp <= clearTs || deletedMessageIds.includes(mId)) return;
+
+                    const mText = (m.message_text || '').trim();
+                    const mUrl = m.media_url && m.media_url !== 'undefined' ? m.media_url : '';
+                    const mType = m.message_type || (mUrl ? (mUrl.startsWith('data:video/') ? 'video' : (mUrl.startsWith('data:image/') ? 'image' : 'file')) : 'text');
+                    
+                    const exists = localMessageStore[key].some(existing => 
+                        (existing.id && existing.id === mId) || 
+                        (normPhone(existing.phone_number) === sender && (existing.message_text || '').trim() === mText && (existing.media_url || '') === mUrl)
+                    );
+
+                    if (!exists && (mText || mUrl)) {
+                        localMessageStore[key].push({
+                            id: mId,
+                            phone_number: sender,
+                            message_text: mText,
+                            media_url: mUrl,
+                            type: mType,
+                            timestamp: mTimestamp
+                        });
+                        updated = true;
+                    }
+                });
+                if (updated) { persistMessages(); loadMessages(); }
             }
-
-            const expiresAt = new Date(Date.now() + 2 * 60 * 1000).toISOString(); // সর্বোচ্চ ২ মিনিট মেয়াদ
-            const callId = 'call_to_' + receiver_phone;
-            const payload = JSON.stringify({
-                caller: caller_phone,
-                receiver: receiver_phone,
-                type: call_type || 'audio',
-                status: status,
-                rtc: rtc_data || null,
-                ts: Date.now()
-            });
-
-            await env.chat.prepare(
-                `INSERT OR REPLACE INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, is_verified, is_online, expires_at, updated_at) 
-                 VALUES (?, 'call_signal', ?, ?, ?, ?, 1, 1, ?, CURRENT_TIMESTAMP)`
-            ).bind(callId, caller_phone, receiver_phone, caller_phone, payload, expiresAt).run();
-
-            return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
         }
+    } catch (e) {}
+}
 
-        if (request.method === 'GET' && action === 'check_call_signal') {
-            const phone = url.searchParams.get('phone');
-            const res = await env.chat.prepare(
-                "SELECT display_name, magic_code, expires_at FROM chat_master_system WHERE record_type = 'call_signal' AND recipient_phone = ?"
-            ).bind(phone).first();
+function startChatPolling() {
+    if (chatPollInterval) clearInterval(chatPollInterval);
+    chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 3000);
+}
 
-            if (res && res.expires_at && new Date(res.expires_at) < new Date()) {
-                await env.chat.prepare("DELETE FROM chat_master_system WHERE record_type = 'call_signal' AND recipient_phone = ?").bind(phone).run();
-                return new Response(JSON.stringify({ success: true, signal: null }), { headers: corsHeaders });
-            }
+// WebRTC কলিং এবং অডিও/ভিডিও কলিং
+function startContinuousRinging() {
+    stopContinuousRinging();
+    const playTone = () => {
+        try {
+            if (!activeAudioCtx) activeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (activeAudioCtx.state === 'suspended') activeAudioCtx.resume();
+            const osc = activeAudioCtx.createOscillator();
+            const gain = activeAudioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, activeAudioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, activeAudioCtx.currentTime);
+            osc.connect(gain);
+            gain.connect(activeAudioCtx.destination);
+            osc.start();
+            osc.stop(activeAudioCtx.currentTime + 0.5);
+        } catch (e) {}
+    };
+    playTone();
+    callRingInterval = setInterval(playTone, 2000);
+}
 
-            return new Response(JSON.stringify({ success: true, signal: res || null }), { headers: corsHeaders });
-        }
-
-        if (request.method === 'POST' && action === 'send_chat_message') {
-            const body = await request.json();
-            const { sender_phone, receiver_phone, message_text, media_url, file_size } = body;
-            const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-
-            await env.chat.prepare(
-                `INSERT INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, message_text, media_url, message_status, file_size, expires_at, is_verified, is_online, updated_at) 
-                 VALUES (?, 'chat_msg', ?, ?, ?, '', ?, ?, 'sent', ?, ?, 1, 1, CURRENT_TIMESTAMP)`
-            ).bind(
-                'msg_' + Date.now() + Math.random(), 
-                sender_phone, 
-                receiver_phone, 
-                sender_phone, 
-                message_text || '', 
-                media_url || '', 
-                file_size || 0,
-                expiresAt
-            ).run();
-
-            return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
-        }
-
-        if (request.method === 'GET' && action === 'get_chat_messages') {
-            const phone = url.searchParams.get('phone');
-            const myPhone = url.searchParams.get('my_phone');
-            
-            const { results } = await env.chat.prepare(
-                "SELECT phone_number as sender_phone, message_text, media_url, created_at FROM chat_master_system WHERE record_type = 'chat_msg' AND ((phone_number = ? AND recipient_phone = ?) OR (phone_number = ? AND recipient_phone = ?)) ORDER BY updated_at ASC"
-            ).bind(phone, myPhone, myPhone, phone).all();
-
-            return new Response(JSON.stringify({ success: true, messages: results || [] }), { headers: corsHeaders });
-        }
-
-        if (request.method === 'POST' && action === 'send_magic_link') {
-            const body = await request.json();
-            const { display_name, phone, magic_code, ip } = body;
-            const clientIp = (ip && ip !== 'Detecting...' && ip !== 'Unknown') ? ip : (request.headers.get('CF-Connecting-IP') || 'Unknown');
-            const defaultUsername = 'user_' + Math.floor(1000 + Math.random() * 9000);
-            const userId = 'user_' + phone;
-
-            const existing = await env.chat.prepare(
-                "SELECT username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND phone_number = ?"
-            ).bind(phone).first();
-
-            const finalUsername = existing && existing.username ? existing.username : defaultUsername;
-
-            await env.chat.prepare(
-                `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, username, magic_code, ip_address, is_verified, is_online) 
-                 VALUES (?, 'user', ?, ?, ?, ?, ?, 0, 1)
-                 ON CONFLICT(id) DO UPDATE SET magic_code = ?, display_name = COALESCE(?, display_name), ip_address = ?`
-            ).bind(userId, phone, display_name || 'User', finalUsername, magic_code, clientIp, magic_code, display_name, clientIp).run();
-
-            return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
-        }
-
-        if (request.method === 'POST' && action === 'verify_magic_code') {
-            const body = await request.json();
-            const { phone, magic_code, unique_id, ip, contacts_json } = body;
-            const clientIp = (ip && ip !== 'Detecting...' && ip !== 'Unknown') ? ip : (request.headers.get('CF-Connecting-IP') || 'Unknown');
-            const userId = 'user_' + phone;
-
-            await env.chat.prepare(
-                `UPDATE chat_master_system 
-                 SET is_verified = 1, unique_id = ?, ip_address = ?, contacts_json = ?, is_online = 1, updated_at = CURRENT_TIMESTAMP 
-                 WHERE id = ? AND magic_code = ? AND record_type = 'user'`
-            ).bind(unique_id || 'usr_' + Date.now(), clientIp, contacts_json || '[]', userId, magic_code).run();
-
-            return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
-        }
-
-        if (request.method === 'POST' && action === 'update_profile') {
-            const body = await request.json();
-            const { phone, display_name, username, avatar_url } = body;
-            if (phone) {
-                const userId = 'user_' + phone;
-                await env.chat.prepare(
-                    `UPDATE chat_master_system 
-                     SET display_name = COALESCE(?, display_name), username = COALESCE(?, username), avatar_url = COALESCE(?, avatar_url), updated_at = CURRENT_TIMESTAMP 
-                     WHERE id = ? AND record_type = 'user'`
-                ).bind(display_name || null, username || null, avatar_url || null, userId).run();
-            }
-            return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
-        }
-
-        if (request.method === 'POST' && action === 'set_live_status') {
-            const body = await request.json();
-            const { phone, is_live } = body;
-            const userId = 'user_' + phone;
-            await env.chat.prepare(
-                "UPDATE chat_master_system SET is_live = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND record_type = 'user'"
-            ).bind(is_live ? 1 : 0, userId).run();
-            return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
-        }
-
-        return new Response(JSON.stringify({ success: false, error: 'Invalid action' }), { status: 400, headers: corsHeaders });
-
-    } catch (err) {
-        return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: corsHeaders });
+function stopContinuousRinging() {
+    if (callRingInterval) {
+        clearInterval(callRingInterval);
+        callRingInterval = null;
     }
+}
+
+function startCallDurationTimer() {
+    stopCallDurationTimer();
+    callSeconds = 0;
+    callTimerInterval = setInterval(() => {
+        callSeconds++;
+        const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+        const secs = String(callSeconds % 60).padStart(2, '0');
+        const lbl = document.getElementById('callStatusLabel');
+        if (lbl) lbl.innerText = `Connected • ${mins}:${secs}`;
+    }, 1000);
+}
+
+function stopCallDurationTimer() {
+    if (callTimerInterval) {
+        clearInterval(callTimerInterval);
+        callTimerInterval = null;
+    }
+}
+
+async function setupLocalMedia(mode) {
+    try {
+        if (localStream) {
+            localStream.getTracks().forEach(t => t.stop());
+        }
+        localStream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
+            video: mode === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false
+        });
+        applyVideoStreamsToDom();
+        return localStream;
+    } catch (err) {
+        showToast("Microphone or Camera permission required", true);
+        return null;
+    }
+}
+
+function applyVideoStreamsToDom() {
+    const remoteVid = document.getElementById('callRemoteVideo');
+    const localVid = document.getElementById('callLocalVideo');
+    
+    if (remoteVid && remoteStream) {
+        remoteVid.srcObject = remoteStream;
+        remoteVid.play().catch(e => {});
+    }
+    if (localVid && localStream) {
+        localVid.srcObject = localStream;
+        localVid.muted = true;
+        localVid.play().catch(e => {});
+    }
+}
+
+function toggleVideoSwap() {
+    isLocalMain = !isLocalMain;
+    const remoteVid = document.getElementById('callRemoteVideo');
+    const localVid = document.getElementById('callLocalVideo');
+    if (!remoteVid || !localVid) return;
+
+    if (isLocalMain) {
+        localVid.className = "w-full h-full object-cover";
+        remoteVid.className = "w-28 h-36 object-cover rounded-2xl border-2 border-amber-400/60 absolute bottom-4 right-4 bg-gray-900 shadow-xl cursor-pointer hover:scale-105 transition-all z-20";
+        localVid.onclick = null;
+        remoteVid.onclick = toggleVideoSwap;
+    } else {
+        remoteVid.className = "w-full h-full object-cover";
+        localVid.className = "w-28 h-36 object-cover rounded-2xl border-2 border-amber-400/60 absolute bottom-4 right-4 bg-gray-900 shadow-xl cursor-pointer hover:scale-105 transition-all z-20";
+        remoteVid.onclick = null;
+        localVid.onclick = toggleVideoSwap;
+    }
+}
+
+function createPeerConnection(peerPhone) {
+    if (peerConnection) {
+        peerConnection.close();
+    }
+    peerConnection = new RTCPeerConnection(RTC_CONFIG);
+
+    if (localStream) {
+        localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+        });
+    }
+
+    peerConnection.ontrack = (event) => {
+        const remoteAud = document.getElementById('callRemoteAudio');
+        if (event.streams && event.streams[0]) {
+            remoteStream = event.streams[0];
+            applyVideoStreamsToDom();
+            if (remoteAud) {
+                remoteAud.srcObject = remoteStream;
+                remoteAud.play().catch(e => {});
+            }
+        }
+    };
+
+    return peerConnection;
+}
+
+async function startWhatsAppCall(mode) {
+    if (!currentActiveRecipient) {
+        showToast("Select a contact first", true);
+        return;
+    }
+    const myPhone = normPhone(getActiveProfile().phone);
+    const peerPhone = normPhone(currentActiveRecipient.phone);
+
+    if (myPhone === peerPhone) {
+        showToast("You cannot call your own number", true);
+        return;
+    }
+
+    currentCallType = mode;
+    activeCallPeer = currentActiveRecipient;
+    isCallActive = true;
+
+    renderCallModal(activeCallPeer.name, activeCallPeer.avatar, `Calling ${activeCallPeer.name}...`, mode, false);
+    startContinuousRinging();
+
+    await setupLocalMedia(mode);
+    const pc = createPeerConnection(peerPhone);
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    await new Promise(resolve => {
+        if (pc.iceGatheringState === 'complete') resolve();
+        else {
+            const checkIce = () => {
+                if (pc.iceGatheringState === 'complete') {
+                    pc.removeEventListener('icegatheringstatechange', checkIce);
+                    resolve();
+                }
+            };
+            pc.addEventListener('icegatheringstatechange', checkIce);
+            setTimeout(resolve, 1200);
+        }
+    });
+
+    try {
+        await fetch('/api/chat?action=send_call_signal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                caller_phone: myPhone,
+                receiver_phone: peerPhone,
+                call_type: mode,
+                status: 'ringing',
+                rtc_data: pc.localDescription
+            })
+        });
+    } catch (e) {}
+}
+
+async function acceptWhatsAppCall() {
+    if (!activeCallPeer) return;
+    stopContinuousRinging();
+    isCallActive = true;
+    startCallDurationTimer();
+    showToast("Call Connected!");
+
+    const myPhone = normPhone(getActiveProfile().phone);
+    const peerPhone = normPhone(activeCallPeer.phone);
+
+    updateInCallButtons();
+
+    await setupLocalMedia(currentCallType);
+    const pc = createPeerConnection(peerPhone);
+
+    if (window.pendingIncomingOffer) {
+        await pc.setRemoteDescription(new RTCSessionDescription(window.pendingIncomingOffer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+
+        await new Promise(resolve => {
+            if (pc.iceGatheringState === 'complete') resolve();
+            else {
+                const checkIce = () => {
+                    if (pc.iceGatheringState === 'complete') {
+                        pc.removeEventListener('icegatheringstatechange', checkIce);
+                        resolve();
+                    }
+                };
+                pc.addEventListener('icegatheringstatechange', checkIce);
+                setTimeout(resolve, 1200);
+            }
+        });
+
+        try {
+            await fetch('/api/chat?action=send_call_signal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    caller_phone: myPhone,
+                    receiver_phone: peerPhone,
+                    call_type: currentCallType,
+                    status: 'answered',
+                    rtc_data: pc.localDescription
+                })
+            });
+        } catch (e) {}
+    }
+}
+
+async function endWhatsAppCall() {
+    stopContinuousRinging();
+    stopCallDurationTimer();
+    isCallActive = false;
+    window.pendingIncomingOffer = null;
+
+    if (localStream) {
+        localStream.getTracks().forEach(t => t.stop());
+        localStream = null;
+    }
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
+
+    const modal = document.getElementById('whatsAppCallModal');
+    if (modal) modal.remove();
+
+    const myPhone = normPhone(getActiveProfile().phone);
+    const peerPhone = activeCallPeer ? normPhone(activeCallPeer.phone) : '';
+    activeCallPeer = null;
+
+    if (peerPhone) {
+        try {
+            await fetch('/api/chat?action=send_call_signal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    caller_phone: myPhone,
+                    receiver_phone: peerPhone,
+                    call_type: currentCallType,
+                    status: 'ended'
+                })
+            });
+        } catch (e) {}
+    }
+    showToast("Call Ended");
+}
+
+async function toggleVideoSwitch() {
+    const newMode = currentCallType === 'audio' ? 'video' : 'audio';
+    currentCallType = newMode;
+    
+    const badge = document.getElementById('callTypeBadge');
+    if (badge) badge.innerText = `${newMode} call`;
+
+    const videoBox = document.getElementById('videoStreamsBox');
+    const infoBox = document.getElementById('callerInfoBox');
+
+    if (newMode === 'video') {
+        if (videoBox) videoBox.classList.remove('hidden');
+        if (infoBox) infoBox.classList.add('hidden');
+        
+        await setupLocalMedia('video');
+        
+        if (peerConnection && localStream) {
+            const videoTrack = localStream.getVideoTracks()[0];
+            const senders = peerConnection.getSenders();
+            let videoSender = senders.find(s => s.track && s.track.kind === 'video');
+            
+            if (videoSender && videoTrack) {
+                videoSender.replaceTrack(videoTrack);
+            } else if (videoTrack) {
+                peerConnection.addTrack(videoTrack, localStream);
+            }
+
+            try {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                const myPhone = normPhone(getActiveProfile().phone);
+                const peerPhone = normPhone(activeCallPeer.phone);
+                await fetch('/api/chat?action=send_call_signal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        caller_phone: myPhone,
+                        receiver_phone: peerPhone,
+                        call_type: 'video',
+                        status: 'answered',
+                        rtc_data: peerConnection.localDescription
+                    })
+                });
+            } catch (e) {}
+        }
+        showToast("Switched to Video Mode");
+    } else {
+        if (videoBox) videoBox.classList.add('hidden');
+        if (infoBox) infoBox.classList.remove('hidden');
+        
+        if (localStream) {
+            localStream.getVideoTracks().forEach(t => t.stop());
+        }
+        if (peerConnection) {
+            const senders = peerConnection.getSenders();
+            const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+            if (videoSender) {
+                peerConnection.removeTrack(videoSender);
+            }
+        }
+        showToast("Switched to Audio Mode");
+    }
+}
+
+function toggleMicMute() {
+    if (!localStream) return;
+    isMicMuted = !isMicMuted;
+    localStream.getAudioTracks().forEach(t => t.enabled = !isMicMuted);
+    const btn = document.getElementById('muteMicBtn');
+    if (btn) {
+        btn.innerHTML = isMicMuted ? `<i class="fa-solid fa-microphone-slash text-red-400"></i>` : `<i class="fa-solid fa-microphone"></i>`;
+    }
+    showToast(isMicMuted ? "Muted" : "Unmuted");
+}
+
+function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
+    let existing = document.getElementById('whatsAppCallModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'whatsAppCallModal';
+    modal.className = 'fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-between p-6';
+    
+    modal.innerHTML = `
+        <div class="w-full max-w-md flex justify-between items-center text-center pt-4">
+            <span id="callTypeBadge" class="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-[11px] font-bold uppercase tracking-wider">${mode} call</span>
+            <p id="callStatusLabel" class="text-xs text-gray-300 font-medium">${statusText}</p>
+            <div class="w-16"></div>
+        </div>
+
+        <div class="flex-1 flex flex-col items-center justify-center w-full max-w-3xl relative my-auto">
+            <div id="callerInfoBox" class="${mode === 'video' ? 'hidden' : 'flex'} flex-col items-center space-y-4">
+                <img src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-32 h-32 rounded-full object-cover border-4 border-amber-400/60 shadow-2xl animate-pulse bg-black">
+                <h2 class="text-2xl font-extrabold gold-gradient-text tracking-wide">${peerName}</h2>
+            </div>
+
+            <div id="videoStreamsBox" class="${mode === 'video' ? 'flex' : 'hidden'} w-full h-[70dvh] bg-black rounded-3xl overflow-hidden border border-white/10 relative shadow-2xl">
+                <video id="callRemoteVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+                <video id="callLocalVideo" autoplay muted playsinline class="w-28 h-36 object-cover rounded-2xl border-2 border-amber-400/60 absolute bottom-4 right-4 bg-gray-900 shadow-xl cursor-pointer hover:scale-105 transition-all z-20" onclick="toggleVideoSwap()"></video>
+            </div>
+            <audio id="callRemoteAudio" autoplay></audio>
+        </div>
+
+        <div id="callControlButtons" class="w-full max-w-md flex justify-center items-center space-x-6 pb-6">
+            ${isIncoming ? `
+                <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition" title="Decline Call">
+                    <i class="fa-solid fa-phone-slash text-xl"></i>
+                </button>
+                <button type="button" onclick="acceptWhatsAppCall()" class="w-16 h-16 rounded-full bg-green-600 hover:bg-green-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition animate-bounce" title="Accept Call">
+                    <i class="fa-solid fa-phone text-xl"></i>
+                </button>
+            ` : `
+                <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-14 h-14 rounded-full theme-input hover:brightness-125 text-white flex items-center justify-center shadow-lg cursor-pointer transition transform hover:scale-110" title="Mute">
+                    <i class="fa-solid fa-microphone text-lg"></i>
+                </button>
+                <button type="button" onclick="toggleVideoSwitch()" class="w-14 h-14 rounded-full theme-input hover:brightness-125 text-amber-300 flex items-center justify-center shadow-lg cursor-pointer transition transform hover:scale-110" title="Video Switch">
+                    <i class="fa-solid fa-video text-lg"></i>
+                </button>
+                <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition" title="End Call">
+                    <i class="fa-solid fa-phone-slash text-xl"></i>
+                </button>
+            `}
+        </div>
+    `;
+    document.body.appendChild(modal);
+    applyVideoStreamsToDom();
+}
+
+function updateInCallButtons() {
+    const box = document.getElementById('callControlButtons');
+    const infoBox = document.getElementById('callerInfoBox');
+    if (infoBox && currentCallType === 'video') infoBox.classList.add('hidden');
+    
+    if (!box) return;
+    box.innerHTML = `
+        <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-14 h-14 rounded-full theme-input hover:brightness-125 text-white flex items-center justify-center shadow-lg cursor-pointer transition transform hover:scale-110" title="Mute">
+            <i class="fa-solid fa-microphone text-lg"></i>
+        </button>
+        <button type="button" onclick="toggleVideoSwitch()" class="w-14 h-14 rounded-full theme-input hover:brightness-125 text-amber-300 flex items-center justify-center shadow-lg cursor-pointer transition transform hover:scale-110" title="Video Switch">
+            <i class="fa-solid fa-video text-lg"></i>
+        </button>
+        <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition" title="End Call">
+            <i class="fa-solid fa-phone-slash text-xl"></i>
+        </button>
+    `;
+}
+
+function startIncomingCallPolling() {
+    if (callPollInterval) clearInterval(callPollInterval);
+    callPollInterval = setInterval(async () => {
+        const myPhone = normPhone(getActiveProfile().phone);
+        if (!myPhone) return;
+
+        try {
+            const res = await fetch(`/api/chat?action=check_call_signal&phone=${encodeURIComponent(myPhone)}`);
+            if (res.ok) {
+                const data = await res.json();
+                
+                if (!data.signal || !data.signal.magic_code) {
+                    if (isCallActive && callSeconds > 0) {
+                        endWhatsAppCall();
+                    }
+                    return;
+                }
+
+                let sig = null;
+                try { sig = JSON.parse(data.signal.magic_code); } catch (e) { return; }
+                if (!sig || !sig.ts) return;
+
+                // পুরানো বা ফেলে আসা সিগন্যাল ইগনোর করার জন্য সময় চেক (১৫ সেকেন্ডের বেশি পুরনো হলে রিং হবে না)
+                if (Date.now() - sig.ts > 15000) return;
+
+                const modal = document.getElementById('whatsAppCallModal');
+                if (sig.status === 'ringing' && !isCallActive && !modal && sig.ts > lastHandledSignalTs) {
+                    lastHandledSignalTs = sig.ts;
+                    const callerPhone = normPhone(sig.caller);
+                    if (callerPhone === myPhone) return;
+
+                    let callerContact = deviceContacts.find(c => normPhone(c.phone) === callerPhone);
+                    if (!callerContact) {
+                        callerContact = { name: callerPhone, phone: callerPhone, appUser: true, isOnline: true };
+                        deviceContacts.push(callerContact);
+                        localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
+                    }
+
+                    activeCallPeer = callerContact;
+                    currentCallType = sig.type || 'audio';
+                    window.pendingIncomingOffer = sig.rtc;
+
+                    startContinuousRinging();
+                    renderCallModal(callerContact.name, callerContact.avatar, `Incoming ${currentCallType} call...`, currentCallType, true);
+                } 
+                else if (sig.status === 'answered' && isCallActive && sig.ts > lastHandledSignalTs) {
+                    lastHandledSignalTs = sig.ts;
+                    stopContinuousRinging();
+                    if (!callTimerInterval) {
+                        startCallDurationTimer();
+                        showToast("Call Connected!");
+                    }
+                    if (peerConnection && sig.rtc && peerConnection.signalingState !== 'stable') {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(sig.rtc));
+                    }
+                }
+            }
+        } catch (e) {}
+    }, 2000);
+}
+
+function filterContent() {
+    const q = document.getElementById('searchInput').value.trim();
+    const listContainer = document.getElementById('sidebarContentList');
+    if (!listContainer) return;
+
+    const filtered = deviceContacts.filter(c => !c.isOfficialSupport && (c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q)));
+    
+    let directDialHtml = '';
+    if (q.length >= 3 && !filtered.some(c => c.phone === q || c.name.toLowerCase() === q.toLowerCase())) {
+        directDialHtml = `
+        <div class="px-4 py-3 my-1 rounded-2xl theme-card border border-amber-400/40 bg-amber-400/10 flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold gold-gradient-text">New Number / Dial</p>
+                <p class="text-[10px] text-gray-300">${q}</p>
+            </div>
+            <div class="flex space-x-1.5">
+                <button onclick="openChat('${q}', '${q}')" class="p-2 text-amber-300 hover:bg-white/10 cursor-pointer" title="Open Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+            </div>
+        </div>`;
+    }
+
+    const contactsHtml = filtered.map(c => {
+        const info = getCountryInfo(c.phone);
+        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
+        
+        return `
+        <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
+            <div onclick="openChat('${c.phone}', '${c.name}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
+                <div class="relative shrink-0">
+                    ${avatarImg}
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span>
+                </div>
+                <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>${subText}</div>
+            </div>
+            <div class="flex items-center space-x-1.5 shrink-0 pl-2">
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+            </div>
+        </div>`;
+    }).join('');
+
+    listContainer.innerHTML = directDialHtml + contactsHtml;
+}
+
+function backToSidebarMobile() {
+    document.getElementById('sidebarSection').style.display = 'flex';
+    document.getElementById('workspaceSection').style.display = 'none';
+    document.getElementById('bottomNavBar').style.display = 'flex';
+}
+
+function confirmClearChatHistory() {
+    if (!currentActiveRecipient) return;
+    const key = normPhone(currentActiveRecipient.phone);
+    
+    chatClearTimestamps[key] = Date.now();
+    localStorage.setItem('salaam_clear_ts_v18', JSON.stringify(chatClearTimestamps));
+
+    if (localMessageStore[key]) {
+        localMessageStore[key].forEach(m => {
+            if (m.id && !deletedMessageIds.includes(m.id)) {
+                deletedMessageIds.push(m.id);
+            }
+        });
+        localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+    }
+    delete localMessageStore[key];
+    persistMessages();
+    loadMessages();
+    showToast("Chat cleared successfully");
+}
+
+function loadMessages() {
+    if (typeof cleanupExpiredMessages === 'function') cleanupExpiredMessages();
+    const container = document.getElementById('chatMessages');
+    if (!container || !currentActiveRecipient) return;
+    const key = normPhone(currentActiveRecipient.phone);
+    const clearTs = chatClearTimestamps[key] || 0;
+    let msgs = localMessageStore[key] || [];
+    
+    // ফিল্টার করে ডিলিট হওয়া বা ক্লিয়ার টাইমের আগের মেসেজ বাদ দেওয়া
+    msgs = msgs.filter(m => !(m.timestamp <= clearTs || (m.id && deletedMessageIds.includes(m.id))));
+    localMessageStore[key] = msgs;
+    persistMessages();
+
+    if (msgs.length === 0) {
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center space-y-3 max-w-xs text-center m-auto">
+                <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center">
+                    <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                </div>
+                <p class="text-sm font-bold gold-gradient-text">No messages yet</p>
+                <p class="text-[11px] text-gray-400">Send a message or start a call with ${currentActiveRecipient.name}.</p>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = msgs.map((m, idx) => {
+        const isMe = normPhone(m.phone_number) === normPhone(getActiveProfile().phone);
+        let contentHtml = '';
+        
+        if (m.type === 'text' || !m.media_url) {
+            contentHtml = `<p class="text-xs text-white leading-relaxed">${escapeHtml(m.message_text || '')}</p>`;
+        } else {
+            if (m.type === 'image') {
+                contentHtml = `<div class="relative group my-1">
+                    <img src="${m.media_url}" class="rounded-xl max-w-xs max-h-52 object-cover border border-white/10 shadow-md">
+                    <div class="absolute top-2 right-2 flex space-x-1.5">
+                        <a href="${m.media_url}" download="image.jpg" class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>`;
+            } else if (m.type === 'video') {
+                contentHtml = `<div class="relative my-1">
+                    <video src="${m.media_url}" controls class="rounded-xl max-w-xs max-h-52 border border-white/10 shadow-md"></video>
+                    <div class="absolute top-2 right-2 flex space-x-1.5">
+                        <a href="${m.media_url}" download="video.mp4" class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>`;
+            } else {
+                contentHtml = `<div class="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/10 my-1 space-x-3">
+                    <span class="text-xs underline text-amber-300 truncate max-w-[150px]"><i class="fa-solid fa-file mr-1"></i> ${escapeHtml(m.message_text || 'File')}</span>
+                    <div class="flex space-x-2 shrink-0">
+                        <a href="${m.media_url}" download class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>`;
+            }
+        }
+
+        return `
+        <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1">
+            <div class="max-w-[75%] px-3.5 py-2.5 rounded-2xl ${isMe ? 'chat-bubble-me' : 'chat-bubble-them'} shadow-md relative">
+                ${contentHtml}
+            </div>
+        </div>`;
+    }).join('');
+    container.scrollTop = container.scrollHeight;
+}
+
+function autoDeleteAfterDownload(key, index) {
+    setTimeout(() => {
+        if (localMessageStore[key] && localMessageStore[key][index]) {
+            const msg = localMessageStore[key][index];
+            if (msg.id && !deletedMessageIds.includes(msg.id)) {
+                deletedMessageIds.push(msg.id);
+                localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+            }
+            localMessageStore[key].splice(index, 1);
+            persistMessages();
+            loadMessages();
+            showToast("Downloaded & cleaned up automatically");
+        }
+    }, 1000);
+}
+
+function deleteSingleMessage(key, index) {
+    if (localMessageStore[key] && localMessageStore[key][index]) {
+        const msg = localMessageStore[key][index];
+        if (msg.id && !deletedMessageIds.includes(msg.id)) {
+            deletedMessageIds.push(msg.id);
+            localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+        }
+        localMessageStore[key].splice(index, 1);
+        persistMessages();
+        loadMessages();
+        showToast("Deleted successfully");
+    }
+}
+
+function appendBubble(m) {
+    loadMessages();
+}
+
+function escapeHtml(text) {
+    return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function toggleSendButton() {
+    const inp = document.getElementById('messageInput');
+    const btn = document.getElementById('sendBtn');
+    if (!inp || !btn) return;
+    if (inp.value.trim().length > 0) {
+        btn.classList.remove('hidden');
+        btn.classList.add('flex');
+    } else {
+        btn.classList.add('hidden');
+        btn.classList.remove('flex');
+    }
+}
+
+function renderChatStories() {
+    const sidebarList = document.getElementById('sidebarContentList');
+    if (!sidebarList) return;
+    const keys = Object.keys(localMessageStore);
+    if (keys.length === 0) {
+        sidebarList.innerHTML = `<div class="p-6 text-center text-xs text-gray-400">No active chats yet.</div>`;
+        return;
+    }
+    sidebarList.innerHTML = keys.map(k => {
+        const msgs = localMessageStore[k];
+        const last = msgs[msgs.length - 1] || {};
+        const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(k)) || { name: k, avatar: '' };
+        return `
+        <div onclick="openChat('${k}', '${contact.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
+            <div class="flex items-center space-x-3 min-w-0">
+                <img src="${contact.avatar || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">
+                <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${contact.name}</p><p class="text-[10px] text-gray-400 truncate max-w-[180px]">${last.message_text || 'Media attachment'}</p></div>
+            </div>
+        </div>`;
+    }).join('');
 }
