@@ -1,4 +1,3 @@
-// ফাইলের সাইজ লিমিট: ৫০ মোবাইট পর্যন্ত ক্লাউড স্টোরেজ (৪৮ ঘণ্টা অটো-ডিলিট), এর বেশি হলে ডাইরেক্ট P2P
 const CLOUD_SIZE_LIMIT_MB = 50; 
 
 async function handleUniversalFileUpload(input) {
@@ -10,10 +9,8 @@ async function handleUniversalFileUpload(input) {
         const fileSizeMB = f.size / (1024 * 1024);
 
         if (fileSizeMB <= CLOUD_SIZE_LIMIT_MB) {
-            // ছোট ফাইল বা মিডিয়া ক্লাউড স্টোরেজের মাধ্যমে পাঠানো (৪৮ ঘণ্টা এক্সপায়ারি)
             await uploadFileViaCloudStorage(f, key, me);
         } else {
-            // ১০ জিবি, ২০ জিবি বা বিশাল ফাইলের জন্য সরাসরি P2P (WebRTC) ট্রান্সফার
             showToast(`Large file (${fileSizeMB.toFixed(1)}MB). Initiating direct P2P transfer...`);
             await initiateP2PFileTransfer(f, key);
         }
@@ -43,7 +40,6 @@ async function uploadFileViaCloudStorage(file, recipientKey, senderPhone) {
     reader.readAsDataURL(file);
 }
 
-// WebRTC P2P Direct Transfer for 10GB+ files bypassing Cloud Storage
 async function initiateP2PFileTransfer(file, recipientKey) {
     const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
     const channel = pc.createDataChannel("salaam-p2p-file", { ordered: true });
@@ -74,6 +70,4 @@ async function initiateP2PFileTransfer(file, recipientKey) {
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    
-    // সিগন্যালিং সার্ভারের মাধ্যমে পিয়ার কানেকশন এস্টাবলিশ করার লজিক এখানে যুক্ত হবে
 }
