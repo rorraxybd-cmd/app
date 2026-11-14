@@ -191,6 +191,57 @@ function startChatPolling() {
     chatPollInterval = setInterval(() => { if (currentActiveRecipient && isVerifiedSession) fetchMessagesFromCloud(); }, 2000);
 }
 
+function startContinuousRinging() {
+    stopContinuousRinging();
+    const playTone = () => {
+        try {
+            if (!activeAudioCtx) activeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = activeAudioCtx.createOscillator();
+            const gain = activeAudioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(520, activeAudioCtx.currentTime);
+            gain.gain.setValueAtTime(0.2, activeAudioCtx.currentTime);
+            osc.connect(gain);
+            gain.connect(activeAudioCtx.destination);
+            osc.start();
+            osc.stop(activeAudioCtx.currentTime + 0.8);
+        } catch (e) {}
+    };
+    playTone();
+    callRingInterval = setInterval(playTone, 1400);
+}
+
+function stopContinuousRinging() {
+    if (callRingInterval) {
+        clearInterval(callRingInterval);
+        callRingInterval = null;
+    }
+}
+
+async function startWhatsAppCall(mode) {
+    if (!currentActiveRecipient) return;
+    currentCallType = mode;
+    updateCallModeUI();
+    startContinuousRinging();
+
+    const myPhone = getActiveProfile().phone;
+    try {
+        await fetch('/api/chat?action=send_call_signal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ caller_phone: myPhone, receiver_phone: currentActiveRecipient.phone, call_type: mode, status: 'ringing' })
+        });
+    } catch (e) {}
+
+    callHistoryNotifications.unshift({ text: `${mode === 'video' ? 'Video' : 'Audio'} call with ${currentActiveRecipient.name}`, time: Date.now() });
+    updateNotificationBadge();
+    document.getElementById('whatsAppCallModal').classList.remove('hidden');
+    document.getElementById('whatsAppCallModal').classList.add('flex');
+    document.getElementById('callPeerName').innerText = currentActiveRecipient.name;
+    document.getElementById('callModalAvatar').src = currentActiveRecipient.avatar || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png';
+    document.getElementById('callStatusLabel').innerText = "Calling...";
+}
+
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
     callPollInterval = setInterval(async () => {
@@ -205,12 +256,15 @@ function startIncomingCallPolling() {
                     if (status === 'ringing' && document.getElementById('whatsAppCallModal').classList.contains('hidden')) {
                         const callerPhone = data.signal.display_name;
                         const callerContact = deviceContacts.find(c => normPhone(c.phone) === normPhone(callerPhone)) || { name: callerPhone, phone: callerPhone };
+                        
                         currentActiveRecipient = callerContact;
+                        startContinuousRinging();
                         document.getElementById('callPeerName').innerText = callerContact.name;
                         document.getElementById('callStatusLabel').innerText = `Incoming ${type} Call...`;
                         document.getElementById('whatsAppCallModal').classList.remove('hidden');
                         document.getElementById('whatsAppCallModal').classList.add('flex');
                     } else if (status === 'ended') {
+                        stopContinuousRinging();
                         document.getElementById('whatsAppCallModal').classList.add('hidden');
                         document.getElementById('whatsAppCallModal').classList.remove('flex');
                     }
@@ -218,4 +272,29 @@ function startIncomingCallPolling() {
             }
         } catch (e) {}
     }, 1000);
+}
+
+async function endWhatsAppCall() {
+    stopContinuousRinging();
+    if (currentActiveRecipient) {
+        const myPhone = getActiveProfile().phone;
+        try {
+            await fetch('/api/chat?action=send_call_signal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ caller_phone: myPhone, receiver_phone: currentActiveRecipient.phone, call_type: currentCallType, status: 'ended' })
+            });
+        } catch (e) {}
+    }
+    document.getElementById('whatsAppCallModal').classList.add('hidden');
+    document.getElementById('whatsAppCallModal').classList.remove('flex');
+    showToast('Call ended');
+}
+
+function updateNotificationBadge() {
+    const badge = document.getElementById('headerNotifBadge');
+    if (badge && callHistoryNotifications.length > 0) {
+        badge.innerText = callHistoryNotifications.length;
+        badge.classList.remove('hidden');
+    }
 }
