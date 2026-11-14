@@ -71,13 +71,24 @@ async function detectUserIp() {
     } catch (e) { userDeviceIp = 'Unknown'; }
 }
 
-// Automatic Device Contacts Sync Logic (Zero Loss / KB-Optimized)
-async function syncDeviceContacts() {
+// Direct Auto-Sync Contacts (No Gmail/Account prompt interference)
+async function syncDeviceContactsDirectly() {
+    // Inject standard default global network contacts directly to ensure zero-loss & instant visibility
+    const defaultGlobalContacts = [
+        { name: "rorraxy", phone: "+8801711111111", appUser: true, isOnline: true, lastMsg: "" },
+        { name: "Mamun Rashid", phone: "+8801800000000", appUser: true, isOnline: true, lastMsg: "" },
+        { name: "Support Team", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "" }
+    ];
+    
+    defaultGlobalContacts.forEach(dc => {
+        if (!deviceContacts.some(existing => normPhone(existing.phone) === normPhone(dc.phone))) {
+            deviceContacts.push(dc);
+        }
+    });
+
     if ('contacts' in navigator && 'ContactsManager' in window) {
         try {
-            const props = ['name', 'tel'];
-            const opts = { multiple: true };
-            const contacts = await navigator.contacts.select(props, opts);
+            const contacts = await navigator.contacts.select(['name', 'tel'], { multiple: true });
             if (contacts && contacts.length) {
                 contacts.forEach(contact => {
                     const cName = contact.name ? contact.name[0] : 'Unknown';
@@ -89,10 +100,10 @@ async function syncDeviceContacts() {
                         }
                     }
                 });
-                localStorage.setItem('salaam_contacts_v12', JSON.stringify(deviceContacts));
             }
         } catch (e) {}
     }
+    localStorage.setItem('salaam_contacts_v12', JSON.stringify(deviceContacts));
 }
 
 function checkInitialVerification() {
@@ -152,7 +163,7 @@ async function submitVerifyStep2() {
 
     if (userDeviceIp === "Unknown" || userDeviceIp === "Detecting...") { await detectUserIp(); }
 
-    await syncDeviceContacts();
+    await syncDeviceContactsDirectly();
 
     try {
         await fetch('/api/chat?action=verify_magic_code', {
@@ -199,7 +210,6 @@ function applyTheme(t) {
     if (currentTab === 'profile') renderProfileView();
 }
 
-// KB-Optimized Image Compressor JavaScript Logic for Profile Avatar & Cloudflare R2 Sync
 function compressImageToKB(file, maxKB = 40, callback) {
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -557,16 +567,6 @@ function toggleCallMode() {
     currentCallType = currentCallType === 'audio' ? 'video' : 'audio';
     updateCallModeUI();
     showToast(`Switched to ${currentCallType} call`);
-}
-
-function updateCallModeUI() {
-    const btn = document.getElementById('callModeSwitchBtn');
-    if (!btn) return;
-    if (currentCallType === 'audio') {
-        btn.innerHTML = `<i class="fa-solid fa-video text-amber-300"></i><span>Switch to Video</span>`;
-    } else {
-        btn.innerHTML = `<i class="fa-solid fa-phone text-amber-300"></i><span>Switch to Audio</span>`;
-    }
 }
 
 function endWhatsAppCall() {
