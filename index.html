@@ -100,6 +100,7 @@
 
     <!-- Main Workspace -->
     <div class="flex flex-1 overflow-hidden relative min-h-0 w-full">
+        <!-- Sidebar Section -->
         <div id="sidebarSection" class="w-full md:w-[360px] theme-surface flex flex-col justify-between shrink-0 z-20 h-full min-h-0 pb-16">
             <div class="flex flex-col flex-1 overflow-hidden min-h-0">
                 <div id="searchBarContainer" class="p-3 shrink-0" style="background-color: var(--bg-main);">
@@ -112,6 +113,7 @@
             </div>
         </div>
 
+        <!-- Workspace Section (Chat & Call) -->
         <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full min-h-0 z-10 relative" style="background-color: var(--bg-main);">
             <div id="activeChatHeader" class="theme-surface px-4 py-3 hidden items-center justify-between shrink-0 border-b border-white/5">
                 <div class="flex items-center space-x-3">
@@ -183,20 +185,25 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- Modular JavaScript Files Connection -->
-    <script src="/verify.js?v=2.1"></script>
-    <script src="/call.js?v=2.1"></script>
-    <script src="/p2p_file_transfer.js?v=2.1"></script>
+    <!-- Modular JavaScript Files Connection with Anti-Cache Versioning -->
+    <script src="/verify.js?v=3.0"></script>
+    <script src="/call.js?v=3.0"></script>
+    <script src="/p2p_file_transfer.js?v=3.0"></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => {
-            if (typeof checkInitialVerification === 'function') {
-                checkInitialVerification();
+            const overlay = document.getElementById('verifyOverlay');
+            if (localStorage.getItem('salaam_verified_v18') === 'true') {
+                if (overlay) overlay.style.display = 'none';
+                if (typeof initAppAfterVerification === 'function') {
+                    initAppAfterVerification();
+                }
             } else {
-                setTimeout(() => {
-                    if (typeof checkInitialVerification === 'function') checkInitialVerification();
-                }, 300);
+                if (typeof checkInitialVerification === 'function') {
+                    checkInitialVerification();
+                }
             }
         });
     </script>
 </body>
 </html>
+```[cite: 5, 7]
