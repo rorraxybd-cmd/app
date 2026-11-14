@@ -25,12 +25,12 @@ async function installPWAApp() {
 
 let currentTheme = localStorage.getItem('salaam_theme') || 'emerald';
 let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
-let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v13') || '{}');
-let isVerifiedSession = localStorage.getItem('salaam_verified_v13') === 'true';
+let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v14') || '{}');
+let isVerifiedSession = localStorage.getItem('salaam_verified_v14') === 'true';
 
 const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'salaam'];
 
-let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v13') || 'null') || [{
+let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v14') || 'null') || [{
     name: "User",
     phone: "+8801700000000",
     username: "user",
@@ -38,8 +38,8 @@ let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v13') || 'n
     avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png"
 }];
 
-let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v13') || 'null') || [
-    { name: "rorraxy Support", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: null }
+let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v14') || 'null') || [
+    { name: "rorraxy Support", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png", hidePhone: true }
 ];
 
 const COUNTRY_MAP = [
@@ -61,9 +61,9 @@ function getCountryInfo(phone) {
 }
 
 function getActiveProfile() { return savedProfiles[0]; }
-function saveProfiles() { localStorage.setItem('salaam_profiles_v13', JSON.stringify(savedProfiles)); }
+function saveProfiles() { localStorage.setItem('salaam_profiles_v14', JSON.stringify(savedProfiles)); }
 function normPhone(p) { return String(p || '').replace(/[\s\-\(\)]/g, ''); }
-function persistMessages() { localStorage.setItem('salaam_messages_v13', JSON.stringify(localMessageStore)); }
+function persistMessages() { localStorage.setItem('salaam_messages_v14', JSON.stringify(localMessageStore)); }
 
 function showToast(msg, isErr = false) {
     const b = document.getElementById('toastBanner'), dot = document.getElementById('toastDot'), text = document.getElementById('toastText');
@@ -107,7 +107,7 @@ async function syncGlobalNetworkUsers() {
                                 appUser: true,
                                 isOnline: u.is_online === 1,
                                 avatar: u.avatar_url || null,
-                                lastMsg: ""
+                                lastMsg: "Tap to message"
                             });
                         } else {
                             deviceContacts[existingIdx].isOnline = u.is_online === 1;
@@ -116,8 +116,8 @@ async function syncGlobalNetworkUsers() {
                         }
                     }
                 });
-                localStorage.setItem('salaam_contacts_v13', JSON.stringify(deviceContacts));
-                if (currentTab === 'contact') renderDeviceContacts();
+                localStorage.setItem('salaam_contacts_v14', JSON.stringify(deviceContacts));
+                if (currentTab === 'contact' || currentTab === 'chat') renderDeviceContacts();
             }
         }
     } catch (e) {}
@@ -174,7 +174,7 @@ async function submitVerifyStep2() {
     if (entered !== generatedOtpCode) { showToast("Invalid code", true); return; }
 
     isVerifiedSession = true;
-    localStorage.setItem('salaam_verified_v13', 'true');
+    localStorage.setItem('salaam_verified_v14', 'true');
     const p = getActiveProfile();
     p.name = tempVerifyName; p.phone = tempVerifyPhone;
     saveProfiles();
@@ -310,7 +310,7 @@ function handleProfileAvatarUpload(input) {
                 }
                 return c;
             });
-            localStorage.setItem('salaam_contacts_v13', JSON.stringify(deviceContacts));
+            localStorage.setItem('salaam_contacts_v14', JSON.stringify(deviceContacts));
 
             renderProfileView();
             showToast("Profile picture updated & synced!");
@@ -360,6 +360,7 @@ function renderDeviceContacts() {
     const contactsHtml = deviceContacts.map(c => {
         const info = getCountryInfo(c.phone);
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
+        const phoneDisplay = c.hidePhone ? `<p class="text-[10px] text-amber-300 font-medium">Official Support Team</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
         return `
         <div onclick="openChat('${c.phone}', '${c.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
             <div class="flex items-center space-x-3">
@@ -370,9 +371,8 @@ function renderDeviceContacts() {
                 <div>
                     <div class="flex items-center space-x-1.5">
                         <p class="text-xs font-semibold gold-gradient-text">${c.name}</p>
-                        <span class="text-[10px]">${info.flag}</span>
                     </div>
-                    <p class="text-[10px] text-gray-400">${c.phone}</p>
+                    ${phoneDisplay}
                 </div>
             </div>
             ${getTickBadge(c.isOnline)}
@@ -437,7 +437,7 @@ function connectDirectNumber(phone, mode) {
     const cp = normPhone(phone);
     if (!deviceContacts.some(c => normPhone(c.phone) === cp)) {
         deviceContacts.unshift({ name: cp, phone: cp, appUser: true, isOnline: true, lastMsg: "", avatar: null });
-        localStorage.setItem('salaam_contacts_v13', JSON.stringify(deviceContacts));
+        localStorage.setItem('salaam_contacts_v14', JSON.stringify(deviceContacts));
     }
     openChat(cp, cp);
     if (mode === 'audio' || mode === 'video') {
