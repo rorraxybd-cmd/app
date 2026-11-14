@@ -196,7 +196,12 @@ async function fetchMessagesFromCloud() {
                     const mUrl = m.media_url && m.media_url !== 'undefined' ? m.media_url : null;
                     const mType = mUrl ? (mUrl.startsWith('data:video/') ? 'video' : 'image') : 'text';
                     
-                    const exists = localMessageStore[key].some(existing => existing.message_text === mText && existing.phone_number === m.sender_phone && existing.media_url === mUrl);
+                    const exists = localMessageStore[key].some(existing => 
+                        existing.message_text === mText && 
+                        existing.phone_number === m.sender_phone && 
+                        existing.media_url === mUrl
+                    );
+
                     if (!exists) {
                         localMessageStore[key].push({
                             id: 'm_' + Date.now() + Math.random(),
@@ -208,7 +213,10 @@ async function fetchMessagesFromCloud() {
                         updated = true;
                     }
                 });
-                if (updated) { persistMessages(); loadMessages(); }
+                if (updated) { 
+                    persistMessages(); 
+                    loadMessages(); 
+                }
             }
         }
     } catch (e) {}
@@ -220,7 +228,7 @@ function startChatPolling() {
 }
 
 // ==========================================
-// সম্পূর্ণ কলিং সিস্টেম (Audio & Video Call)
+// সম্পূর্ণ কলিং ও সুইচিং সিস্টেম (Audio & Video Call)
 // ==========================================
 
 function startContinuousRinging() {
@@ -307,27 +315,32 @@ function showCallModalUI(peerName, avatarUrl, statusText, mode, isIncoming = fal
     }
     
     modal.innerHTML = `
-        <div class="theme-card p-6 rounded-3xl max-w-sm w-full text-center space-y-5 border border-amber-400/30 shadow-2xl">
+        <div class="theme-card p-6 rounded-3xl max-w-sm w-full text-center space-y-4 border border-amber-400/30 shadow-2xl">
             <div class="relative w-24 h-24 mx-auto">
                 <img id="callModalAvatar" src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-24 h-24 rounded-full object-cover border-2 border-amber-400/60 bg-black shadow-lg">
                 <span class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-black animate-pulse"></span>
             </div>
             <div>
-                <span class="px-2.5 py-0.5 rounded-full bg-amber-400/15 text-amber-300 text-[10px] font-bold uppercase tracking-wider">${mode} call</span>
+                <span id="callTypeBadge" class="px-2.5 py-0.5 rounded-full bg-amber-400/15 text-amber-300 text-[10px] font-bold uppercase tracking-wider">${mode} call</span>
                 <h2 id="callPeerName" class="text-xl font-bold gold-gradient-text mt-2">${peerName}</h2>
                 <p id="callStatusLabel" class="text-xs text-gray-300 mt-1 font-medium">${statusText}</p>
             </div>
-            <div id="localVideoPreviewBox" class="hidden w-full h-44 bg-black rounded-2xl overflow-hidden border border-white/10 relative">
+            <div id="localVideoPreviewBox" class="hidden w-full h-40 bg-black rounded-2xl overflow-hidden border border-white/10 relative">
                 <video id="callLocalVideo" autoplay muted playsinline class="w-full h-full object-cover"></video>
             </div>
-            <div id="callModalActions" class="flex justify-center space-x-4 pt-2">
+            <div id="callModalActions" class="flex justify-center items-center space-x-3 pt-2">
+                <button onclick="switchCallModeToVideo()" id="switchToVideoBtn" class="p-3 rounded-2xl theme-input hover:brightness-125 text-amber-300 text-xs font-bold cursor-pointer shadow-md transition flex items-center space-x-1.5" title="Switch to Video">
+                    <i class="fa-solid fa-video"></i>
+                </button>
+
                 ${isIncoming ? `
-                    <button onclick="acceptWhatsAppCall()" class="px-6 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center space-x-2">
+                    <button onclick="acceptWhatsAppCall()" class="px-5 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center space-x-1.5">
                         <i class="fa-solid fa-phone"></i><span>Accept</span>
                     </button>
                 ` : ''}
-                <button onclick="endWhatsAppCall()" class="px-6 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center space-x-2">
-                    <i class="fa-solid fa-phone-slash"></i><span>${isIncoming ? 'Decline' : 'End Call'}</span>
+
+                <button onclick="endWhatsAppCall()" class="px-6 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-phone-slash"></i><span>${isIncoming ? 'Decline' : 'End'}</span>
                 </button>
             </div>
         </div>
@@ -350,7 +363,7 @@ async function enableLocalCameraPreview() {
             vid.srcObject = localLiveStream;
         }
     } catch (e) {
-        showToast("Camera/Mic permission denied", true);
+        showToast("Camera/Mic permission required", true);
     }
 }
 
@@ -358,6 +371,26 @@ function stopLocalMediaTracks() {
     if (localLiveStream) {
         localLiveStream.getTracks().forEach(track => track.stop());
         localLiveStream = null;
+    }
+}
+
+async function switchCallModeToVideo() {
+    currentCallType = 'video';
+    const badge = document.getElementById('callTypeBadge');
+    if (badge) badge.innerText = "video call";
+    showToast("Switched to Video Call");
+    await enableLocalCameraPreview();
+    
+    if (currentActiveRecipient) {
+        const myPhone = normPhone(getActiveProfile().phone);
+        const peerPhone = normPhone(currentActiveRecipient.phone);
+        try {
+            await fetch('/api/chat?action=send_call_signal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ caller_phone: myPhone, receiver_phone: peerPhone, call_type: 'video', status: 'connected' })
+            });
+        } catch (e) {}
     }
 }
 
@@ -477,7 +510,7 @@ async function endWhatsAppCall() {
 }
 
 // ==========================================
-// চ্যাট ও কন্টাক্ট হেল্পার ফাংশনসমূহ
+// চ্যাট ও ইউজার ইন্টারফেস ফাংশনসমূহ
 // ==========================================
 
 function filterContent() {
