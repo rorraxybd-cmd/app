@@ -4,14 +4,14 @@ let callRingInterval = null, activeAudioCtx = null, callPollInterval = null, cha
 let callTimerInterval = null, callSeconds = 0;
 let peerConnection = null, localStream = null, remoteStream = null;
 let isMicMuted = false, lastHandledSignalTs = 0;
-let isLocalMain = false; // ভিডিও বড়-ছোট (PiP Swap) করার জন্য
+let isLocalMain = false; // PiP Video Swap
 
 let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
 let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
 let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
 
-// rorraxy অফিশিয়াল সাপোর্ট টিম কন্টাক্ট (কোনো ফোন নম্বর ছাড়াই ব্র্যান্ড ও হোয়াইট সাবটাইটেল সহ)
+// অফিসিয়াল সাপোর্ট টিম (ছোটহাতে rorraxy এবং নিচে Official Support Team)
 let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [
     { name: "rorraxy", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png", hidePhone: true, subTitle: "Official Support Team", isOfficialSupport: true }
 ];
@@ -83,7 +83,7 @@ async function syncGlobalNetworkUsers() {
 }
 
 function openWorldLink() {
-    window.open('https://chat.rorraxy.com/world', '_blank');
+    window.open('https://rorraxy.com', '_blank');
 }
 
 function switchTab(tab) {
@@ -126,18 +126,21 @@ function renderDeviceContacts() {
     const contactsHtml = deviceContacts.map(c => {
         const info = getCountryInfo(c.phone);
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        
-        // যদি অফিশিয়াল সাপোর্ট হয়, তবে ফোন নম্বরের পরিবর্তে সাদা রঙের Official Support Team দেখাবে
         const subText = c.isOfficialSupport ? `<p class="text-[10px] text-white font-medium">${c.subTitle}</p>` : (c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`);
         
         return `
-        <div onclick="openChat('${c.phone}', '${c.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
-            <div class="flex items-center space-x-3">
-                <div class="relative">
+        <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
+            <div onclick="openChat('${c.phone}', '${c.name}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
+                <div class="relative shrink-0">
                     ${avatarImg}
                     <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span>
                 </div>
-                <div><p class="text-xs font-semibold gold-gradient-text">${c.name}</p>${subText}</div>
+                <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>${subText}</div>
+            </div>
+            <div class="flex items-center space-x-1.5 shrink-0 pl-2">
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
             </div>
         </div>`;
     }).join('');
@@ -160,26 +163,38 @@ function renderCallsHistory() {
         return;
     }
 
-    listContainer.innerHTML = callHistoryNotifications.map((call, idx) => {
-        const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(call.phone)) || { name: call.phone, avatar: null };
-        const avatarImg = contact.avatar ? `<img src="${contact.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${contact.name.charAt(0)}</div>`;
-        const timeStr = new Date(call.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    listContainer.innerHTML = `
+        <div class="flex justify-between items-center px-3 py-1">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Recent Calls</span>
+            <button onclick="clearAllCallHistory()" class="text-[10px] text-red-400 hover:underline font-semibold cursor-pointer">Clear All</button>
+        </div>` + 
+        callHistoryNotifications.map((call, idx) => {
+            const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(call.phone)) || { name: call.phone, avatar: null };
+            const avatarImg = contact.avatar ? `<img src="${contact.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${contact.name.charAt(0)}</div>`;
+            const timeStr = new Date(call.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        return `
-        <div class="flex justify-between items-center px-4 py-3 my-1 theme-card rounded-2xl border border-white/5">
-            <div class="flex items-center space-x-3">
-                ${avatarImg}
-                <div>
-                    <p class="text-xs font-semibold gold-gradient-text">${contact.name}</p>
-                    <p class="text-[10px] text-gray-400"><i class="fa-solid fa-${call.type === 'video' ? 'video' : 'phone'} mr-1 text-amber-300"></i> ${call.status || 'Completed'} • ${timeStr}</p>
+            return `
+            <div class="flex justify-between items-center px-4 py-3 my-1 theme-card rounded-2xl border border-white/5">
+                <div class="flex items-center space-x-3 min-w-0">
+                    ${avatarImg}
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold gold-gradient-text truncate">${contact.name}</p>
+                        <p class="text-[10px] text-gray-400"><i class="fa-solid fa-${call.type === 'video' ? 'video' : 'phone'} mr-1 text-amber-300"></i> ${call.status || 'Completed'} • ${timeStr}</p>
+                    </div>
                 </div>
-            </div>
-            <div class="flex space-x-2">
-                <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
-                <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('video')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
-            </div>
-        </div>`;
-    }).join('');
+                <div class="flex space-x-2 shrink-0">
+                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('video')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+                </div>
+            </div>`;
+        }).join('');
+}
+
+function clearAllCallHistory() {
+    callHistoryNotifications = [];
+    localStorage.removeItem('salaam_call_notifications');
+    renderCallsHistory();
+    showToast("Call history cleared");
 }
 
 function openChat(phone, name) {
@@ -290,7 +305,7 @@ function startChatPolling() {
     chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 3000);
 }
 
-// WebRTC কলিং এবং অডিও/ভিডিও হ্যান্ডলিং
+// WebRTC অডিও/ভিডিও কলিং
 function startContinuousRinging() {
     stopContinuousRinging();
     const playTone = () => {
@@ -665,11 +680,11 @@ function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
 
         <div id="callControlButtons" class="w-full max-w-md flex justify-center items-center space-x-6 pb-6">
             ${isIncoming ? `
-                <button type="button" onclick="acceptWhatsAppCall()" class="w-16 h-16 rounded-full bg-green-600 hover:bg-green-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition animate-bounce" title="Accept Call">
-                    <i class="fa-solid fa-phone text-xl"></i>
-                </button>
                 <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition" title="Decline Call">
                     <i class="fa-solid fa-phone-slash text-xl"></i>
+                </button>
+                <button type="button" onclick="acceptWhatsAppCall()" class="w-16 h-16 rounded-full bg-green-600 hover:bg-green-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition animate-bounce" title="Accept Call">
+                    <i class="fa-solid fa-phone text-xl"></i>
                 </button>
             ` : `
                 <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-14 h-14 rounded-full theme-input hover:brightness-125 text-white flex items-center justify-center shadow-lg cursor-pointer transition transform hover:scale-110" title="Mute">
@@ -792,13 +807,18 @@ function filterContent() {
         const subText = c.isOfficialSupport ? `<p class="text-[10px] text-white font-medium">${c.subTitle}</p>` : (c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`);
         
         return `
-        <div onclick="openChat('${c.phone}', '${c.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
-            <div class="flex items-center space-x-3">
-                <div class="relative">
+        <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
+            <div onclick="openChat('${c.phone}', '${c.name}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
+                <div class="relative shrink-0">
                     ${avatarImg}
                     <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span>
                 </div>
-                <div><p class="text-xs font-semibold gold-gradient-text">${c.name}</p>${subText}</div>
+                <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>${subText}</div>
+            </div>
+            <div class="flex items-center space-x-1.5 shrink-0 pl-2">
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 theme-input rounded-xl text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
             </div>
         </div>`;
     }).join('');
@@ -862,17 +882,17 @@ function loadMessages() {
             if (m.type === 'image') {
                 contentHtml = `<div class="relative group my-1">
                     <img src="${m.media_url}" class="rounded-xl max-w-xs max-h-52 object-cover border border-white/10 shadow-md">
-                    <div class="absolute top-2 right-2 flex space-x-1 bg-black/70 p-1 rounded-lg backdrop-blur-sm">
-                        <a href="${m.media_url}" download="image.jpg" class="p-1.5 text-amber-300 hover:text-white" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download text-xs"></i></a>
-                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1.5 text-red-400 hover:text-red-300" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
+                    <div class="absolute top-2 right-2 flex space-x-1 bg-black/60 p-1 rounded-lg backdrop-blur-sm">
+                        <a href="${m.media_url}" download="image.jpg" class="p-1 text-amber-300 hover:text-white text-xs" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
             } else if (m.type === 'video') {
                 contentHtml = `<div class="relative my-1">
                     <video src="${m.media_url}" controls class="rounded-xl max-w-xs max-h-52 border border-white/10 shadow-md"></video>
-                    <div class="absolute top-2 right-2 flex space-x-1 bg-black/70 p-1 rounded-lg backdrop-blur-sm">
-                        <a href="${m.media_url}" download="video.mp4" class="p-1.5 text-amber-300 hover:text-white" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download text-xs"></i></a>
-                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1.5 text-red-400 hover:text-red-300" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
+                    <div class="absolute top-2 right-2 flex space-x-1 bg-black/60 p-1 rounded-lg backdrop-blur-sm">
+                        <a href="${m.media_url}" download="video.mp4" class="p-1 text-amber-300 hover:text-white text-xs" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
             } else {
@@ -966,9 +986,9 @@ function renderChatStories() {
         const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(k)) || { name: k, avatar: '' };
         return `
         <div onclick="openChat('${k}', '${contact.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
-            <div class="flex items-center space-x-3">
-                <img src="${contact.avatar || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-10 h-10 rounded-full object-cover bg-black">
-                <div><p class="text-xs font-semibold gold-gradient-text">${contact.name}</p><p class="text-[10px] text-gray-400 truncate max-w-[180px]">${last.message_text || 'Media attachment'}</p></div>
+            <div class="flex items-center space-x-3 min-w-0">
+                <img src="${contact.avatar || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">
+                <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${contact.name}</p><p class="text-[10px] text-gray-400 truncate max-w-[180px]">${last.message_text || 'Media attachment'}</p></div>
             </div>
         </div>`;
     }).join('');
