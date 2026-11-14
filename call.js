@@ -11,7 +11,7 @@ let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18'
 let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
 
 let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [
-    { name: "rorraxy Support", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png", hidePhone: true }
+    { name: "rorraxy Support", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png", hidePhone: true, subTitle: "Official Support Team" }
 ];
 
 const RTC_CONFIG = {
@@ -117,7 +117,7 @@ function renderDeviceContacts() {
     const contactsHtml = deviceContacts.map(c => {
         const info = getCountryInfo(c.phone);
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const phoneDisplay = c.hidePhone ? `<p class="text-[10px] text-amber-300 font-medium">Official Support Team</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
         return `
         <div onclick="openChat('${c.phone}', '${c.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
             <div class="flex items-center space-x-3">
@@ -125,7 +125,7 @@ function renderDeviceContacts() {
                     ${avatarImg}
                     <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span>
                 </div>
-                <div><p class="text-xs font-semibold gold-gradient-text">${c.name}</p>${phoneDisplay}</div>
+                <div><p class="text-xs font-semibold gold-gradient-text">${c.name}</p>${subText}</div>
             </div>
         </div>`;
     }).join('');
@@ -134,14 +134,23 @@ function renderDeviceContacts() {
 
 function openChat(phone, name) {
     const cp = normPhone(phone);
-    const targetContact = deviceContacts.find(c => normPhone(c.phone) === cp);
-    const avatarUrl = targetContact && targetContact.avatar ? targetContact.avatar : 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png';
+    let targetContact = deviceContacts.find(c => normPhone(c.phone) === cp);
+    
+    // যদি কন্টাক্টে না থাকে, তবে অটো নতুন কন্টাক্ট হিসেবে যোগ করে নেওয়া হবে
+    if (!targetContact) {
+        targetContact = { name: name || cp, phone: cp, appUser: true, isOnline: true, avatar: null };
+        deviceContacts.push(targetContact);
+        localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
+    }
 
-    currentActiveRecipient = { phone: cp, name: name || cp, isOnline: true, avatar: avatarUrl };
+    const avatarUrl = targetContact.avatar ? targetContact.avatar : 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png';
+
+    currentActiveRecipient = { phone: cp, name: targetContact.name, isOnline: true, avatar: avatarUrl };
     document.getElementById('activeChatHeader').style.display = 'flex';
     document.getElementById('chatInputBar').style.display = 'flex';
-    document.getElementById('activeChatTitle').innerText = name || cp;
+    document.getElementById('activeChatTitle').innerText = targetContact.name;
     document.getElementById('activeChatAvatar').src = avatarUrl;
+    
     if (window.innerWidth < 768) {
         document.getElementById('sidebarSection').style.display = 'none';
         document.getElementById('workspaceSection').style.display = 'flex';
@@ -198,7 +207,6 @@ async function fetchMessagesFromCloud() {
                     const mId = m.id || ('m_' + (m.timestamp || Date.now()));
                     const mTimestamp = m.timestamp || Date.now();
                     
-                    // চ্যাট ক্লিয়ার করার সময়ের আগের বা ডিলিট করা মেসেজ হলে পুরোপুরি ইগ্নোর করবে
                     if (mTimestamp <= clearTs || deletedMessageIds.includes(mId)) return;
 
                     const mText = (m.message_text || '').trim();
@@ -233,7 +241,7 @@ function startChatPolling() {
     chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 3000);
 }
 
-// WebRTC কলিং ও অন্যান্য ফাংশনসমূহ অপরিবর্তিত রাখা হয়েছে...
+// WebRTC কলিং ফাংশনসমূহ
 function startContinuousRinging() {
     stopContinuousRinging();
     const playTone = () => {
@@ -619,7 +627,13 @@ function startIncomingCallPolling() {
                     const callerPhone = normPhone(sig.caller);
                     if (callerPhone === myPhone) return;
 
-                    const callerContact = deviceContacts.find(c => normPhone(c.phone) === callerPhone) || { name: callerPhone, phone: callerPhone };
+                    let callerContact = deviceContacts.find(c => normPhone(c.phone) === callerPhone);
+                    if (!callerContact) {
+                        callerContact = { name: callerPhone, phone: callerPhone, appUser: true, isOnline: true };
+                        deviceContacts.push(callerContact);
+                        localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
+                    }
+
                     activeCallPeer = callerContact;
                     currentCallType = sig.type || 'audio';
                     window.pendingIncomingOffer = sig.rtc;
@@ -644,15 +658,31 @@ function startIncomingCallPolling() {
 }
 
 function filterContent() {
-    const q = document.getElementById('searchInput').value.toLowerCase();
-    const filtered = deviceContacts.filter(c => c.name.toLowerCase().includes(q) || c.phone.toLowerCase().includes(q));
+    const q = document.getElementById('searchInput').value.trim();
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
+
+    const filtered = deviceContacts.filter(c => c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q));
+    
+    let directDialHtml = '';
+    // যদি ইনপুটে নাম্বার বা লেখা থাকে কিন্তু কন্টাক্টে হুবহু না মেলে, তবে ডাইরেক্ট চ্যাট/কল করার অপশন দেখাবে
+    if (q.length >= 3 && !filtered.some(c => c.phone === q || c.name.toLowerCase() === q.toLowerCase())) {
+        directDialHtml = `
+        <div class="px-4 py-3 my-1 rounded-2xl theme-card border border-amber-400/40 bg-amber-400/10 flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold gold-gradient-text">New Number / Dial</p>
+                <p class="text-[10px] text-gray-300">${q}</p>
+            </div>
+            <div class="flex space-x-1.5">
+                <button onclick="openChat('${q}', '${q}')" class="p-2 theme-input rounded-xl text-amber-300 hover:bg-white/10 cursor-pointer" title="Open Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+            </div>
+        </div>`;
+    }
 
     const contactsHtml = filtered.map(c => {
         const info = getCountryInfo(c.phone);
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const phoneDisplay = c.hidePhone ? `<p class="text-[10px] text-amber-300 font-medium">Official Support Team</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
         return `
         <div onclick="openChat('${c.phone}', '${c.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
             <div class="flex items-center space-x-3">
@@ -660,11 +690,12 @@ function filterContent() {
                     ${avatarImg}
                     <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span>
                 </div>
-                <div><p class="text-xs font-semibold gold-gradient-text">${c.name}</p>${phoneDisplay}</div>
+                <div><p class="text-xs font-semibold gold-gradient-text">${c.name}</p>${subText}</div>
             </div>
         </div>`;
     }).join('');
-    listContainer.innerHTML = `<div id="directDialSlot"></div>` + contactsHtml;
+
+    listContainer.innerHTML = directDialHtml + contactsHtml;
 }
 
 function backToSidebarMobile() {
@@ -673,12 +704,10 @@ function backToSidebarMobile() {
     document.getElementById('bottomNavBar').style.display = 'flex';
 }
 
-// চ্যাট ক্লিয়ার করার সাথে সাথে ক্লিয়ার টাইমস্ট্যাম্প রেকর্ড করা হবে যাতে পোলিং আর পুরোনো মেসেজ না আনে
 function confirmClearChatHistory() {
     if (!currentActiveRecipient) return;
     const key = normPhone(currentActiveRecipient.phone);
     
-    // বর্তমান সময়কে ক্লিয়ার টাইমস্ট্যাম্প হিসেবে সেভ করা হলো
     chatClearTimestamps[key] = Date.now();
     localStorage.setItem('salaam_clear_ts_v18', JSON.stringify(chatClearTimestamps));
 
