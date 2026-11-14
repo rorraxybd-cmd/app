@@ -5,9 +5,9 @@ let isVerifiedSession = localStorage.getItem('salaam_verified_v18') === 'true';
 const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'salaam'];
 
 let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v18') || 'null') || [{
-    name: "User",
+    name: "Mr. Masudar",
     phone: "+8801700000000",
-    username: "user_" + Math.floor(1000 + Math.random() * 9000),
+    username: "mrmasudar",
     themeColor: "emerald",
     avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png"
 }];
@@ -99,7 +99,6 @@ async function submitVerifyStep1() {
 
 function autoFillOtp() { document.getElementById('vOtpInput').value = generatedOtpCode; }
 
-// ভেরিফিকেশন সফল হওয়ার সাথে সাথেই ক্যামেরা ও মাইক্রোফোনের পারমিশন প্রি-রিকোয়েস্ট করার ফাংশন
 async function requestMediaPermissionsEarly() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -107,9 +106,7 @@ async function requestMediaPermissionsEarly() {
             video: true 
         });
         stream.getTracks().forEach(track => track.stop());
-    } catch (err) {
-        console.log("Media permission deferred or denied.");
-    }
+    } catch (err) {}
 }
 
 async function submitVerifyStep2() {
@@ -184,7 +181,6 @@ function checkInitialVerification() {
         }
     } else {
         if (overlay) overlay.style.display = 'none';
-        
         if (typeof initAppAfterVerification === 'function') {
             initAppAfterVerification();
         } else {
@@ -199,45 +195,54 @@ function checkInitialVerification() {
     }
 }
 
-// প্রোফাইল ও সেটিংস রেন্ডার করার ফাংশন
+// ----------------------------------------------------
+// সেটিংস / প্রোফাইল ভিউ (প্রিমিয়াম কার্ড ও এডিট অপশনসহ)
+// ----------------------------------------------------
 function renderProfileView() {
     const profile = getActiveProfile();
     const sidebarList = document.getElementById('sidebarContentList');
     if (!sidebarList) return;
 
+    // ফোন নম্বর সিক্রেট আকারে দেখানো (যেমন: +88017******50)
+    const phoneStr = profile.phone || '';
+    const maskedPhone = phoneStr.length > 6 ? phoneStr.substring(0, 5) + '******' + phoneStr.slice(-2) : phoneStr;
+
     sidebarList.innerHTML = `
         <div class="p-4 space-y-4">
-            <div class="text-center space-y-2 theme-card p-4 rounded-2xl border border-white/5">
-                <div class="relative w-20 h-20 mx-auto">
-                    <img id="profileAvatarPreview" src="${profile.avatar}" class="w-20 h-20 rounded-full object-cover border-2 border-amber-400/50 bg-black">
-                    <label class="absolute bottom-0 right-0 w-7 h-7 rounded-full pink-btn flex items-center justify-center cursor-pointer shadow-md" title="Change Photo">
-                        <i class="fa-solid fa-camera text-[11px]"></i>
+            <!-- প্রোফাইল কার্ড -->
+            <div class="text-center space-y-2 theme-card p-5 rounded-3xl border border-amber-400/20 shadow-xl">
+                <div class="relative w-24 h-24 mx-auto">
+                    <img id="profileAvatarPreview" src="${profile.avatar}" class="w-24 h-24 rounded-full object-cover border-2 border-amber-400/60 bg-black shadow-lg">
+                    <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full pink-btn flex items-center justify-center cursor-pointer shadow-md hover:scale-110 transition" title="Change Photo">
+                        <i class="fa-solid fa-camera text-xs"></i>
                         <input type="file" accept="image/*" class="hidden" onchange="handleProfileAvatarChange(this)">
                     </label>
                 </div>
                 <div>
-                    <h3 class="text-sm font-bold gold-gradient-text">${profile.name}</h3>
-                    <p class="text-[10px] text-amber-300 font-medium tracking-wider mt-0.5">Verified Secure Account</p>
+                    <h3 class="text-base font-bold gold-gradient-text">Mr. ${profile.name}</h3>
+                    <p class="text-[11px] text-gray-400 mt-0.5"><i class="fa-solid fa-phone text-amber-300 mr-1"></i> <span class="tracking-wider">${maskedPhone}</span> <span class="text-[9px] bg-amber-400/10 text-amber-300 px-1.5 py-0.5 rounded ml-1">Secret</span></p>
                 </div>
             </div>
 
-            <div class="space-y-3 theme-card p-4 rounded-2xl border border-white/5">
+            <!-- সেটিংস এডিট ফর্ম -->
+            <div class="space-y-3.5 theme-card p-5 rounded-3xl border border-amber-400/20 shadow-xl">
                 <div class="space-y-1">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text">FULL NAME</label>
-                    <input type="text" id="editDisplayName" value="${profile.name}" class="w-full theme-input text-xs px-3.5 py-2.5 rounded-xl text-white focus:outline-none border border-white/10">
+                    <input type="text" id="editDisplayName" value="${profile.name}" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white focus:outline-none border border-white/10">
                 </div>
                 <div class="space-y-1">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text">USERNAME</label>
-                    <input type="text" id="editUsername" value="${profile.username}" class="w-full theme-input text-xs px-3.5 py-2.5 rounded-xl text-white focus:outline-none border border-white/10" placeholder="username">
+                    <input type="text" id="editUsername" value="${profile.username}" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white focus:outline-none border border-white/10" placeholder="username">
                 </div>
                 <div class="space-y-1">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text">THEME STYLE</label>
-                    <select id="editThemeColor" class="w-full theme-input text-xs px-3.5 py-2.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer">
-                        <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>Emerald Dark</option>
-                        <option value="classic" ${profile.themeColor==='classic'?'selected':''}>Classic Gold</option>
+                    <select id="editThemeColor" onchange="previewThemeStyle(this.value)" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer">
+                        <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>emerald Dark (Default)</option>
+                        <option value="luxury" ${profile.themeColor==='luxury'?'selected':''}>Luxury Blue</option>
+                        <option value="black" ${profile.themeColor==='black'?'selected':''}>Classic Black</option>
                     </select>
                 </div>
-                <button onclick="saveProfileSettings()" class="w-full py-3 gold-btn text-xs rounded-xl font-bold cursor-pointer shadow-lg mt-1">
+                <button onclick="saveProfileSettings()" class="w-full py-3.5 gold-btn text-xs rounded-xl font-bold cursor-pointer shadow-lg mt-2 transition hover:brightness-110">
                     SAVE & SYNC PROFILE
                 </button>
             </div>
@@ -245,7 +250,14 @@ function renderProfileView() {
     `;
 }
 
-// যেকোনো বড় ছবি আপলোড করলে অটোমেটিক হাই-কোয়ালিটি রেখে সর্বনিম্ন KB-তে কনভার্ট ও অপ্টিমাইজ করার ফাংশন
+function previewThemeStyle(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const profile = getActiveProfile();
+    profile.themeColor = theme;
+    saveProfiles();
+}
+
+// যেকোনো বড় ছবি আপলোড করলে অটোমেটিক হাই-কোয়ালিটি রেখে সর্বনিম্ন KB-তে কনভার্ট করা
 function handleProfileAvatarChange(input) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
@@ -255,21 +267,15 @@ function handleProfileAvatarChange(input) {
         const img = new Image();
         img.onload = async function() {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 400;
-            const MAX_HEIGHT = 400;
+            const MAX_WIDTH = 350;
+            const MAX_HEIGHT = 350;
             let width = img.width;
             let height = img.height;
 
             if (width > height) {
-                if (width > MAX_WIDTH) {
-                    height *= MAX_WIDTH / width;
-                    width = MAX_WIDTH;
-                }
+                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
             } else {
-                if (height > MAX_HEIGHT) {
-                    width *= MAX_HEIGHT / height;
-                    height = MAX_HEIGHT;
-                }
+                if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
             }
 
             canvas.width = width;
@@ -277,8 +283,7 @@ function handleProfileAvatarChange(input) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
 
-            // হাই কোয়ালিটি (0.85) বজায় রেখে সাইজ KB-তে ছোট করা
-            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
             
             const profile = getActiveProfile();
             profile.avatar = compressedDataUrl;
@@ -293,7 +298,7 @@ function handleProfileAvatarChange(input) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phone: profile.phone, avatar_url: compressedDataUrl })
                 });
-                showToast("Profile photo optimized & updated");
+                showToast("Profile photo optimized & synced");
             } catch (err) {
                 showToast("Saved locally", true);
             }
@@ -316,6 +321,7 @@ async function saveProfileSettings() {
     if (newUsername) profile.username = newUsername;
     profile.themeColor = newTheme;
     saveProfiles();
+    document.documentElement.setAttribute('data-theme', newTheme);
 
     try {
         await fetch('/api/chat?action=update_profile', {
@@ -325,12 +331,77 @@ async function saveProfileSettings() {
                 phone: profile.phone,
                 display_name: profile.name,
                 username: profile.username,
-                avatar_url: profile.avatar
+                avatar_url: profile.avatar,
+                themeColor: profile.themeColor
             })
         });
-        showToast("Profile synced with cloud");
+        showToast("Profile synced successfully");
         renderProfileView();
     } catch (e) {
         showToast("Saved locally", true);
     }
+}
+
+// ----------------------------------------------------
+// নোটিফিকেশন টগল প্যানেল ও অল/সিলেক্টিভ ডিলিট লজিক
+// ----------------------------------------------------
+let notificationStore = JSON.parse(localStorage.getItem('salaam_notifications_v1') || '[]');
+
+function toggleNotificationPanel() {
+    const panel = document.getElementById('notificationPanel');
+    if (!panel) return;
+    if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        renderNotificationsDropdown();
+    } else {
+        panel.classList.add('hidden');
+    }
+}
+
+function renderNotificationsDropdown() {
+    const container = document.getElementById('notificationListContainer');
+    if (!container) return;
+
+    if (notificationStore.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-500 py-4 text-[11px]">No new notifications</p>`;
+        document.getElementById('headerNotifBadge')?.classList.add('hidden');
+        return;
+    }
+
+    container.innerHTML = notificationStore.map((n, idx) => `
+        <div class="flex items-center justify-between p-2 rounded-xl bg-black/40 border border-white/5 space-x-2">
+            <div class="flex items-center space-x-2 min-w-0">
+                <input type="checkbox" ${n.keepPinned ? 'checked' : ''} onchange="togglePinNotification(${idx})" class="accent-amber-400 cursor-pointer" title="Keep important">
+                <p class="truncate text-white text-[11px]">${n.text}</p>
+            </div>
+            <button onclick="deleteSingleNotification(${idx})" class="text-gray-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-trash"></i></button>
+        </div>
+    `).join('');
+
+    const badge = document.getElementById('headerNotifBadge');
+    if (badge) {
+        badge.innerText = notificationStore.length;
+        badge.classList.remove('hidden');
+    }
+}
+
+function togglePinNotification(idx) {
+    if (notificationStore[idx]) {
+        notificationStore[idx].keepPinned = !notificationStore[idx].keepPinned;
+        localStorage.setItem('salaam_notifications_v1', JSON.stringify(notificationStore));
+    }
+}
+
+function deleteSingleNotification(idx) {
+    notificationStore.splice(idx, 1);
+    localStorage.setItem('salaam_notifications_v1', JSON.stringify(notificationStore));
+    renderNotificationsDropdown();
+}
+
+function deleteAllNotifications() {
+    // শুধু আনপিন্ড (অগুরুত্বপূর্ণ) নোটিফিকেশনগুলো ডিলিট হবে, পিন করাগুলো থেকে যাবে
+    notificationStore = notificationStore.filter(n => n.keepPinned);
+    localStorage.setItem('salaam_notifications_v1', JSON.stringify(notificationStore));
+    renderNotificationsDropdown();
+    showToast("Cleared unpinned notifications");
 }
