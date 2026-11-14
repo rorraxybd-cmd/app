@@ -15,6 +15,15 @@ export async function onRequest(context) {
     }
 
     try {
+        // গ্লোবাল নেটওয়ার্ক ইউজারদের তালিকা ফেচ করা (যারা অ্যাপ ইনস্টল ও ভেরিফাই করেছে)
+        if (request.method === 'GET' && action === 'get_global_users') {
+            const { results } = await env.chat.prepare(
+                "SELECT phone_number, display_name, avatar_url, is_online FROM chat_master_system WHERE record_type = 'user' AND is_verified = 1 ORDER BY updated_at DESC LIMIT 200"
+            ).all();
+
+            return new Response(JSON.stringify({ success: true, users: results || [] }), { headers: corsHeaders });
+        }
+
         if (request.method === 'POST' && action === 'send_magic_link') {
             const body = await request.json();
             const { display_name, phone, magic_code, ip } = body;
