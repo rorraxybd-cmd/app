@@ -142,10 +142,17 @@ async function submitVerifyStep2() {
     } catch (e) {}
 
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-    document.getElementById('verifyOverlay').style.display = 'none';
+    
+    const overlay = document.getElementById('verifyOverlay');
+    if (overlay) overlay.style.display = 'none';
+    
     showToast("Verified & Connected");
     
-    if (typeof initAppAfterVerification === 'function') initAppAfterVerification();
+    if (typeof initAppAfterVerification === 'function') {
+        initAppAfterVerification();
+    } else if (typeof switchTab === 'function') {
+        switchTab('contact');
+    }
 }
 
 function checkInitialVerification() {
@@ -162,17 +169,22 @@ function checkInitialVerification() {
         }
     } else {
         if (overlay) overlay.style.display = 'none';
+        
         if (typeof initAppAfterVerification === 'function') {
             initAppAfterVerification();
         } else {
             setTimeout(() => {
-                if (typeof initAppAfterVerification === 'function') initAppAfterVerification();
+                if (typeof initAppAfterVerification === 'function') {
+                    initAppAfterVerification();
+                } else if (typeof switchTab === 'function') {
+                    switchTab('contact');
+                }
             }, 300);
         }
     }
 }
 
-// সেটিংস ও প্রোফাইল পেজ রেন্ডার করার ফাংশন
+// প্রোফাইল ও সেটিংস রেন্ডার করার ফাংশন
 function renderProfileView() {
     const profile = getActiveProfile();
     const sidebarList = document.getElementById('sidebarContentList');
