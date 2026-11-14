@@ -169,7 +169,7 @@ function renderProfileView() {
     if (!sidebarList) return;
 
     sidebarList.innerHTML = `
-        <div class="p-3 space-y-4">
+        <div class="p-4 space-y-4">
             <div class="text-center space-y-2 theme-card p-4 rounded-2xl border border-white/5">
                 <div class="relative w-20 h-20 mx-auto">
                     <img id="profileAvatarPreview" src="${profile.avatar}" class="w-20 h-20 rounded-full object-cover border-2 border-amber-400/50 bg-black">
