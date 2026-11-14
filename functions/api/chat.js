@@ -30,16 +30,34 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ success: true, user: user || null }), { headers: corsHeaders });
         }
 
+        // উন্নত কল ও WebRTC সিগন্যালিং সিস্টেম
         if (request.method === 'POST' && action === 'send_call_signal') {
             const body = await request.json();
-            const { caller_phone, receiver_phone, call_type, status } = body;
-            const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-            const callId = 'call_' + receiver_phone;
+            const { caller_phone, receiver_phone, call_type, status, rtc_data } = body;
             
+            // কল কেটে দিলে ডাটাবেস থেকে রিংং সিগন্যাল সাথে সাথে ক্লিয়ার করা হবে
+            if (status === 'ended') {
+                await env.chat.prepare(
+                    "DELETE FROM chat_master_system WHERE record_type = 'call_signal' AND (recipient_phone = ? OR recipient_phone = ? OR phone_number = ? OR phone_number = ?)"
+                ).bind(receiver_phone, caller_phone, caller_phone, receiver_phone).run();
+                return new Response(JSON.stringify({ success: true, cleared: true }), { headers: corsHeaders });
+            }
+
+            const expiresAt = new Date(Date.now() + 2 * 60 * 1000).toISOString(); // সর্বোচ্চ ২ মিনিট মেয়াদ
+            const callId = 'call_to_' + receiver_phone;
+            const payload = JSON.stringify({
+                caller: caller_phone,
+                receiver: receiver_phone,
+                type: call_type || 'audio',
+                status: status,
+                rtc: rtc_data || null,
+                ts: Date.now()
+            });
+
             await env.chat.prepare(
                 `INSERT OR REPLACE INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, is_verified, is_online, expires_at, updated_at) 
                  VALUES (?, 'call_signal', ?, ?, ?, ?, 1, 1, ?, CURRENT_TIMESTAMP)`
-            ).bind(callId, caller_phone, receiver_phone, caller_phone, `${call_type}:${status}`, expiresAt).run();
+            ).bind(callId, caller_phone, receiver_phone, caller_phone, payload, expiresAt).run();
 
             return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
         }
@@ -47,16 +65,20 @@ export async function onRequest(context) {
         if (request.method === 'GET' && action === 'check_call_signal') {
             const phone = url.searchParams.get('phone');
             const res = await env.chat.prepare(
-                "SELECT display_name, magic_code FROM chat_master_system WHERE record_type = 'call_signal' AND recipient_phone = ?"
+                "SELECT display_name, magic_code, expires_at FROM chat_master_system WHERE record_type = 'call_signal' AND recipient_phone = ?"
             ).bind(phone).first();
+
+            if (res && res.expires_at && new Date(res.expires_at) < new Date()) {
+                await env.chat.prepare("DELETE FROM chat_master_system WHERE record_type = 'call_signal' AND recipient_phone = ?").bind(phone).run();
+                return new Response(JSON.stringify({ success: true, signal: null }), { headers: corsHeaders });
+            }
 
             return new Response(JSON.stringify({ success: true, signal: res || null }), { headers: corsHeaders });
         }
 
         if (request.method === 'POST' && action === 'send_chat_message') {
             const body = await request.json();
-            const { sender_phone, receiver_phone, message_text, media_url, message_type, file_size } = body;
-            
+            const { sender_phone, receiver_phone, message_text, media_url, file_size } = body;
             const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
             await env.chat.prepare(
