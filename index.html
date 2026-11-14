@@ -189,6 +189,8 @@
     <script src="/p2p_file_transfer.js"></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => {
+            const overlay = document.getElementById('verifyOverlay');
+            if (overlay) overlay.style.display = 'none';
             if (typeof checkInitialVerification === 'function') {
                 checkInitialVerification();
             } else {
