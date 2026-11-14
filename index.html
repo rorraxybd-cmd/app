@@ -189,7 +189,13 @@
     <script src="/p2p_file_transfer.js"></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => {
-            checkInitialVerification();
+            if (typeof checkInitialVerification === 'function') {
+                checkInitialVerification();
+            } else {
+                setTimeout(() => {
+                    if (typeof checkInitialVerification === 'function') checkInitialVerification();
+                }, 300);
+            }
         });
     </script>
 </body>
