@@ -163,7 +163,7 @@ function checkInitialVerification() {
     }
 }
 
-// সেটিংস ও প্রোফাইল রেন্ডার করার মূল ফাংশন (মোবাইল নম্বর হাইড রেখে ফুল নেম, ইউজারনেম এবং থিম অপশনসহ)
+// সেটিংস ও প্রোফাইল রেন্ডার করার ফাংশন (মোবাইল নম্বর গোপন রেখে ফুল নেম, ইউজারনেম ও থিম কালার এডিট অপশন)
 function renderProfileView() {
     const profile = getActiveProfile();
     const sidebarList = document.getElementById('sidebarContentList');
