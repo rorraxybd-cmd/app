@@ -151,15 +151,24 @@ async function submitVerifyStep2() {
 function checkInitialVerification() {
     detectUserIp();
     if (!isVerifiedSession) {
-        document.getElementById('verifyOverlay').style.display = 'flex';
+        const overlay = document.getElementById('verifyOverlay');
+        if (overlay) overlay.style.display = 'flex';
         if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
             document.getElementById('pwaInstallContainer')?.classList.add('hidden');
             document.getElementById('verifyStep1').style.display = 'block';
             updatePhoneValidation();
         }
     } else {
-        document.getElementById('verifyOverlay').style.display = 'none';
-        if (typeof initAppAfterVerification === 'function') initAppAfterVerification();
+        const overlay = document.getElementById('verifyOverlay');
+        if (overlay) overlay.style.display = 'none';
+        
+        if (typeof initAppAfterVerification === 'function') {
+            initAppAfterVerification();
+        } else {
+            setTimeout(() => {
+                if (typeof initAppAfterVerification === 'function') initAppAfterVerification();
+            }, 300);
+        }
     }
 }
 
