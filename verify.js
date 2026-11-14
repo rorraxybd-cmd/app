@@ -1,6 +1,7 @@
 let currentTab = 'contact', currentActiveRecipient = null, deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let currentCallType = 'audio', activeShareData = null;
+let callRingInterval = null, activeAudioCtx = null, localLiveStream = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -24,23 +25,21 @@ async function installPWAApp() {
 
 let currentTheme = localStorage.getItem('salaam_theme') || 'emerald';
 let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
-let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v12') || '{}');
-let isVerifiedSession = localStorage.getItem('salaam_verified_v12') === 'true';
+let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v13') || '{}');
+let isVerifiedSession = localStorage.getItem('salaam_verified_v13') === 'true';
 
 const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'salaam'];
 
-let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v12') || 'null') || [{
-    name: "Masudar Rahman",
-    phone: "+8801538187301",
-    username: "mrmasudar",
+let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v13') || 'null') || [{
+    name: "User",
+    phone: "+8801700000000",
+    username: "user",
     privacy: "public",
-    avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg"
+    avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png"
 }];
 
-let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v12') || 'null') || [
-    { name: "rorraxy", phone: "+8801711111111", appUser: true, isOnline: true, lastMsg: "" },
-    { name: "Mamun Rashid", phone: "+8801800000000", appUser: true, isOnline: true, lastMsg: "" },
-    { name: "Saudi Support", phone: "+966500000000", appUser: true, isOnline: true, lastMsg: "" }
+let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v13') || 'null') || [
+    { name: "rorraxy Support", phone: "+8801538187301", appUser: true, isOnline: true, lastMsg: "Official Support Team", avatar: null }
 ];
 
 const COUNTRY_MAP = [
@@ -58,13 +57,13 @@ function getCountryInfo(phone) {
     for (const c of COUNTRY_MAP) {
         if (p.startsWith(c.code)) return c;
     }
-    return { code: 'OTHER', name: 'Global / Other', flag: '🌍' };
+    return { code: 'OTHER', name: 'Global', flag: '🌍' };
 }
 
 function getActiveProfile() { return savedProfiles[0]; }
-function saveProfiles() { localStorage.setItem('salaam_profiles_v12', JSON.stringify(savedProfiles)); }
+function saveProfiles() { localStorage.setItem('salaam_profiles_v13', JSON.stringify(savedProfiles)); }
 function normPhone(p) { return String(p || '').replace(/[\s\-\(\)]/g, ''); }
-function persistMessages() { localStorage.setItem('salaam_messages_v12', JSON.stringify(localMessageStore)); }
+function persistMessages() { localStorage.setItem('salaam_messages_v13', JSON.stringify(localMessageStore)); }
 
 function showToast(msg, isErr = false) {
     const b = document.getElementById('toastBanner'), dot = document.getElementById('toastDot'), text = document.getElementById('toastText');
@@ -80,7 +79,7 @@ function updatePhoneValidation() {
     if (!select || !phoneInput) return;
     const val = select.value.split('|');
     phoneInput.maxLength = val[1];
-    phoneInput.placeholder = "Enter " + val[1] + " digits number";
+    phoneInput.placeholder = "Enter " + val[1] + " digits";
 }
 
 async function detectUserIp() {
@@ -113,10 +112,11 @@ async function syncGlobalNetworkUsers() {
                         } else {
                             deviceContacts[existingIdx].isOnline = u.is_online === 1;
                             if (u.display_name) deviceContacts[existingIdx].name = u.display_name;
+                            if (u.avatar_url) deviceContacts[existingIdx].avatar = u.avatar_url;
                         }
                     }
                 });
-                localStorage.setItem('salaam_contacts_v12', JSON.stringify(deviceContacts));
+                localStorage.setItem('salaam_contacts_v13', JSON.stringify(deviceContacts));
                 if (currentTab === 'contact') renderDeviceContacts();
             }
         }
@@ -146,7 +146,7 @@ async function submitVerifyStep1() {
     const phone = document.getElementById('vPhoneInput').value.trim();
 
     if (!name) { showToast("Please enter your full name", true); return; }
-    if (!phone || phone.length < requiredLen - 1) { showToast(`Please enter a valid number (${requiredLen} digits)`, true); return; }
+    if (!phone || phone.length < requiredLen - 1) { showToast(`Enter valid number (${requiredLen} digits)`, true); return; }
 
     tempVerifyName = name; tempVerifyPhone = countryCode + phone;
     generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -164,17 +164,17 @@ async function submitVerifyStep1() {
     document.getElementById('verifyStep1').style.display = 'none';
     document.getElementById('verifyStep2').style.display = 'block';
     document.getElementById('vDisplayCode').innerText = generatedOtpCode;
-    showToast("Code generated instantly!");
+    showToast("Code generated!");
 }
 
 function autoFillOtp() { document.getElementById('vOtpInput').value = generatedOtpCode; }
 
 async function submitVerifyStep2() {
     const entered = document.getElementById('vOtpInput').value.trim();
-    if (entered !== generatedOtpCode) { showToast("Invalid verification code", true); return; }
+    if (entered !== generatedOtpCode) { showToast("Invalid code", true); return; }
 
     isVerifiedSession = true;
-    localStorage.setItem('salaam_verified_v12', 'true');
+    localStorage.setItem('salaam_verified_v13', 'true');
     const p = getActiveProfile();
     p.name = tempVerifyName; p.phone = tempVerifyPhone;
     saveProfiles();
@@ -191,7 +191,8 @@ async function submitVerifyStep2() {
 
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
     document.getElementById('verifyOverlay').style.display = 'none';
-    showToast("Successfully Connected & Auto-Synced!");
+    showToast("Verified & Connected!");
+    syncGlobalNetworkUsers();
     switchTab('contact');
 }
 
@@ -301,8 +302,23 @@ function handleProfileAvatarUpload(input) {
             const p = getActiveProfile();
             p.avatar = compressedDataUrl;
             saveProfiles();
+            
+            const myNormPhone = normPhone(p.phone);
+            deviceContacts = deviceContacts.map(c => {
+                if (normPhone(c.phone) === myNormPhone) {
+                    c.avatar = compressedDataUrl;
+                }
+                return c;
+            });
+            localStorage.setItem('salaam_contacts_v13', JSON.stringify(deviceContacts));
+
             renderProfileView();
-            showToast("Profile picture optimized & updated!");
+            showToast("Profile picture updated & synced!");
+
+            const activeAvatarEl = document.getElementById('activeChatAvatar');
+            if (activeAvatarEl && currentActiveRecipient && normPhone(currentActiveRecipient.phone) === myNormPhone) {
+                activeAvatarEl.src = compressedDataUrl;
+            }
 
             try {
                 await fetch('/api/chat?action=update_avatar', {
@@ -326,14 +342,14 @@ function saveProfileChanges() {
     let newUname = document.getElementById('eUsername').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
 
     if (RESERVED_USERNAMES.includes(newUname)) {
-        showToast("This username is reserved and cannot be used!", true);
+        showToast("This username is reserved!", true);
         return;
     }
 
     p.name = newName; p.username = newUname;
     saveProfiles();
     renderProfileView();
-    showToast("Profile updated successfully!");
+    showToast("Profile updated!");
 }
 
 function getTickBadge(on) {
@@ -343,10 +359,14 @@ function getTickBadge(on) {
 function renderDeviceContacts() {
     const contactsHtml = deviceContacts.map(c => {
         const info = getCountryInfo(c.phone);
+        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
         return `
         <div onclick="openChat('${c.phone}', '${c.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
             <div class="flex items-center space-x-3">
-                <div class="relative w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span></div>
+                <div class="relative">
+                    ${avatarImg}
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span>
+                </div>
                 <div>
                     <div class="flex items-center space-x-1.5">
                         <p class="text-xs font-semibold gold-gradient-text">${c.name}</p>
@@ -367,10 +387,14 @@ function renderChatStories() {
     document.getElementById('sidebarContentList').innerHTML = deviceContacts.filter(c => c.appUser).map(c => {
         const msgs = localMessageStore[c.phone] || [];
         const last = msgs.length ? (msgs[msgs.length - 1].type === 'image' ? 'Photo' : (msgs[msgs.length - 1].type === 'video' ? 'Video' : msgs[msgs.length - 1].message_text)) : c.lastMsg;
+        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
         return `
         <div onclick="openChat('${c.phone}', '${c.name}')" class="px-4 py-3 my-1 hover:bg-white/5 cursor-pointer flex items-center justify-between rounded-2xl theme-card border border-white/5">
             <div class="flex items-center space-x-3 flex-1 min-w-0">
-                <div class="relative"><img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im.jpg" class="w-10 h-10 rounded-full object-cover"><span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span></div>
+                <div class="relative">
+                    ${avatarImg}
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span>
+                </div>
                 <div class="flex-1 min-w-0"><span class="font-semibold text-xs gold-gradient-text truncate block">${c.name}</span><p class="text-[11px] text-gray-400 truncate">${last || 'Tap to message'}</p></div>
             </div>
             ${getTickBadge(c.isOnline)}
@@ -396,11 +420,11 @@ function filterContent() {
                 <div class="p-3.5 my-2 rounded-2xl theme-card border border-amber-400/40 flex items-center justify-between shadow-lg">
                     <div>
                         <p class="text-xs font-bold gold-gradient-text">${info.flag} ${formattedPhone}</p>
-                        <p class="text-[10px] text-[#2ed573]">Direct Global P2P Ready</p>
+                        <p class="text-[10px] text-[#2ed573]">Ready to Connect</p>
                     </div>
                     <div class="flex items-center space-x-2">
                         <button onclick="connectDirectNumber('${formattedPhone}', 'chat')" class="gold-btn px-3 py-1.5 rounded-xl text-[10px] font-bold cursor-pointer">Chat</button>
-                        <button onclick="connectDirectNumber('${formattedPhone}', 'audio')" class="pink-btn p-2 rounded-xl cursor-pointer" title="Direct Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                        <button onclick="connectDirectNumber('${formattedPhone}', 'audio')" class="pink-btn p-2 rounded-xl cursor-pointer" title="Call"><i class="fa-solid fa-phone text-xs"></i></button>
                     </div>
                 </div>`;
         } else {
@@ -412,8 +436,8 @@ function filterContent() {
 function connectDirectNumber(phone, mode) {
     const cp = normPhone(phone);
     if (!deviceContacts.some(c => normPhone(c.phone) === cp)) {
-        deviceContacts.unshift({ name: cp, phone: cp, appUser: true, isOnline: true, lastMsg: "" });
-        localStorage.setItem('salaam_contacts_v12', JSON.stringify(deviceContacts));
+        deviceContacts.unshift({ name: cp, phone: cp, appUser: true, isOnline: true, lastMsg: "", avatar: null });
+        localStorage.setItem('salaam_contacts_v13', JSON.stringify(deviceContacts));
     }
     openChat(cp, cp);
     if (mode === 'audio' || mode === 'video') {
@@ -423,10 +447,14 @@ function connectDirectNumber(phone, mode) {
 
 function openChat(phone, name) {
     const cp = normPhone(phone);
-    currentActiveRecipient = { phone: cp, name: name || cp, isOnline: true };
+    const targetContact = deviceContacts.find(c => normPhone(c.phone) === cp);
+    const avatarUrl = targetContact && targetContact.avatar ? targetContact.avatar : 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png';
+
+    currentActiveRecipient = { phone: cp, name: name || cp, isOnline: true, avatar: avatarUrl };
     document.getElementById('activeChatHeader').style.display = 'flex';
     document.getElementById('chatInputBar').style.display = 'flex';
     document.getElementById('activeChatTitle').innerText = name || cp;
+    document.getElementById('activeChatAvatar').src = avatarUrl;
     document.getElementById('activeChatHeaderTick').innerHTML = getTickBadge(true);
     if (window.innerWidth < 768) {
         document.getElementById('sidebarSection').style.display = 'none';
@@ -513,7 +541,7 @@ function shareToContact(phone) {
     localMessageStore[cp].push(msg);
     persistMessages();
     closeShareModal();
-    showToast("Successfully shared to contact!");
+    showToast("Shared!");
 }
 
 async function executeSystemShare() {
@@ -523,11 +551,11 @@ async function executeSystemShare() {
             await navigator.share({ title: 'SALAAM Share', text: activeShareData.title, url: activeShareData.url });
         } else {
             await navigator.clipboard.writeText(activeShareData.url);
-            showToast("Link copied to clipboard!");
+            showToast("Link copied!");
         }
     } catch (e) {
         navigator.clipboard.writeText(activeShareData.url);
-        showToast("Link copied to clipboard!");
+        showToast("Link copied!");
     }
     closeShareModal();
 }
@@ -538,7 +566,7 @@ function deleteSingleMessage(msgId) {
     localMessageStore[key] = (localMessageStore[key] || []).filter(m => m.id !== msgId);
     persistMessages();
     loadMessages();
-    showToast("Deleted instantly");
+    showToast("Deleted");
 }
 
 function appendBubble(msg, idx) {
@@ -590,7 +618,7 @@ function loadMessages() {
         msgs.forEach((m, i) => appendBubble(m, i));
         scrollChatToBottom();
     } else {
-        c.innerHTML = `<div class="empty-placeholder flex flex-col items-center justify-center space-y-3 text-center m-auto"><p class="text-sm font-bold gold-gradient-text">Start Secure Chat</p></div>`;
+        c.innerHTML = `<div class="empty-placeholder flex flex-col items-center justify-center space-y-3 text-center m-auto"><p class="text-sm font-bold gold-gradient-text">Start Chat</p></div>`;
     }
 }
 
@@ -602,7 +630,7 @@ function scrollChatToBottom() {
 function confirmClearChatHistory() {
     if (currentActiveRecipient) {
         localMessageStore[currentActiveRecipient.phone] = [];
-        persistMessages(); loadMessages(); showToast('Chat cleared');
+        persistMessages(); loadMessages(); showToast('Cleared');
     }
 }
 
@@ -610,45 +638,90 @@ function openLiveBroadcastModal() {
     document.getElementById('liveModal').classList.remove('hidden');
     document.getElementById('liveModal').classList.add('flex');
 }
+
 function closeLiveBroadcastModal() {
+    stopMyLiveStream();
     document.getElementById('liveModal').classList.add('hidden');
     document.getElementById('liveModal').classList.remove('flex');
 }
-function startMyLiveStream() {
-    showToast("Broadcasting live stream to all partners!");
-    closeLiveBroadcastModal();
+
+async function startMyLiveStream() {
+    try {
+        localLiveStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const videoEl = document.getElementById('liveCameraVideo');
+        videoEl.srcObject = localLiveStream;
+        videoEl.classList.remove('hidden');
+        document.getElementById('livePlaceholderUI').classList.add('hidden');
+        document.getElementById('stopLiveBtn').classList.remove('hidden');
+
+        const p = getActiveProfile();
+        callHistoryNotifications.unshift({ text: `🔴 LIVE: ${p.name} started a live video!`, time: Date.now() });
+        updateNotificationBadge();
+        showToast("Live Video Started! Alert sent to all users.");
+    } catch (e) {
+        showToast("Camera access required to start live video", true);
+    }
 }
 
-function playCallRingingSound() {
-    try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.8);
-    } catch (e) {}
+function stopMyLiveStream() {
+    if (localLiveStream) {
+        localLiveStream.getTracks().forEach(track => track.stop());
+        localLiveStream = null;
+    }
+    const videoEl = document.getElementById('liveCameraVideo');
+    if (videoEl) {
+        videoEl.srcObject = null;
+        videoEl.classList.add('hidden');
+    }
+    document.getElementById('livePlaceholderUI')?.classList.remove('hidden');
+    document.getElementById('stopLiveBtn')?.classList.add('hidden');
+}
+
+function startContinuousRinging() {
+    stopContinuousRinging();
+    const playTone = () => {
+        try {
+            if (!activeAudioCtx) activeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = activeAudioCtx.createOscillator();
+            const gain = activeAudioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, activeAudioCtx.currentTime);
+            gain.gain.setValueAtTime(0.12, activeAudioCtx.currentTime);
+            osc.connect(gain);
+            gain.connect(activeAudioCtx.destination);
+            osc.start();
+            osc.stop(activeAudioCtx.currentTime + 1.0);
+        } catch (e) {}
+    };
+    playTone();
+    callRingInterval = setInterval(playTone, 2500);
+}
+
+function stopContinuousRinging() {
+    if (callRingInterval) {
+        clearInterval(callRingInterval);
+        callRingInterval = null;
+    }
 }
 
 function startWhatsAppCall(mode) {
     if (!currentActiveRecipient) return;
     currentCallType = mode;
     updateCallModeUI();
-    playCallRingingSound();
+    startContinuousRinging();
     callHistoryNotifications.unshift({ text: `${mode === 'video' ? 'Video' : 'Audio'} call with ${currentActiveRecipient.name}`, time: Date.now() });
+    updateNotificationBadge();
     document.getElementById('whatsAppCallModal').classList.remove('hidden');
     document.getElementById('whatsAppCallModal').classList.add('flex');
     document.getElementById('callPeerName').innerText = currentActiveRecipient.name;
+    document.getElementById('callModalAvatar').src = currentActiveRecipient.avatar || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png';
+    document.getElementById('callStatusLabel').innerText = "Calling...";
 }
 
 function toggleCallMode() {
     currentCallType = currentCallType === 'audio' ? 'video' : 'audio';
     updateCallModeUI();
-    showToast(`Switched to ${currentCallType} call`);
+    showToast(`Switched to ${currentCallType}`);
 }
 
 function updateCallModeUI() {
@@ -662,9 +735,18 @@ function updateCallModeUI() {
 }
 
 function endWhatsAppCall() {
+    stopContinuousRinging();
     document.getElementById('whatsAppCallModal').classList.add('hidden');
     document.getElementById('whatsAppCallModal').classList.remove('flex');
     showToast('Call ended');
+}
+
+function updateNotificationBadge() {
+    const badge = document.getElementById('headerNotifBadge');
+    if (badge && callHistoryNotifications.length > 0) {
+        badge.innerText = callHistoryNotifications.length;
+        badge.classList.remove('hidden');
+    }
 }
 
 function openRecipientInfoModal() {
@@ -678,7 +760,7 @@ function closeRecipientInfoModal() { document.getElementById('recipientInfoModal
 
 function openNotificationModal() {
     const list = document.getElementById('modalNotifList');
-    document.getElementById('headerNotifBadge').innerText = callHistoryNotifications.length;
+    updateNotificationBadge();
     list.innerHTML = callHistoryNotifications.length ? callHistoryNotifications.map(n => `<div class="text-[11px] bg-black/40 p-2.5 rounded-xl border border-white/5">${n.text}</div>`).join('') : `<p class="text-xs text-gray-400 text-center py-4">No notifications</p>`;
     document.getElementById('notificationModal').classList.remove('hidden');
     document.getElementById('notificationModal').classList.add('flex');
@@ -687,5 +769,6 @@ function closeNotificationModal() { document.getElementById('notificationModal')
 
 window.addEventListener('DOMContentLoaded', () => {
     applyTheme(currentTheme);
+    updateNotificationBadge();
     checkInitialVerification();
 });
