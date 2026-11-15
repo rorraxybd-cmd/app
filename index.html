@@ -198,7 +198,7 @@
                 </div>
             </div>
 
-            <div id="chatInputBar" class="theme-surface px-3 py-2.5 hidden items-center shrink-0 z-20">
+            <div id="chatInputBar" class="theme-surface px-3 py-2.5 hidden items-center shrink-0 z-25">
                 <div class="flex-1 flex items-center theme-input rounded-2xl px-3.5 py-2 space-x-2.5">
                     <label class="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center shrink-0" title="Attach File">
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
@@ -284,6 +284,24 @@
             } catch (e) {}
         }
 
+        // Mobile back to sidebar helper function
+        function backToSidebarMobile() {
+            const workspace = document.getElementById('workspaceSection');
+            const sidebar = document.getElementById('sidebarSection');
+            const bottomNav = document.getElementById('bottomNavBar');
+            if (workspace) {
+                workspace.classList.add('hidden');
+                workspace.style.display = '';
+            }
+            if (sidebar) {
+                sidebar.classList.remove('hidden');
+            }
+            if (bottomNav) {
+                bottomNav.classList.remove('hidden');
+                bottomNav.style.display = 'flex';
+            }
+        }
+
         function switchTab(tabName) {
             const tabs = ['Profile', 'Discover', 'Contact', 'Chat', 'Calls'];
             tabs.forEach(t => {
@@ -315,8 +333,17 @@
             }
 
             const workspace = document.getElementById('workspaceSection');
+            const sidebar = document.getElementById('sidebarSection');
+            const bottomNav = document.getElementById('bottomNavBar');
+
             if (tabName !== 'chat' && workspace && window.innerWidth < 768) {
                 workspace.classList.add('hidden');
+                workspace.style.display = '';
+                if (sidebar) sidebar.classList.remove('hidden');
+                if (bottomNav) {
+                    bottomNav.classList.remove('hidden');
+                    bottomNav.style.display = 'flex';
+                }
             }
 
             const sidebarList = document.getElementById('sidebarContentList');
@@ -328,7 +355,6 @@
                 if (typeof selectedDiscoverCountry !== 'undefined') selectedDiscoverCountry = null;
                 if (typeof renderDiscoverDirectory === 'function') renderDiscoverDirectory();
             } else if (tabName === 'contact') {
-                // Immediately render local contacts first, then fetch cloud updates in background
                 if (typeof renderContactsView === 'function') renderContactsView();
                 fetchCloudContacts().then(() => {
                     if (typeof renderContactsView === 'function') renderContactsView();
