@@ -461,11 +461,12 @@ function startIncomingCallPolling() {
                     const callerPhone = normPhone(sig.caller);
                     if (callerPhone === myPhone) return;
 
+                    let deviceContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
                     let callerContact = deviceContacts.find(c => normPhone(c.phone) === callerPhone);
                     if (!callerContact) {
                         callerContact = { name: callerPhone, phone: callerPhone, appUser: true, isOnline: true };
                         deviceContacts.push(callerContact);
-                        localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
+                        localStorage.setItem('message_contacts_v18', JSON.stringify(deviceContacts));
                     }
 
                     activeCallPeer = callerContact;
