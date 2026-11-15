@@ -26,7 +26,8 @@ let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || '
 const RTC_CONFIG = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' }
     ]
 };
 
@@ -439,6 +440,26 @@ function createPeerConnection(peerPhone) {
         });
     }
 
+    // ICE Candidate Exchange Handling
+    peerConnection.onicecandidate = async (event) => {
+        if (event.candidate) {
+            const myPhone = normPhone(getActiveProfile().phone);
+            try {
+                await fetch('/api/chat?action=send_call_signal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        caller_phone: myPhone,
+                        receiver_phone: peerPhone,
+                        call_type: currentCallType,
+                        status: 'ice',
+                        rtc_data: event.candidate
+                    })
+                });
+            } catch (e) {}
+        }
+    };
+
     peerConnection.ontrack = (event) => {
         const remoteAud = document.getElementById('callRemoteAudio');
         if (event.streams && event.streams[0]) {
@@ -480,20 +501,6 @@ async function startWhatsAppCall(mode) {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
-    await new Promise(resolve => {
-        if (pc.iceGatheringState === 'complete') resolve();
-        else {
-            const checkIce = () => {
-                if (pc.iceGatheringState === 'complete') {
-                    pc.removeEventListener('icegatheringstatechange', checkIce);
-                    resolve();
-                }
-            };
-            pc.addEventListener('icegatheringstatechange', checkIce);
-            setTimeout(resolve, 1200);
-        }
-    });
-
     try {
         await fetch('/api/chat?action=send_call_signal', {
             method: 'POST',
@@ -528,20 +535,6 @@ async function acceptWhatsAppCall() {
         await pc.setRemoteDescription(new RTCSessionDescription(window.pendingIncomingOffer));
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-
-        await new Promise(resolve => {
-            if (pc.iceGatheringState === 'complete') resolve();
-            else {
-                const checkIce = () => {
-                    if (pc.iceGatheringState === 'complete') {
-                        pc.removeEventListener('icegatheringstatechange', checkIce);
-                        resolve();
-                    }
-                };
-                pc.addEventListener('icegatheringstatechange', checkIce);
-                setTimeout(resolve, 1200);
-            }
-        });
 
         try {
             await fetch('/api/chat?action=send_call_signal', {
@@ -767,9 +760,20 @@ function startIncomingCallPolling() {
                 try { sig = JSON.parse(data.signal.magic_code); } catch (e) { return; }
                 if (!sig || !sig.ts) return;
 
-                if (Date.now() - sig.ts > 15000) return;
+                if (Date.now() - sig.ts > 20000) return;
 
                 const modal = document.getElementById('whatsAppCallModal');
+                
+                // ICE Candidate background handling during call
+                if (sig.status === 'ice' && isCallActive && peerConnection && sig.rtc) {
+                    if (sig.ts > lastHandledSignalTs) {
+                        try {
+                            await peerConnection.addIceCandidate(new RTCIceCandidate(sig.rtc));
+                        } catch (e) {}
+                    }
+                    return;
+                }
+
                 if (sig.status === 'ringing' && !isCallActive && !modal && sig.ts > lastHandledSignalTs) {
                     lastHandledSignalTs = sig.ts;
                     const callerPhone = normPhone(sig.caller);
@@ -1010,11 +1014,11 @@ function appendBubble(m) {
 
 function escapeHtml(text) {
     return String(text || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+        .replace(/&/g, '&')
+        .replace(/</g, '<')
+        .replace(/>/g, '>')
+        .replace(/"/g, '"')
+        .replace(/'/g, ''');
 }
 
 function toggleSendButton() {
