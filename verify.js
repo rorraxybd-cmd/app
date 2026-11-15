@@ -83,7 +83,7 @@ function getCountryInfo(phone) {
             }
         }
     }
-    return { code: 'OTHER', name: 'Global', flag: '🌍' };
+    return { code: 'OTHER', name: 'Global', flag: '🌐' };
 }
 
 function getActiveProfile() { return savedProfiles[0]; }
@@ -99,37 +99,59 @@ function updatePhoneValidation() {
 }
 
 async function submitVerifyStep1() {
-    const name = document.getElementById('vFullName').value.trim();
-    const selectData = document.getElementById('vCountrySelect').value.split('|');
-    const countryCode = selectData[0], requiredLen = parseInt(selectData[1], 10) || 10;
-    const phone = document.getElementById('vPhoneInput').value.trim();
+    const nameInput = document.getElementById('vFullName');
+    const selectEl = document.getElementById('vCountrySelect');
+    const phoneInput = document.getElementById('vPhoneInput');
 
-    if (!name) { showToast("Please enter your full name", true); return; }
-    if (!phone || phone.length < 6) { showToast(`Enter valid phone number`, true); return; }
+    const name = nameInput ? nameInput.value.trim() : '';
+    const selectData = selectEl ? selectEl.value.split('|') : ['+880', '10'];
+    const countryCode = selectData[0];
+    const phone = phoneInput ? phoneInput.value.trim() : '';
 
-    tempVerifyName = name; tempVerifyPhone = countryCode + phone;
+    if (!name) { 
+        if (typeof showToast === 'function') showToast("Please enter your full name", true);
+        return; 
+    }
+    if (!phone || phone.length < 6) { 
+        if (typeof showToast === 'function') showToast("Enter valid phone number", true);
+        return; 
+    }
+
+    tempVerifyName = name; 
+    tempVerifyPhone = countryCode + phone;
     generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
+    // ব্যাকএন্ড ফেচ রিকোয়েস্ট ফেইল করলেও ফ্লো যেন আটকে না থাকে, সেজন্য try-catch সেফ করা হয়েছে
     try {
         await fetch('/api/chat?action=send_magic_link', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ display_name: tempVerifyName, phone: tempVerifyPhone, magic_code: generatedOtpCode, ip: userDeviceIp })
         });
-    } catch (e) {}
+    } catch (e) {
+        console.warn("API offline mode, continuing locally...", e);
+    }
 
-    document.getElementById('verifyStep1').style.display = 'none';
-    document.getElementById('verifyStep2').style.display = 'block';
+    const step1El = document.getElementById('verifyStep1');
+    const step2El = document.getElementById('verifyStep2');
+    
+    if (step1El) step1El.style.display = 'none';
+    if (step2El) step2El.style.display = 'block';
     
     const otpInput = document.getElementById('vOtpInput');
     if (otpInput) otpInput.value = generatedOtpCode;
 
-    showToast("Verified & Auto-Filled");
+    if (typeof showToast === 'function') showToast("Verified & Auto-Filled");
 }
 
 async function submitVerifyStep2() {
-    const entered = document.getElementById('vOtpInput').value.trim();
-    if (entered !== generatedOtpCode) { showToast("Invalid code", true); return; }
+    const otpEl = document.getElementById('vOtpInput');
+    const entered = otpEl ? otpEl.value.trim() : '';
+    
+    if (entered !== generatedOtpCode) { 
+        if (typeof showToast === 'function') showToast("Invalid code", true); 
+        return; 
+    }
 
     isVerifiedSession = true;
     localStorage.setItem('salaam_verified_v18', 'true');
@@ -172,7 +194,7 @@ async function submitVerifyStep2() {
     const overlay = document.getElementById('verifyOverlay');
     if (overlay) overlay.style.display = 'none';
     
-    showToast("Connected Successfully");
+    if (typeof showToast === 'function') showToast("Connected Successfully");
     
     if (typeof initAppAfterVerification === 'function') {
         initAppAfterVerification();
@@ -188,7 +210,8 @@ function checkInitialVerification() {
         if (overlay) overlay.style.display = 'flex';
         if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
             document.getElementById('pwaInstallContainer')?.classList.add('hidden');
-            document.getElementById('verifyStep1').style.display = 'block';
+            const step1 = document.getElementById('verifyStep1');
+            if (step1) step1.style.display = 'block';
             updatePhoneValidation();
         } else {
             document.getElementById('pwaInstallContainer')?.classList.remove('hidden');
@@ -305,9 +328,9 @@ function handleProfileAvatarChange(input) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phone: profile.phone, avatar_url: compressedDataUrl })
                 });
-                showToast("Profile photo optimized & synced");
+                if (typeof showToast === 'function') showToast("Profile photo optimized & synced");
             } catch (err) {
-                showToast("Saved locally", true);
+                if (typeof showToast === 'function') showToast("Saved locally", true);
             }
         };
         img.src = e.target.result;
@@ -320,8 +343,8 @@ async function saveProfileSettings() {
     const newUsername = document.getElementById('editUsername').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
     const newTheme = document.getElementById('editThemeColor').value;
     
-    if (!newName) { showToast("Display name cannot be empty", true); return; }
-    if (RESERVED_USERNAMES.includes(newUsername)) { showToast("Username is reserved", true); return; }
+    if (!newName) { if (typeof showToast === 'function') showToast("Display name cannot be empty", true); return; }
+    if (RESERVED_USERNAMES.includes(newUsername)) { if (typeof showToast === 'function') showToast("Username is reserved", true); return; }
 
     const profile = getActiveProfile();
     profile.name = newName;
@@ -342,10 +365,10 @@ async function saveProfileSettings() {
                 themeColor: profile.themeColor
             })
         });
-        showToast("Profile synced successfully");
+        if (typeof showToast === 'function') showToast("Profile synced successfully");
         renderProfileView();
     } catch (e) {
-        showToast("Saved locally", true);
+        if (typeof showToast === 'function') showToast("Saved locally", true);
     }
 }
 
@@ -406,6 +429,5 @@ function deleteAllNotifications() {
     notificationStore = notificationStore.filter(n => n.keepPinned);
     localStorage.setItem('salaam_notifications_v1', JSON.stringify(notificationStore));
     renderNotificationsDropdown();
-    showToast("Cleared unpinned notifications");
+    if (typeof showToast === 'function') showToast("Cleared unpinned notifications");
 }
-```[cite: 5]
