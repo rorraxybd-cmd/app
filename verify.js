@@ -219,7 +219,26 @@ function checkInitialVerification() {
     }
 }
 
-// পরিপাটি ও গোছালো সেটিংস/প্রোফাইল ভিউ (টগল এডিট মোড সহ)
+// শুধু সাবডোমেন ও ইউআরএল সহ ক্লিন কপি এবং নেটিভ শেয়ার ফাংশন
+function shareProfileLink() {
+    const profile = getActiveProfile();
+    const profileUrl = `chat.rorraxy.com/${profile.username || 'user'}`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'MESSAGE by rorraxy.com',
+            url: profileUrl
+        }).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(profileUrl).then(() => {
+            if (typeof showToast === 'function') showToast(`Copied: ${profileUrl}`);
+        }).catch(() => {
+            if (typeof showToast === 'function') showToast("Failed to copy link", true);
+        });
+    }
+}
+
+// পরিপাটি ও গোছালো সেটিংস/প্রোফাইল ভিউ (পিঙ্ক কালার শেয়ার প্রোফাইল বাটন সহ)
 function renderProfileView(isEditing = false) {
     const profile = getActiveProfile();
     const sidebarList = document.getElementById('sidebarContentList');
@@ -247,15 +266,14 @@ function renderProfileView(isEditing = false) {
                     <p class="text-[11px] text-gray-400 mt-1 flex items-center justify-center space-x-1">
                         <i class="fa-solid fa-phone text-amber-300"></i>
                         <span class="tracking-wider">${maskedPhone}</span>
-                        <span class="text-[9px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full ml-1">Verified</span>
+                        <span class="text-[10px] text-emerald-400 font-semibold ml-1">Verified</span>
                     </p>
                 </div>
 
-                <!-- সুন্দর পরিপাটি শেয়ার বাটন (বাটনে কোনো বড় ইউআরএল লেখা থাকবে না, ক্লিকের পর জাস্ট লিংক কপি হবে) -->
+                <!-- একদম ক্লিন পিঙ্ক কালার টেক্সটযুক্ত শেয়ার প্রোফাইল বাটন (কোনো আইকন বা লিংক ছাড়াই) -->
                 <div class="pt-2">
-                    <button onclick="shareProfileLink()" class="w-full py-3 px-4 rounded-2xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 text-xs font-bold border border-amber-400/30 flex items-center justify-center space-x-2 transition cursor-pointer shadow-inner">
-                        <i class="fa-solid fa-share-nodes"></i>
-                        <span>Share Profile Link</span>
+                    <button onclick="shareProfileLink()" class="w-full py-3.5 px-4 rounded-2xl theme-input hover:border-pink-500/50 transition cursor-pointer shadow-inner flex items-center justify-center">
+                        <span class="text-xs font-extrabold pink-gradient-text tracking-wider uppercase">Share Profile</span>
                     </button>
                 </div>
             </div>
