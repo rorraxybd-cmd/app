@@ -8,6 +8,29 @@ function persistMessages() {
     localStorage.setItem('salaam_messages_v18', JSON.stringify(localMessageStore)); 
 }
 
+// প্রয়োজনীয় সেফটি হেল্পার ফাংশনসমূহ (মেসেজ সেন্ড ও রেন্ডার সচল রাখার জন্য)
+function normPhone(p) {
+    return String(p || '').replace(/[\s\-\(\)\+]/g, '');
+}
+
+function getActiveProfile() {
+    try {
+        const profiles = JSON.parse(localStorage.getItem('message_profiles_v18') || '[{}]');
+        return profiles[0] || { phone: '' };
+    } catch (e) {
+        return { phone: '' };
+    }
+}
+
+function escapeHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function toggleSendButton() {
     const inp = document.getElementById('messageInput');
     const sendBtn = document.getElementById('sendBtn');
@@ -23,7 +46,10 @@ function toggleSendButton() {
 }
 
 async function sendTextMessage() {
-    if (!currentActiveRecipient) return;
+    if (!currentActiveRecipient) {
+        if (typeof showToast === 'function') showToast("কোনো চ্যাট সিলেক্ট করা নেই!", true);
+        return;
+    }
     const inp = document.getElementById('messageInput');
     const text = inp.value.trim();
     if (!text) return;
@@ -165,7 +191,7 @@ function loadMessages() {
                     <svg class="w-7 h-7 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                 </div>
                 <p class="text-sm font-bold gold-gradient-text">No messages yet</p>
-                <p class="text-[11px] text-gray-400">Send a message or start a call with ${currentActiveRecipient.name}.</p>
+                <p class="text-[11px] text-gray-400">Send a message or start a call with ${escapeHtml(currentActiveRecipient.name)}.</p>
             </div>`;
         return;
     }
@@ -221,3 +247,4 @@ function loadMessages() {
     }).join('');
     container.scrollTop = container.scrollHeight;
 }
+```[cite: 15]
