@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SALAAM | rorraxy.com</title>
-    <link rel="icon" type="image/png" href="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg">
+    <title>MESSAGE | rorraxy.com</title>
+    <link rel="icon" type="image/png" href="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=1.9">
+    <link rel="stylesheet" href="/discover.css?v=2.0">
     <style>
         :root {
             --bg-main: #030305;
@@ -29,7 +29,6 @@
         .gold-gradient-text { background: linear-gradient(135deg, #F5D061 0%, #AA771C 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .pink-gradient-text { background: linear-gradient(135deg, #EC4899 0%, #be185d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        /* Premium Soft Black Card with Golden Border (No Logo Shadow) */
         .verify-card {
             background: linear-gradient(145deg, #08110c 0%, #030305 100%);
             border-radius: 32px;
@@ -46,7 +45,7 @@
         .theme-card { background-color: var(--card); }
         .theme-input { background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(245, 208, 97, 0.2); }
         
-        /* Clean logo with zero unwanted shadow */
+        /* লোগোর সমস্ত শ্যাডো বা গ্লো সম্পূর্ণ রিমুভড (Clean) */
         .header-logo-clean {
             width: 90px;
             height: 90px;
@@ -67,12 +66,12 @@
             
             <!-- Step 0: Install Container (Page 1) -->
             <div id="pwaInstallContainer" class="space-y-4">
-                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png" alt="Logo" class="header-logo-clean mx-auto">
-                <h1 class="brand-title-font text-3xl font-extrabold gold-gradient-text">SALAAM</h1>
+                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto">
+                <h1 class="brand-title-font text-3xl font-extrabold gold-gradient-text">MESSAGE</h1>
                 <p class="text-[11px] text-white/75 tracking-widest font-semibold uppercase">Private Global Messenger</p>
                 <div class="pt-3">
                     <button onclick="handleCustomInstall()" class="gold-btn w-full py-4 rounded-xl text-xs font-extrabold tracking-wider shadow-lg inline-flex items-center justify-center space-x-2 cursor-pointer uppercase">
-                        <i class="fa-solid fa-download"></i><span>INSTALL & CONNECT</span>
+                        <i class="fa-solid fa-download"></i><span>INSTALL APP</span>
                     </button>
                 </div>
             </div>
@@ -80,7 +79,7 @@
             <!-- Step 1: Name & Phone Number Form (Page 2) -->
             <div id="verifyStep1" class="space-y-4 text-left hidden">
                 <div class="text-center pb-1">
-                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png" alt="Logo" class="header-logo-clean mx-auto mb-2" style="width: 60px; height: 60px;">
+                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto mb-2" style="width: 60px; height: 60px;">
                     <h2 class="brand-title-font text-xl font-bold gold-gradient-text">Create Profile</h2>
                 </div>
                 <div class="space-y-1.5">
@@ -90,8 +89,8 @@
                 <div class="space-y-1.5">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-red-500">*</span></label>
                     <div class="flex space-x-2 w-full">
-                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer shrink-0" style="width: 135px;">
-                            <!-- দেশসমূহ discover.js থেকে লোড হবে -->
+                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer shrink-0" style="width: 145px;">
+                            <!-- discover.js থেকে দেশ ও পতাকা লোড হবে -->
                         </select>
                         <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-white/10">
                     </div>
@@ -118,10 +117,10 @@
     <!-- Header Bar -->
     <header class="theme-surface px-4 py-3 flex justify-between items-center shrink-0 z-30 border-b border-white/5">
         <div class="flex items-center space-x-3">
-            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png" alt="Logo" class="header-logo-clean" style="width: 42px; height: 42px;">
+            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean" style="width: 42px; height: 42px;">
             <div>
                 <div class="flex items-center space-x-1.5">
-                    <h1 class="brand-title-font font-extrabold text-lg sm:text-xl gold-gradient-text leading-none">SALAAM</h1>
+                    <h1 class="brand-title-font font-extrabold text-lg sm:text-xl gold-gradient-text leading-none">MESSAGE</h1>
                     <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.8 4.2L18.3 4.3L19.5 7.6L22 10L20.8 13.3L21.5 16.8L18.3 18.4L16.7 21.5L13.3 20.8L10 22L7.6 19.5L4.3 18.3L4.2 14.8L2 12L4.2 9.2L4.3 5.7L7.6 4.5L10 2L12 2Z" fill="#F5D061"/><path d="M8.5 12.2L10.8 14.5L15.6 9.5" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
                 <a href="https://rorraxy.com" target="_blank" class="text-[11px] text-white/70 hover:text-amber-300 transition block tracking-wider mt-0.5">rorraxy.com</a>
@@ -172,7 +171,7 @@
                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                     </button>
                     <div class="flex items-center space-x-3">
-                        <div class="relative"><img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png" class="w-9 h-9 header-logo-clean"></div>
+                        <div class="relative"><img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" class="w-9 h-9 header-logo-clean"></div>
                         <div>
                             <div class="flex items-center space-x-1.5">
                                 <span id="activeChatTitle" class="font-semibold text-white text-xs tracking-wide">Select a contact</span>
@@ -192,7 +191,7 @@
                     <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center">
                         <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                     </div>
-                    <p class="text-sm font-bold gold-gradient-text">Assalamu Alaikum</p>
+                    <p class="text-sm font-bold gold-gradient-text">Welcome to rorraxy MESSAGE</p>
                     <p class="text-[11px] text-gray-400">Select a contact or country to start messaging or calling.</p>
                 </div>
             </div>
@@ -212,7 +211,7 @@
         </div>
     </div>
 
-    <!-- Bottom Navigation Bar -->
+    <!-- Bottom Navigation Bar (5 Active Menus) -->
     <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40 border-t border-white/5">
         <div class="flex items-center justify-around w-full px-3">
             <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none">
@@ -243,20 +242,21 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- Modular JavaScript Files Connection -->
-    <script src="/discover.js?v=2.0"></script>
-    <script src="/verify.js?v=6.0"></script>
-    <script src="/call.js?v=6.0"></script>
-    <script src="/p2p_file_transfer.js?v=6.0"></script>
+    <!-- Modular JavaScript Files Connection (message.js & transfer.js যুক্ত করা হলো) -->
+    <script src="/discover.js?v=2.1"></script>
+    <script src="/verify.js?v=6.1"></script>
+    <script src="/call.js?v=6.1"></script>
+    <script src="/message.js?v=2.1"></script>
+    <script src="/transfer.js?v=2.1"></script>
     
     <script>
-        // Custom Install Handler to ensure smooth transition to verification form
+        // PWA Install & Seamless Step-by-Step Transition Handler
         function handleCustomInstall() {
             if (typeof installPWAApp === 'function') {
                 installPWAApp();
             }
             
-            // Immediately transition to Step 1 (Profile & Phone Number Form) seamlessly
+            // ইনস্টল বাটনে ক্লিক করার সাথে সাথেই পরবর্তী ফর্ম (নাম ও মোবাইল নম্বর) ধাপে চলে যাবে
             const installContainer = document.getElementById('pwaInstallContainer');
             const step1 = document.getElementById('verifyStep1');
             
@@ -281,7 +281,6 @@
                 const installContainer = document.getElementById('pwaInstallContainer');
                 const step1 = document.getElementById('verifyStep1');
                 
-                // Ensure initial install screen is shown cleanly
                 if (installContainer) installContainer.classList.remove('hidden');
                 if (step1) step1.classList.add('hidden');
 
