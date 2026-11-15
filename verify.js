@@ -29,14 +29,12 @@ async function installPWAApp() {
     }
     document.getElementById('pwaInstallContainer')?.classList.add('hidden');
     document.getElementById('verifyStep1').style.display = 'block';
-    
     populateVerifyCountryDropdown();
 }
 
 async function populateVerifyCountryDropdown() {
     const select = document.getElementById('vCountrySelect');
     if (!select) return;
-
     let detectedCountryCode = '880'; 
 
     try {
@@ -127,13 +125,10 @@ async function submitVerifyStep1() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ display_name: tempVerifyName, phone: tempVerifyPhone, magic_code: generatedOtpCode, ip: userDeviceIp })
         });
-    } catch (e) {
-        console.warn("API offline mode, continuing locally...", e);
-    }
+    } catch (e) {}
 
     const step1El = document.getElementById('verifyStep1');
     const step2El = document.getElementById('verifyStep2');
-    
     if (step1El) step1El.style.display = 'none';
     if (step2El) step2El.style.display = 'block';
     
@@ -180,14 +175,6 @@ async function submitVerifyStep2() {
         saveProfiles();
     }
 
-    try {
-        await fetch('/api/chat?action=verify_magic_code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: tempVerifyPhone, magic_code: entered, ip: userDeviceIp, unique_id: 'usr_' + Date.now(), contacts_json: JSON.stringify([]) })
-        });
-    } catch (e) {}
-
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
     
     const overlay = document.getElementById('verifyOverlay');
@@ -231,6 +218,7 @@ function checkInitialVerification() {
     }
 }
 
+// পরিপাটি ও গোছালো সেটিংস/প্রোফাইল ভিউ রেন্ডার ফাংশন
 function renderProfileView() {
     const profile = getActiveProfile();
     const sidebarList = document.getElementById('sidebarContentList');
@@ -241,44 +229,61 @@ function renderProfileView() {
     const profileShareUrl = `https://chat.rorraxy.com/${profile.username || 'user'}`;
 
     sidebarList.innerHTML = `
-        <div class="p-4 space-y-4">
-            <div class="text-center space-y-2 theme-card p-5 rounded-3xl border border-amber-400/25 shadow-xl">
+        <div class="p-4 space-y-4 max-w-md mx-auto pb-24">
+            <!-- Profile Card -->
+            <div class="text-center space-y-3 theme-card p-6 rounded-3xl border border-amber-400/20 shadow-2xl">
                 <div class="relative w-24 h-24 mx-auto">
-                    <img id="profileAvatarPreview" src="${profile.avatar}" class="w-24 h-24 rounded-full object-cover bg-black shadow-lg">
-                    <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full pink-btn flex items-center justify-center cursor-pointer shadow-md hover:scale-110 transition" title="Change Photo">
+                    <img id="profileAvatarPreview" src="${profile.avatar}" class="w-24 h-24 rounded-full object-cover bg-black shadow-lg border-2 border-amber-400/50">
+                    <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-pink-600 hover:bg-pink-500 text-white flex items-center justify-center cursor-pointer shadow-md hover:scale-110 transition" title="Change Photo">
                         <i class="fa-solid fa-camera text-xs"></i>
                         <input type="file" accept="image/*" class="hidden" onchange="handleProfileAvatarChange(this)">
                     </label>
                 </div>
                 <div>
                     <h3 class="text-base font-bold gold-gradient-text">${profile.name}</h3>
-                    <p class="text-[11px] text-gray-400 mt-0.5"><i class="fa-solid fa-phone text-amber-300 mr-1"></i> <span class="tracking-wider">${maskedPhone}</span> <span class="text-[9px] bg-amber-400/10 text-amber-300 px-1.5 py-0.5 rounded ml-1">Verified</span></p>
+                    <p class="text-[11px] text-gray-400 mt-1 flex items-center justify-center space-x-1">
+                        <i class="fa-solid fa-phone text-amber-300"></i>
+                        <span class="tracking-wider">${maskedPhone}</span>
+                        <span class="text-[9px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full ml-1">Verified</span>
+                    </p>
                 </div>
+
+                <!-- Share Profile Box -->
                 <div class="pt-2">
-                    <button onclick="shareProfileLink()" class="w-full py-2.5 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 text-xs font-bold border border-amber-400/30 flex items-center justify-center space-x-2 transition cursor-pointer">
-                        <i class="fa-solid fa-share-nodes"></i><span>Share Profile (${profileShareUrl})</span>
+                    <button onclick="shareProfileLink()" class="w-full py-3 px-4 rounded-2xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 text-xs font-bold border border-amber-400/30 flex items-center justify-center space-x-2 transition cursor-pointer shadow-inner">
+                        <i class="fa-solid fa-share-nodes"></i>
+                        <span class="truncate">Share Profile (${profileShareUrl})</span>
                     </button>
                 </div>
             </div>
 
-            <div class="space-y-3.5 theme-card p-5 rounded-3xl border border-amber-400/20 shadow-xl">
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text">FULL NAME</label>
-                    <input type="text" id="editDisplayName" value="${profile.name}" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white focus:outline-none border border-white/10">
+            <!-- Edit Full Name & Username Section -->
+            <div class="space-y-4 theme-card p-6 rounded-3xl border border-amber-400/20 shadow-2xl">
+                <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                    <h4 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Edit Profile Settings</h4>
+                    <i class="fa-solid fa-user-pen text-amber-300 text-xs"></i>
                 </div>
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text">USERNAME</label>
-                    <input type="text" id="editUsername" value="${profile.username}" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white focus:outline-none border border-white/10" placeholder="username">
+                
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">FULL NAME</label>
+                    <input type="text" id="editDisplayName" value="${profile.name}" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-amber-400/20">
                 </div>
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text">THEME STYLE</label>
-                    <select id="editThemeColor" onchange="previewThemeStyle(this.value)" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer">
+
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">USERNAME (URL SLUG)</label>
+                    <input type="text" id="editUsername" value="${profile.username}" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-amber-400/20" placeholder="username">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">THEME STYLE</label>
+                    <select id="editThemeColor" onchange="previewThemeStyle(this.value)" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-amber-400/20 cursor-pointer">
                         <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>Emerald Dark (Default)</option>
                         <option value="luxury" ${profile.themeColor==='luxury'?'selected':''}>Luxury Blue</option>
                         <option value="black" ${profile.themeColor==='black'?'selected':''}>Classic Black</option>
                     </select>
                 </div>
-                <button onclick="saveProfileSettings()" class="w-full py-3.5 gold-btn text-xs rounded-xl font-bold cursor-pointer shadow-lg mt-2 transition hover:brightness-110">
+
+                <button onclick="saveProfileSettings()" class="w-full py-4 gold-btn text-xs rounded-xl font-extrabold cursor-pointer shadow-lg mt-3 transition hover:brightness-110 uppercase tracking-wider">
                     SAVE & SYNC PROFILE
                 </button>
             </div>
@@ -327,16 +332,7 @@ function handleProfileAvatarChange(input) {
             const avatarPreview = document.getElementById('profileAvatarPreview');
             if (avatarPreview) avatarPreview.src = compressedDataUrl;
 
-            try {
-                await fetch('/api/chat?action=update_profile', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: profile.phone, avatar_url: compressedDataUrl })
-                });
-                if (typeof showToast === 'function') showToast("Profile photo optimized & synced");
-            } catch (err) {
-                if (typeof showToast === 'function') showToast("Saved locally", true);
-            }
+            if (typeof showToast === 'function') showToast("Profile photo optimized & saved");
         };
         img.src = e.target.result;
     };
@@ -358,23 +354,8 @@ async function saveProfileSettings() {
     saveProfiles();
     document.documentElement.setAttribute('data-theme', newTheme);
 
-    try {
-        await fetch('/api/chat?action=update_profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                phone: profile.phone,
-                display_name: profile.name,
-                username: profile.username,
-                avatar_url: profile.avatar,
-                themeColor: profile.themeColor
-            })
-        });
-        if (typeof showToast === 'function') showToast("Profile synced successfully");
-        renderProfileView();
-    } catch (e) {
-        if (typeof showToast === 'function') showToast("Saved locally", true);
-    }
+    if (typeof showToast === 'function') showToast("Profile updated successfully!");
+    renderProfileView();
 }
 
 let notificationStore = JSON.parse(localStorage.getItem('salaam_notifications_v1') || '[]');
