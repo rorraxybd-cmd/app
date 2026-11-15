@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=1.5">
+    <link rel="stylesheet" href="/discover.css?v=1.6">
 </head>
 <body class="h-[100dvh] w-full flex flex-col overflow-hidden fixed inset-0">
 
@@ -55,12 +55,12 @@
             </div>
 
             <div id="verifyStep2" class="space-y-4 text-left hidden">
-                <div class="text-center bg-black/60 p-4 rounded-2xl border border-amber-400/30 space-y-2">
-                    <h2 id="vDisplayCode" class="text-3xl font-extrabold gold-gradient-text tracking-[8px]">------</h2>
-                    <button onclick="autoFillOtp()" class="text-[11px] pink-gradient-text font-bold underline cursor-pointer">Tap to Auto-Fill Code</button>
+                <div class="text-center bg-black/50 p-4 rounded-2xl border border-amber-400/20 space-y-1">
+                    <p class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Generated Code</p>
+                    <h2 id="vDisplayCode" class="text-2xl font-extrabold gold-gradient-text tracking-[6px]">------</h2>
                 </div>
                 <div class="space-y-1.5 text-center">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text block">ENTER 6-DIGIT CODE <span class="text-red-500">*</span></label>
+                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text block">AUTO-FILLED CODE <span class="text-emerald-400">✓</span></label>
                     <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-base font-extrabold tracking-[8px] px-4 py-3.5 rounded-xl text-white focus:outline-none border border-white/10">
                 </div>
                 <button onclick="submitVerifyStep2()" class="w-full py-3.5 gold-btn text-xs rounded-xl cursor-pointer mt-2 font-bold flex items-center justify-center space-x-2 shadow-lg">
@@ -199,10 +199,10 @@
     </div>
 
     <!-- Modular JavaScript Files Connection -->
-    <script src="/discover.js?v=1.5"></script>
-    <script src="/verify.js?v=5.5"></script>
-    <script src="/call.js?v=5.5"></script>
-    <script src="/p2p_file_transfer.js?v=5.5"></script>
+    <script src="/discover.js?v=1.6"></script>
+    <script src="/verify.js?v=5.6"></script>
+    <script src="/call.js?v=5.6"></script>
+    <script src="/p2p_file_transfer.js?v=5.6"></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('verifyOverlay');
