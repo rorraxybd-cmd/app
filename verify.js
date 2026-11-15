@@ -1,11 +1,11 @@
 // verify.js - Professional Verification & Profile Module (Complete)
 let deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
-let isVerifiedSession = localStorage.getItem('salaam_verified_v18') === 'true';
+let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
 
 const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'message'];
 
-let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v18') || 'null') || [{
+let savedProfiles = JSON.parse(localStorage.getItem('message_profiles_v18') || 'null') || [{
     name: "rorraxy.com",
     phone: "+8801538187301",
     username: "rorraxy.com",
@@ -86,7 +86,7 @@ function getCountryInfo(phone) {
 }
 
 function getActiveProfile() { return savedProfiles[0]; }
-function saveProfiles() { localStorage.setItem('salaam_profiles_v18', JSON.stringify(savedProfiles)); }
+function saveProfiles() { localStorage.setItem('message_profiles_v18', JSON.stringify(savedProfiles)); }
 function normPhone(p) { return String(p || '').replace(/[\s\-\(\)]/g, ''); }
 
 function updatePhoneValidation() {
@@ -149,7 +149,7 @@ async function submitVerifyStep2() {
     }
 
     isVerifiedSession = true;
-    localStorage.setItem('salaam_verified_v18', 'true');
+    localStorage.setItem('message_verified_v18', 'true');
 
     try {
         const res = await fetch(`/api/chat?action=get_user_profile&phone=${encodeURIComponent(tempVerifyPhone)}`);
@@ -219,7 +219,6 @@ function checkInitialVerification() {
     }
 }
 
-// ক্লিন কপি এবং নেটিভ শেয়ার ফাংশন
 function shareProfileLink() {
     const profile = getActiveProfile();
     const profileUrl = `chat.rorraxy.com/${profile.username || 'user'}`;
@@ -238,7 +237,6 @@ function shareProfileLink() {
     }
 }
 
-// সেটিংস/প্রোফাইল ভিউ
 function renderProfileView(isEditing = false) {
     const profile = getActiveProfile();
     const sidebarList = document.getElementById('sidebarContentList');
@@ -252,7 +250,6 @@ function renderProfileView(isEditing = false) {
 
     sidebarList.innerHTML = `
         <div class="p-4 space-y-4 max-w-md mx-auto pb-24">
-            <!-- Profile Info Card -->
             <div class="text-center space-y-3 theme-card p-6 rounded-3xl border border-amber-400/20 shadow-2xl">
                 <div class="relative w-24 h-24 mx-auto">
                     <img id="profileAvatarPreview" src="${profile.avatar}" class="w-24 h-24 rounded-full object-cover bg-black shadow-lg border-2 border-amber-400/50">
@@ -277,7 +274,6 @@ function renderProfileView(isEditing = false) {
                 </div>
             </div>
 
-            <!-- Profile Information & Toggle Edit Section -->
             <div class="space-y-4 theme-card p-6 rounded-3xl border border-amber-400/20 shadow-2xl">
                 <div class="flex items-center justify-between border-b border-white/10 pb-2">
                     <h4 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Profile Information</h4>
@@ -406,7 +402,7 @@ async function saveProfileSettings() {
     renderProfileView(false);
 }
 
-let notificationStore = JSON.parse(localStorage.getItem('salaam_notifications_v1') || '[]');
+let notificationStore = JSON.parse(localStorage.getItem('message_notifications_v1') || '[]');
 
 function toggleNotificationPanel() {
     const panel = document.getElementById('notificationPanel');
@@ -449,19 +445,19 @@ function renderNotificationsDropdown() {
 function togglePinNotification(idx) {
     if (notificationStore[idx]) {
         notificationStore[idx].keepPinned = !notificationStore[idx].keepPinned;
-        localStorage.setItem('salaam_notifications_v1', JSON.stringify(notificationStore));
+        localStorage.setItem('message_notifications_v1', JSON.stringify(notificationStore));
     }
 }
 
 function deleteSingleNotification(idx) {
     notificationStore.splice(idx, 1);
-    localStorage.setItem('salaam_notifications_v1', JSON.stringify(notificationStore));
+    localStorage.setItem('message_notifications_v1', JSON.stringify(notificationStore));
     renderNotificationsDropdown();
 }
 
 function deleteAllNotifications() {
     notificationStore = notificationStore.filter(n => n.keepPinned);
-    localStorage.setItem('salaam_notifications_v1', JSON.stringify(notificationStore));
+    localStorage.setItem('message_notifications_v1', JSON.stringify(notificationStore));
     renderNotificationsDropdown();
     if (typeof showToast === 'function') showToast("Cleared unpinned notifications");
 }
