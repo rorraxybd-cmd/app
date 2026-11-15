@@ -1,4 +1,4 @@
-// discover.js - Global Directory & Contacts Sync Module (Fixed Chat Input Bar)
+// discover.js - Global Directory & Contacts Sync Module (Mobile Chat Input & Status Fixed)
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -172,10 +172,14 @@ function openChat(phone, name, avatar = '') {
     const workspace = document.getElementById('workspaceSection');
     if (workspace) {
         workspace.classList.remove('hidden');
-        workspace.style.display = 'flex';
+        if (window.innerWidth < 768) {
+            // মোবাইলের জন্য ফুল-স্ক্রিন ওভারলে ও ফ্লেক্স নিশ্চিত করা হলো
+            workspace.classList.add('absolute', 'inset-0', 'z-30', 'flex');
+        } else {
+            workspace.style.display = 'flex';
+        }
     }
 
-    // Fixed: removed 'hidden' class from chatHeader and chatInputBar so they show up properly
     const chatHeader = document.getElementById('activeChatHeader');
     if (chatHeader) {
         chatHeader.classList.remove('hidden');
