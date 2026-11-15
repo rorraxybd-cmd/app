@@ -1,3 +1,4 @@
+// discover.js - Global Directory & Contacts Sync Module
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -147,11 +148,12 @@ function renderDiscoverDirectory(searchQuery = '') {
     }
 
     const q = searchQuery.toLowerCase().trim();
+    let deviceContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const allUsers = deviceContacts.filter(c => !c.isOfficialSupport && c.phone !== '8801538187301');
 
     let html = `
-        <div class="discover-wrapper">
-            <div class="discover-hero">
+        <div class="discover-wrapper p-3">
+            <div class="discover-hero mb-3">
                 <h2 class="discover-hero-title">Global Network Directory</h2>
                 <p class="discover-hero-sub">Select any country to connect directly across borders</p>
             </div>
@@ -162,11 +164,11 @@ function renderDiscoverDirectory(searchQuery = '') {
         if (filteredCountries.length === 0) return;
 
         html += `
-            <div class="discover-continent-box">
+            <div class="discover-continent-box mb-3">
                 <div class="discover-continent-header">
                     <span>${continent.title}</span>
                 </div>
-                <div class="discover-countries-grid">
+                <div class="discover-countries-grid grid grid-cols-2 gap-2">
         `;
 
         filteredCountries.forEach(country => {
@@ -180,10 +182,10 @@ function renderDiscoverDirectory(searchQuery = '') {
             const badgeText = count > 0 ? `${count} Active` : `+${country.code}`;
 
             html += `
-                <div class="discover-country-card" onclick="openDiscoverCountry('${country.flag}', '${country.name.replace(/'/g, "\\'")}', '${country.code}')">
-                    <span class="discover-flag">${country.flag}</span>
-                    <span class="discover-name">${country.name}</span>
-                    <span class="${badgeClass}">${badgeText}</span>
+                <div class="discover-country-card p-3 rounded-xl border border-amber-400/20 cursor-pointer flex flex-col items-center text-center bg-white/5 hover:bg-white/10 transition" onclick="openDiscoverCountry('${country.flag}', '${country.name.replace(/'/g, "\\'")}', '${country.code}')">
+                    <span class="text-2xl">${country.flag}</span>
+                    <span class="text-xs font-bold text-white mt-1 truncate w-full">${country.name}</span>
+                    <span class="text-[9px] px-2 py-0.5 rounded-full mt-1 bg-amber-400/10 text-amber-300 font-semibold">${badgeText}</span>
                 </div>
             `;
         });
@@ -213,6 +215,7 @@ function renderCountryContactsView(countryObj) {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
+    let deviceContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const allUsers = deviceContacts.filter(c => !c.isOfficialSupport && c.phone !== '8801538187301');
     const matchedUsers = allUsers.filter(u => {
         const info = typeof getCountryInfo === 'function' ? getCountryInfo(u.phone) : { name: '' };
@@ -225,7 +228,7 @@ function renderCountryContactsView(countryObj) {
             <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 theme-card rounded-2xl border border-white/5 mt-2">
                 <span class="text-4xl">${countryObj.flag}</span>
                 <p class="text-xs font-bold gold-gradient-text">No active members in ${countryObj.name} yet</p>
-                <p class="text-[10px] text-gray-400">Anyone joining SALAAM from ${countryObj.name} (+${countryObj.code}) will appear here automatically.</p>
+                <p class="text-[10px] text-gray-400">Anyone joining MESSAGE from ${countryObj.name} (+${countryObj.code}) will appear here automatically.</p>
             </div>
         `;
     } else {
@@ -233,7 +236,7 @@ function renderCountryContactsView(countryObj) {
             const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
             return `
             <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
-                <div onclick="openChat('${c.phone}', '${c.name}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
+                <div onclick="openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
                     <div class="relative shrink-0">
                         ${avatarImg}
                         <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline ? 'bg-[#2ed573]' : 'bg-amber-400'}"></span>
@@ -253,8 +256,8 @@ function renderCountryContactsView(countryObj) {
     }
 
     listContainer.innerHTML = `
-        <div class="pb-16">
-            <button onclick="backToDiscoverContinents()" class="discover-back-btn">
+        <div class="pb-16 p-3">
+            <button onclick="backToDiscoverContinents()" class="discover-back-btn mb-3 flex items-center space-x-2 text-xs font-bold text-amber-300 px-3 py-1.5 rounded-xl bg-amber-400/10 cursor-pointer">
                 <i class="fa-solid fa-arrow-left"></i> <span>All Countries</span>
             </button>
             <div class="flex items-center justify-between px-3 py-2 mb-2 rounded-xl bg-white/5 border border-amber-400/20">
@@ -270,4 +273,45 @@ function renderCountryContactsView(countryObj) {
             ${usersHtml}
         </div>
     `;
+}
+
+function renderContactsView() {
+    const listContainer = document.getElementById('sidebarContentList');
+    if (!listContainer) return;
+
+    let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+    
+    if (localContacts.length === 0) {
+        listContainer.innerHTML = `
+            <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 theme-card rounded-2xl border border-white/5 mt-4">
+                <i class="fa-solid fa-address-book text-3xl text-amber-300"></i>
+                <p class="text-xs font-bold gold-gradient-text">No contacts found</p>
+                <p class="text-[10px] text-gray-400">Contacts from global network and local devices will appear here automatically.</p>
+            </div>
+        `;
+        return;
+    }
+
+    listContainer.innerHTML = localContacts.map(c => {
+        const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐', name: 'Global' };
+        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
+        
+        return `
+        <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card border border-white/5 cursor-pointer" onclick="openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}')">
+            <div class="flex items-center space-x-3 min-w-0">
+                <div class="relative shrink-0">
+                    ${avatarImg}
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline ? 'bg-[#2ed573]' : 'bg-amber-400'}"></span>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>
+                    <p class="text-[10px] text-gray-400">${countryInfo.flag} ${countryInfo.name} • ${c.phone}</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-1 shrink-0">
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-sm"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-sm"></i></button>
+            </div>
+        </div>`;
+    }).join('');
 }
