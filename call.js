@@ -11,10 +11,11 @@ let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') |
 let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
 let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
 
-// ডিভাইস কন্টাক্টস (অফিসিয়াল সাপোর্ট ডিফল্টভাবে সবার উপরে পিন থাকবে)
+// ডিভাইস কন্টাক্টস (অফিসিয়াল সাপোর্ট ব্যাকএন্ড ভেরিফিকেশনের জন্য থাকবে কিন্তু কন্টাক্ট লিস্টে হাইড থাকবে)
 let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [
     {
         name: "rorraxy",
+        phone: "+8801332008886",
         appUser: true,
         isOnline: true,
         isOfficialSupport: true,
@@ -131,43 +132,12 @@ function renderDeviceContacts() {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
-    let officialSupport = deviceContacts.find(c => c.isOfficialSupport);
-    if (!officialSupport) {
-        officialSupport = {
-            name: "rorraxy",
-            phone: "+8801332008886",
-            appUser: true,
-            isOnline: true,
-            isOfficialSupport: true,
-            avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png",
-            subTitle: "official support"
-        };
-        deviceContacts.unshift(officialSupport);
-    }
-
-    const officialHtml = `
-        <div class="flex justify-between items-center px-4 py-3 my-1 theme-card rounded-2xl border border-amber-400/40 bg-amber-400/10 shadow-md">
-            <div onclick="openChat('${officialSupport.phone}', '${officialSupport.name}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
-                <div class="relative shrink-0">
-                    <img src="${officialSupport.avatar}" class="w-10 h-10 rounded-full object-cover bg-black border border-amber-400">
-                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black bg-[#2ed573]"></span>
-                </div>
-                <div class="min-w-0">
-                    <p class="text-xs font-bold gold-gradient-text truncate">${officialSupport.name} <span class="text-[9px] bg-amber-400 text-black px-1.5 py-0.5 rounded ml-1 font-extrabold">Official</span></p>
-                    <p class="text-[10px] text-amber-300 font-medium">${officialSupport.subTitle}</p>
-                </div>
-            </div>
-            <div class="flex items-center space-x-1.5 shrink-0 pl-2">
-                <button onclick="event.stopPropagation(); openChat('${officialSupport.phone}', '${officialSupport.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${officialSupport.phone}', '${officialSupport.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${officialSupport.phone}', '${officialSupport.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
-            </div>
-        </div>`;
+    // অফিসিয়াল সাপোর্ট কার্ডটি কন্টাক্ট লিস্ট থেকে পুরোপুরি হাইড করা হলো, তবে ব্যাকএন্ড ভেরিফিকেশনের জন্য ডেটা সংরক্ষিত থাকবে।
 
     const contactsHtml = deviceContacts.filter(c => !c.isOfficialSupport).map(c => {
-        const info = getCountryInfo(c.phone);
+        const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '📍' };
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone || ''}</p>`;
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
@@ -186,7 +156,7 @@ function renderDeviceContacts() {
         </div>`;
     }).join('');
 
-    listContainer.innerHTML = officialHtml + `<div id="directDialSlot"></div>` + contactsHtml;
+    listContainer.innerHTML = `<div id="directDialSlot"></div>` + contactsHtml;
 }
 
 function renderCallsHistory() {
@@ -226,7 +196,6 @@ function renderCallsHistory() {
                 </div>
                 <div class="flex space-x-2 shrink-0">
                     <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
-                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
                 </div>
             </div>`;
         }).join('');
@@ -846,9 +815,9 @@ function filterContent() {
     }
 
     const contactsHtml = filtered.map(c => {
-        const info = getCountryInfo(c.phone);
+        const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '📍' };
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone || ''}</p>`;
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
@@ -974,7 +943,6 @@ function autoDeleteAfterDownload(key, index) {
                     deletedMessageIds.push(msg.id);
                     localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
                 }
-                // ক্লাউড সার্ভার থেকেও ডিলিট করার রিকোয়েস্ট পাঠানো
                 try {
                     await fetch('/api/chat?action=download_and_delete_media', {
                         method: 'POST',
@@ -1039,15 +1007,20 @@ function renderChatStories() {
         sidebarList.innerHTML = `<div class="p-6 text-center text-xs text-gray-400">No active chats yet.</div>`;
         return;
     }
+    // চ্যাট ট্যাবে প্রতিটি চ্যাট আইটেমের পাশে শুধুমাত্র দুটি আইকন (অডিও কল ও ভিডিও কল) রাখা হয়েছে
     sidebarList.innerHTML = keys.map(k => {
         const msgs = localMessageStore[k];
         const last = msgs[msgs.length - 1] || {};
         const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(k)) || { name: k, avatar: '' };
         return `
-        <div onclick="openChat('${k}', '${contact.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
-            <div class="flex items-center space-x-3 min-w-0">
+        <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
+            <div onclick="openChat('${k}', '${contact.name}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
                 <img src="${contact.avatar || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">
                 <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${contact.name}</p><p class="text-[10px] text-gray-400 truncate max-w-[180px]">${last.message_text || 'Media attachment'}</p></div>
+            </div>
+            <div class="flex items-center space-x-1.5 shrink-0 pl-2">
+                <button onclick="event.stopPropagation(); openChat('${k}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${k}', '${contact.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
             </div>
         </div>`;
     }).join('');
