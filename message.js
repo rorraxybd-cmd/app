@@ -1,11 +1,11 @@
 // message.js - Professional Chat & Messaging Module
 let chatPollInterval = null;
-let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
-let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
-let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
+let localMessageStore = JSON.parse(localStorage.getItem('message_messages_v18') || '{}');
+let deletedMessageIds = JSON.parse(localStorage.getItem('message_deleted_ids_v18') || '[]');
+let chatClearTimestamps = JSON.parse(localStorage.getItem('message_clear_ts_v18') || '{}');
 
 function persistMessages() { 
-    localStorage.setItem('salaam_messages_v18', JSON.stringify(localMessageStore)); 
+    localStorage.setItem('message_messages_v18', JSON.stringify(localMessageStore)); 
 }
 
 async function sendTextMessage() {
@@ -97,7 +97,7 @@ function deleteSingleMessage(key, index) {
         if (msg.id) {
             if (!deletedMessageIds.includes(msg.id)) {
                 deletedMessageIds.push(msg.id);
-                localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+                localStorage.setItem('message_deleted_ids_v18', JSON.stringify(deletedMessageIds));
             }
             fetch('/api/chat?action=delete_message', {
                 method: 'POST',
@@ -117,7 +117,7 @@ function confirmClearChatHistory() {
     const key = normPhone(currentActiveRecipient.phone);
     
     chatClearTimestamps[key] = Date.now();
-    localStorage.setItem('salaam_clear_ts_v18', JSON.stringify(chatClearTimestamps));
+    localStorage.setItem('message_clear_ts_v18', JSON.stringify(chatClearTimestamps));
 
     if (localMessageStore[key]) {
         localMessageStore[key].forEach(m => {
@@ -125,7 +125,7 @@ function confirmClearChatHistory() {
                 deletedMessageIds.push(m.id);
             }
         });
-        localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+        localStorage.setItem('message_deleted_ids_v18', JSON.stringify(deletedMessageIds));
     }
     delete localMessageStore[key];
     persistMessages();
@@ -171,7 +171,7 @@ function loadMessages() {
                 contentHtml = `<div class="relative group my-1">
                     <img src="${m.media_url}" class="rounded-xl max-w-xs max-h-52 object-cover border border-white/10 shadow-md">
                     <div class="absolute top-2 right-2 flex space-x-1.5 bg-black/50 backdrop-blur-sm rounded-lg p-1">
-                        <a href="${m.media_url}" download="image.jpg" class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <a href="${m.media_url}" download="image.jpg" class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" title="Download"><i class="fa-solid fa-download"></i></a>
                         <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
@@ -179,7 +179,7 @@ function loadMessages() {
                 contentHtml = `<div class="relative my-1">
                     <video src="${m.media_url}" controls class="rounded-xl max-w-xs max-h-52 border border-white/10 shadow-md"></video>
                     <div class="absolute top-2 right-2 flex space-x-1.5 bg-black/50 backdrop-blur-sm rounded-lg p-1">
-                        <a href="${m.media_url}" download="video.mp4" class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <a href="${m.media_url}" download="video.mp4" class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" title="Download"><i class="fa-solid fa-download"></i></a>
                         <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
@@ -187,7 +187,7 @@ function loadMessages() {
                 contentHtml = `<div class="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/10 my-1 space-x-3">
                     <span class="text-xs underline text-amber-300 truncate max-w-[150px]"><i class="fa-solid fa-file mr-1"></i> ${escapeHtml(m.message_text || 'File')}</span>
                     <div class="flex space-x-2 shrink-0">
-                        <a href="${m.media_url}" download class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <a href="${m.media_url}" download class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer"><i class="fa-solid fa-download"></i></a>
                         <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
@@ -203,3 +203,4 @@ function loadMessages() {
     }).join('');
     container.scrollTop = container.scrollHeight;
 }
+```[cite: 17]
