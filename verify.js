@@ -6,10 +6,10 @@ const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'message
 
 let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v18') || 'null') || [{
     name: "Mr. Masudar",
-    phone: "+8801700000000",
+    phone: "+8801538187301",
     username: "mrmasudar",
     themeColor: "emerald",
-    avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg"
+    avatar: "https://pub-e1469a425020465cb5f7971065e07a62.r2.dev/logo.jpg"
 }];
 
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -121,7 +121,6 @@ async function submitVerifyStep1() {
     tempVerifyPhone = countryCode + phone;
     generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // ব্যাকএন্ড ফেচ রিকোয়েস্ট ফেইল করলেও ফ্লো যেন আটকে না থাকে, সেজন্য try-catch সেফ করা হয়েছে
     try {
         await fetch('/api/chat?action=send_magic_link', {
             method: 'POST',
@@ -239,12 +238,13 @@ function renderProfileView() {
 
     const phoneStr = profile.phone || '';
     const maskedPhone = phoneStr.length > 6 ? phoneStr.substring(0, 5) + '******' + phoneStr.slice(-2) : phoneStr;
+    const profileShareUrl = `https://chat.rorraxy.com/${profile.username || 'user'}`;
 
     sidebarList.innerHTML = `
         <div class="p-4 space-y-4">
-            <div class="text-center space-y-2 theme-card p-5 rounded-3xl border border-amber-400/20 shadow-xl">
+            <div class="text-center space-y-2 theme-card p-5 rounded-3xl border border-amber-400/25 shadow-xl">
                 <div class="relative w-24 h-24 mx-auto">
-                    <img id="profileAvatarPreview" src="${profile.avatar}" class="w-24 h-24 rounded-full object-cover border-2 border-amber-400/60 bg-black shadow-lg">
+                    <img id="profileAvatarPreview" src="${profile.avatar}" class="w-24 h-24 rounded-full object-cover bg-black shadow-lg">
                     <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full pink-btn flex items-center justify-center cursor-pointer shadow-md hover:scale-110 transition" title="Change Photo">
                         <i class="fa-solid fa-camera text-xs"></i>
                         <input type="file" accept="image/*" class="hidden" onchange="handleProfileAvatarChange(this)">
@@ -253,6 +253,11 @@ function renderProfileView() {
                 <div>
                     <h3 class="text-base font-bold gold-gradient-text">${profile.name}</h3>
                     <p class="text-[11px] text-gray-400 mt-0.5"><i class="fa-solid fa-phone text-amber-300 mr-1"></i> <span class="tracking-wider">${maskedPhone}</span> <span class="text-[9px] bg-amber-400/10 text-amber-300 px-1.5 py-0.5 rounded ml-1">Verified</span></p>
+                </div>
+                <div class="pt-2">
+                    <button onclick="shareProfileLink()" class="w-full py-2.5 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 text-xs font-bold border border-amber-400/30 flex items-center justify-center space-x-2 transition cursor-pointer">
+                        <i class="fa-solid fa-share-nodes"></i><span>Share Profile (${profileShareUrl})</span>
+                    </button>
                 </div>
             </div>
 
