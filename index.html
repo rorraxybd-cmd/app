@@ -57,8 +57,8 @@
             border: none !important;
         }
         #vCountrySelect { width: 155px; min-width: 140px; font-weight: 700; }
-        .chat-bubble-me { background: linear-gradient(135deg, #0f2e1a 0%, #081a10 100%); border: 1px solid rgba(46, 213, 115, 0.3); }
-        .chat-bubble-them { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(245, 208, 97, 0.2); }
+        .chat-bubble-me { background: var(--bg-bubble-me, linear-gradient(135deg, #0f2e1a 0%, #081a10 100%)); border: 1px solid rgba(46, 213, 115, 0.3); }
+        .chat-bubble-them { background: var(--bg-bubble-them, rgba(255, 255, 255, 0.06)); border: 1px solid rgba(245, 208, 97, 0.2); }
         .pink-btn { background: linear-gradient(135deg, #EC4899 0%, #be185d 100%); color: #ffffff; }
     </style>
 </head>
@@ -92,7 +92,7 @@
                     <input type="text" id="vFullName" placeholder="Enter your full name" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
                 </div>
                 <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-pink-500">*</span></label>
+                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-pink-500">*</span> <span class="text-[9px] text-gray-400 lowercase">(kept secret)</span></label>
                     <div class="flex space-x-2 w-full">
                         <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none cursor-pointer shrink-0"></select>
                         <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
@@ -155,7 +155,7 @@
     <div class="flex flex-1 overflow-hidden relative min-h-0 w-full">
         <div id="sidebarSection" class="w-full md:w-[360px] theme-surface flex flex-col justify-between shrink-0 z-20 h-full min-h-0 pb-16">
             <div class="flex flex-col flex-1 overflow-hidden min-h-0">
-                <!-- Search Bar (সেটিংস বা প্রোফাইল পেজে স্বয়ংক্রিয়ভাবে লুকানো থাকবে) -->
+                <!-- Search Bar -->
                 <div id="searchBarContainer" class="p-3 shrink-0" style="background-color: var(--bg-main);">
                     <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
                         <input type="text" id="searchInput" placeholder="Search name or dial number..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="filterContent()">
@@ -213,7 +213,7 @@
         </div>
     </div>
 
-    <!-- Bottom Navigation Bar (5 Active Menus with Pink/Gold Highlighting) -->
+    <!-- Bottom Navigation Bar -->
     <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40 border-t border-white/5">
         <div class="flex items-center justify-around w-full px-3">
             <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
@@ -252,7 +252,6 @@
     <script src="/transfer.js?v=18.0"></script>
     
     <script>
-        // ক্লাউড থেকে সব রেজিস্টার্ড ইউজার ফেচ করে কন্টাক্ট লিস্ট আপডেট করার ফাংশন
         async function fetchCloudContacts() {
             try {
                 const res = await fetch('/api/chat?action=get_all_users');
@@ -282,7 +281,6 @@
             } catch (e) {}
         }
 
-        // সুনির্দিষ্ট ট্যাব সুইচিং এবং মডিউল রেন্ডারিং লজিক
         function switchTab(tabName) {
             const tabs = ['Profile', 'Discover', 'Contact', 'Chat', 'Calls'];
             tabs.forEach(t => {
@@ -313,7 +311,6 @@
                 activeLabel.classList.add('pink-gradient-text', 'font-bold');
             }
 
-            // সার্চ বার হ্যান্ডলিং (প্রোফাইল/সেটিংস ট্যাবে লুকানো থাকবে, বাকি ট্যাবে দৃশ্যমান হবে)
             const searchBarContainer = document.getElementById('searchBarContainer');
             const searchInput = document.getElementById('searchInput');
             if (searchBarContainer) {
@@ -325,13 +322,11 @@
                 }
             }
 
-            // মোবাইল ভিউতে ওয়ার্কস্পেস রিসেট করা
             const workspace = document.getElementById('workspaceSection');
             if (tabName !== 'chat' && workspace && window.innerWidth < 768) {
                 workspace.classList.add('hidden');
             }
 
-            // সাইডবার লিস্ট ফ্রেশ করে সংশ্লিষ্ট মডিউলের রেন্ডারিং ফাংশন কল করা
             const sidebarList = document.getElementById('sidebarContentList');
             if (sidebarList) sidebarList.innerHTML = '';
 
@@ -355,8 +350,18 @@
             const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : { username: 'mrmasudar' };
             const profileUrl = `chat.rorraxy.com/${profile.username || 'user'}`;
             
-            navigator.clipboard.writeText(profileUrl);
-            if (typeof showToast === 'function') showToast(`Copied: ${profileUrl}`);
+            if (navigator.share) {
+                navigator.share({
+                    title: 'MESSAGE by rorraxy.com',
+                    url: profileUrl
+                }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(profileUrl).then(() => {
+                    if (typeof showToast === 'function') showToast(`Copied: ${profileUrl}`);
+                }).catch(() => {
+                    if (typeof showToast === 'function') showToast("Failed to copy link", true);
+                });
+            }
         }
 
         function showToast(text, isError = false) {
@@ -423,6 +428,9 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('verifyOverlay');
+            const savedTheme = JSON.parse(localStorage.getItem('salaam_profiles_v18') || '[{}]')[0]?.themeColor || 'emerald';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+
             if (localStorage.getItem('salaam_verified_v18') === 'true') {
                 if (overlay) overlay.style.display = 'none';
                 initAppAfterVerification();
@@ -443,3 +451,16 @@
     </script>
 </body>
 </html>
+```
+
+---
+
+### ৩. থিম স্টাইল অপশন সিলেকশন (`verify.js` এর ভেতর থিম অপশন)
+আপনার `verify.js` ফাইলের থিম ড্রপডাউনে স্কাই ব্লু এবং ব্ল্যাক থিম সঠিকভাবে সিলেকশন নিশ্চিত করতে থিম ড্রপডাউন অপশনগুলো এভাবে আপডেট করুন:
+
+```html
+<select id="editThemeColor" onchange="previewThemeStyle(this.value)" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-amber-400/20 cursor-pointer">
+    <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>Emerald Dark (Default)</option>
+    <option value="skyblue" ${profile.themeColor==='skyblue'?'selected':''}>Sky Blue (Modern)</option>
+    <option value="black" ${profile.themeColor==='black'?'selected':''}>Classic Black (Pure)</option>
+</select>
