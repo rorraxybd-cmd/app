@@ -46,7 +46,6 @@ function initAppAfterVerification() {
     startBackgroundCallPolling();
     startChatPolling();
 
-    // প্রতি ৫ সেকেন্ড পরপর ব্যাকগ্রাউন্ডে গ্লোবাল ইউজার সিঙ্ক হবে যাতে নতুন কেউ ভেরিফাই করলেই কন্টাক্ট ও ডিসকভারে চলে আসে
     if (globalUserSyncInterval) clearInterval(globalUserSyncInterval);
     globalUserSyncInterval = setInterval(syncGlobalNetworkUsers, 5000);
 }
@@ -158,11 +157,15 @@ function renderDeviceContacts() {
     const myPhone = normPhone(profile.phone || '');
     const myCountryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(myPhone) : { name: 'Bangladesh', flag: '🇧🇩' };
 
-    // Contacts ট্যাবে শুধুমাত্র নিজস্ব দেশের লোকাল কন্টাক্টগুলো দেখাবে, আর বাকি সব দেশ Discover ট্যাবে দেখাবে
+    // কন্টাক্ট ফিল্টারিং আরও নিরাপদ করা হলো যাতে লিস্ট খালি না থাকে
     const localContacts = deviceContacts.filter(c => {
         if (c.isOfficialSupport || c.phone === '8801538187301') return false;
+        const cleanPhone = normPhone(c.phone);
+        if (myCountryInfo.name === 'Bangladesh') {
+            return cleanPhone.startsWith('880');
+        }
         const cInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { name: '' };
-        return cInfo.name === myCountryInfo.name;
+        return cInfo.name === myCountryInfo.name || !cInfo.name || cInfo.name === 'Global';
     });
 
     if (localContacts.length === 0) {
@@ -176,7 +179,7 @@ function renderDeviceContacts() {
     }
 
     const contactsHtml = localContacts.map(c => {
-        const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐', name: 'Global' };
+        const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🇧🇩', name: 'Bangladesh' };
         const defaultAvatar = 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
         const avatarUrl = c.avatar && c.avatar !== 'undefined' ? c.avatar : defaultAvatar;
         const avatarImg = `<img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover bg-black">`;
@@ -852,7 +855,6 @@ function startBackgroundCallPolling() {
 function filterContent() {
     const q = document.getElementById('searchInput').value.trim();
 
-    // যদি Discover ট্যাবে থাকেন তাহলে ২০০+ দেশের ডিরেক্টরি সার্চ হবে
     if (currentTab === 'discover') {
         if (typeof renderDiscoverDirectory === 'function') {
             renderDiscoverDirectory(q);
@@ -869,8 +871,12 @@ function filterContent() {
 
     const filtered = deviceContacts.filter(c => {
         if (c.isOfficialSupport || c.phone === '8801538187301') return false;
+        const cleanPhone = normPhone(c.phone);
+        if (myCountryInfo.name === 'Bangladesh') {
+            return cleanPhone.startsWith('880') && (c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q));
+        }
         const cInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { name: '' };
-        const isLocal = cInfo.name === myCountryInfo.name;
+        const isLocal = cInfo.name === myCountryInfo.name || !cInfo.name || cInfo.name === 'Global';
         return isLocal && (c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q));
     });
     
@@ -889,7 +895,7 @@ function filterContent() {
     }
 
     const contactsHtml = filtered.map(c => {
-        const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐', name: 'Global' };
+        const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🇧🇩', name: 'Bangladesh' };
         const defaultAvatar = 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
         const avatarUrl = c.avatar && c.avatar !== 'undefined' ? c.avatar : defaultAvatar;
         const avatarImg = `<img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover bg-black">`;
