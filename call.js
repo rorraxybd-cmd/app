@@ -46,7 +46,7 @@ function initAppAfterVerification() {
     startBackgroundCallPolling();
     startChatPolling();
 
-    // প্রতি ৫ সেকেন্ড পরপর ব্যাকগ্রাউন্ডে গ্লোবাল ইউজার সিঙ্ক হবে যাতে নতুন কেউ ভেরিফাই করলেই কন্টাক্টে চলে আসে
+    // প্রতি ৫ সেকেন্ড পরপর ব্যাকগ্রাউন্ডে গ্লোবাল ইউজার সিঙ্ক হবে যাতে নতুন কেউ ভেরিফাই করলেই কন্টাক্ট ও ডিসকভারে চলে আসে
     if (globalUserSyncInterval) clearInterval(globalUserSyncInterval);
     globalUserSyncInterval = setInterval(syncGlobalNetworkUsers, 5000);
 }
@@ -92,22 +92,21 @@ async function syncGlobalNetworkUsers() {
                     }
                 });
                 localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
-                if ((currentTab === 'contact' || currentTab === 'chat') && hasNewUser) {
+                if (hasNewUser) {
                     if (currentTab === 'contact') renderDeviceContacts();
-                    else renderChatStories();
+                    else if (currentTab === 'chat') renderChatStories();
+                    else if (currentTab === 'discover' && typeof renderDiscoverDirectory === 'function') {
+                        renderDiscoverDirectory(document.getElementById('searchInput')?.value || '');
+                    }
                 }
             }
         }
     } catch (e) {}
 }
 
-function openWorldLink() {
-    window.open('https://rorraxy.com', '_blank');
-}
-
 function switchTab(tab) {
     currentTab = tab;
-    ['world', 'calls', 'chat', 'contact', 'profile'].forEach(t => {
+    ['discover', 'calls', 'chat', 'contact', 'profile'].forEach(t => {
         const isSel = (t === tab);
         const lbl = document.getElementById('label' + t.charAt(0).toUpperCase() + t.slice(1));
         const icn = document.getElementById('icon' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -116,16 +115,28 @@ function switchTab(tab) {
     });
 
     const sb = document.getElementById('searchBarContainer');
+    const searchInput = document.getElementById('searchInput');
+
     if (tab === 'profile') { 
         if (sb) sb.style.display = 'none'; 
         if (typeof renderProfileView === 'function') renderProfileView(); 
     } else if (tab === 'calls') {
         if (sb) sb.style.display = 'none';
         renderCallsHistory();
+    } else if (tab === 'discover') {
+        if (sb) sb.style.display = 'block';
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.placeholder = 'Search any country worldwide...';
+        }
+        if (typeof selectedDiscoverCountry !== 'undefined') selectedDiscoverCountry = null;
+        if (typeof renderDiscoverDirectory === 'function') renderDiscoverDirectory();
     } else {
         if (sb) sb.style.display = 'block';
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) searchInput.value = '';
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.placeholder = 'Search local name or dial number...';
+        }
         if (tab === 'chat') renderChatStories();
         else { syncGlobalNetworkUsers(); renderDeviceContacts(); }
     }
@@ -142,25 +153,29 @@ function switchTab(tab) {
 function renderDeviceContacts() {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
-    
-    // নিশ্চিত করার জন্য প্রতিবার রেন্ডার করার আগে ক্লাউড থেকে লেটেস্ট ইউজার সিংশন কল করা হয়
-    syncGlobalNetworkUsers();
 
-    const validContacts = deviceContacts.filter(c => !c.isOfficialSupport && c.phone !== '8801538187301');
+    const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
+    const myPhone = normPhone(profile.phone || '');
+    const myCountryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(myPhone) : { name: 'Bangladesh', flag: '🇧🇩' };
 
-    if (validContacts.length === 0) {
+    // Contacts ট্যাবে শুধুমাত্র নিজস্ব দেশের লোকাল কন্টাক্টগুলো দেখাবে, আর বাকি সব দেশ Discover ট্যাবে দেখাবে
+    const localContacts = deviceContacts.filter(c => {
+        if (c.isOfficialSupport || c.phone === '8801538187301') return false;
+        const cInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { name: '' };
+        return cInfo.name === myCountryInfo.name;
+    });
+
+    if (localContacts.length === 0) {
         listContainer.innerHTML = `
             <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 m-auto">
-                <div class="w-12 h-12 rounded-2xl theme-card flex items-center justify-center">
-                    <i class="fa-solid fa-address-book text-amber-300 text-lg"></i>
-                </div>
-                <p class="text-xs font-bold gold-gradient-text">No contacts found yet</p>
-                <p class="text-[10px] text-gray-400">Verified users will automatically appear here.</p>
+                <span class="text-3xl">${myCountryInfo.flag || '🇧🇩'}</span>
+                <p class="text-xs font-bold gold-gradient-text">No local contacts in ${myCountryInfo.name}</p>
+                <p class="text-[10px] text-gray-400">Tap <b>Discover 🌍</b> below to connect with users from 200+ countries.</p>
             </div>`;
         return;
     }
 
-    const contactsHtml = validContacts.map(c => {
+    const contactsHtml = localContacts.map(c => {
         const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐', name: 'Global' };
         const defaultAvatar = 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
         const avatarUrl = c.avatar && c.avatar !== 'undefined' ? c.avatar : defaultAvatar;
@@ -836,10 +851,28 @@ function startBackgroundCallPolling() {
 
 function filterContent() {
     const q = document.getElementById('searchInput').value.trim();
+
+    // যদি Discover ট্যাবে থাকেন তাহলে ২০০+ দেশের ডিরেক্টরি সার্চ হবে
+    if (currentTab === 'discover') {
+        if (typeof renderDiscoverDirectory === 'function') {
+            renderDiscoverDirectory(q);
+        }
+        return;
+    }
+
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
-    const filtered = deviceContacts.filter(c => !c.isOfficialSupport && c.phone !== '8801538187301' && (c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q)));
+    const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
+    const myPhone = normPhone(profile.phone || '');
+    const myCountryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(myPhone) : { name: 'Bangladesh' };
+
+    const filtered = deviceContacts.filter(c => {
+        if (c.isOfficialSupport || c.phone === '8801538187301') return false;
+        const cInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { name: '' };
+        const isLocal = cInfo.name === myCountryInfo.name;
+        return isLocal && (c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q));
+    });
     
     let directDialHtml = '';
     if (q.length >= 3 && !filtered.some(c => c.phone === q || c.name.toLowerCase() === q.toLowerCase())) {
