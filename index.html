@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=1.7">
+    <link rel="stylesheet" href="/discover.css?v=1.8">
 </head>
 <body class="h-[100dvh] w-full flex flex-col overflow-hidden fixed inset-0">
 
@@ -43,7 +43,7 @@
                 <div class="space-y-1.5">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text">MOBILE NUMBER <span class="text-red-500">*</span></label>
                     <div class="flex space-x-2 w-full">
-                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer shrink-0 w-[160px] truncate">
+                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer shrink-0">
                             <!-- অটো-ডিটেক্ট হয়ে দেশসমূহ এখানে আসবে -->
                         </select>
                         <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-white/10">
@@ -195,10 +195,10 @@
     </div>
 
     <!-- Modular JavaScript Files Connection -->
-    <script src="/discover.js?v=1.7"></script>
-    <script src="/verify.js?v=5.7"></script>
-    <script src="/call.js?v=5.7"></script>
-    <script src="/p2p_file_transfer.js?v=5.7"></script>
+    <script src="/discover.js?v=1.8"></script>
+    <script src="/verify.js?v=5.8"></script>
+    <script src="/call.js?v=5.8"></script>
+    <script src="/p2p_file_transfer.js?v=5.8"></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('verifyOverlay');
