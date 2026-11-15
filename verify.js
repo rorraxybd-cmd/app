@@ -131,13 +131,12 @@ async function submitVerifyStep1() {
 
     document.getElementById('verifyStep1').style.display = 'none';
     document.getElementById('verifyStep2').style.display = 'block';
-    document.getElementById('vDisplayCode').innerText = generatedOtpCode;
     
-    // অটোমেটিকলি কোডটি ইনপুট বক্সে বসিয়ে দেওয়া হলো
+    // কোডটি সরাসরি ইনপুট বক্সে অটো-ফিল হয়ে যাবে
     const otpInput = document.getElementById('vOtpInput');
     if (otpInput) otpInput.value = generatedOtpCode;
 
-    showToast("Verification code ready");
+    showToast("Verified & Auto-Filled");
 }
 
 async function submitVerifyStep2() {
@@ -187,7 +186,7 @@ async function submitVerifyStep2() {
     const overlay = document.getElementById('verifyOverlay');
     if (overlay) overlay.style.display = 'none';
     
-    showToast("Verified & Connected");
+    showToast("Connected Successfully");
     
     if (typeof initAppAfterVerification === 'function') {
         initAppAfterVerification();
@@ -364,7 +363,7 @@ async function saveProfileSettings() {
     }
 }
 
-let notificationStore = JSON.parse(localStorage.getItem('salaam_notifications_v1') || '[]');
+let notificationStore = JSON.parse(localStorage.getItem('salaam_notifications_v1'] || '[]');
 
 function toggleNotificationPanel() {
     const panel = document.getElementById('notificationPanel');
