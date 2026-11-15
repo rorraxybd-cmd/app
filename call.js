@@ -11,7 +11,6 @@ let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') |
 let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
 let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
 
-// ডিভাইস কন্টাক্টস (অফিসিয়াল সাপোর্ট ব্যাকএন্ড ভেরিফিকেশনের জন্য থাকবে কিন্তু লিস্টে হাইড থাকবে)
 let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [
     {
         name: "rorraxy",
@@ -296,7 +295,6 @@ async function fetchMessagesFromCloud() {
                     const mId = m.id || ('m_' + (m.timestamp || Date.now()));
                     const mTimestamp = m.timestamp || Date.now();
                     
-                    // ডিলিট হওয়া বা চ্যাট ক্লিয়ার করার আগের মেসেজ স্কিপ করা
                     if (mTimestamp <= clearTs || deletedMessageIds.includes(mId)) return;
 
                     const mText = (m.message_text || '').trim();
@@ -331,7 +329,6 @@ function startChatPolling() {
     chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 3000);
 }
 
-// WebRTC কলিং ফাংশনসমূহ
 function startContinuousRinging() {
     stopContinuousRinging();
     const playTone = () => {
