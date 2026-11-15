@@ -155,13 +155,6 @@
     <div class="flex flex-1 overflow-hidden relative min-h-0 w-full">
         <div id="sidebarSection" class="w-full md:w-[360px] theme-surface flex flex-col justify-between shrink-0 z-20 h-full min-h-0 pb-16">
             <div class="flex flex-col flex-1 overflow-hidden min-h-0">
-                <!-- Search Bar -->
-                <div id="searchBarContainer" class="p-3 shrink-0" style="background-color: var(--bg-main);">
-                    <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
-                        <input type="text" id="searchInput" placeholder="Search name or dial number..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="filterContent()">
-                        <button onclick="filterContent()" class="cursor-pointer p-1 shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7.5" stroke="#F5D061" stroke-width="2.2"/><line x1="20.5" y1="20.5" x2="16.35" y2="16.35" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round"/></svg></button>
-                    </div>
-                </div>
                 <div id="sidebarContentList" class="flex-1 overflow-y-auto space-y-1.5 p-3 pb-20"></div>
             </div>
         </div>
@@ -273,6 +266,7 @@
                             } else {
                                 exists.name = u.display_name || exists.name;
                                 exists.avatar = u.avatar_url || exists.avatar;
+                                exists.appUser = true;
                             }
                         });
                         localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
@@ -311,17 +305,6 @@
                 activeLabel.classList.add('pink-gradient-text', 'font-bold');
             }
 
-            const searchBarContainer = document.getElementById('searchBarContainer');
-            const searchInput = document.getElementById('searchInput');
-            if (searchBarContainer) {
-                if (tabName === 'profile') {
-                    searchBarContainer.style.display = 'none';
-                } else {
-                    searchBarContainer.style.display = 'block';
-                    if (searchInput) searchInput.value = '';
-                }
-            }
-
             const workspace = document.getElementById('workspaceSection');
             if (tabName !== 'chat' && workspace && window.innerWidth < 768) {
                 workspace.classList.add('hidden');
@@ -343,24 +326,6 @@
                 if (typeof renderChatHistoryList === 'function') renderChatHistoryList();
             } else if (tabName === 'calls') {
                 if (typeof renderCallsHistoryView === 'function') renderCallsHistoryView();
-            }
-        }
-
-        function shareProfileLink() {
-            const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : { username: 'mrmasudar' };
-            const profileUrl = `chat.rorraxy.com/${profile.username || 'user'}`;
-            
-            if (navigator.share) {
-                navigator.share({
-                    title: 'MESSAGE by rorraxy.com',
-                    url: profileUrl
-                }).catch(() => {});
-            } else {
-                navigator.clipboard.writeText(profileUrl).then(() => {
-                    if (typeof showToast === 'function') showToast(`Copied: ${profileUrl}`);
-                }).catch(() => {
-                    if (typeof showToast === 'function') showToast("Failed to copy link", true);
-                });
             }
         }
 
