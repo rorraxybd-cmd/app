@@ -11,8 +11,21 @@ let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') |
 let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
 let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
 
-// ডিভাইস কন্টাক্টস (অফিশিয়াল সাপোর্ট টিম ডিফল্টভাবে কন্টাক্ট লিস্টে হাইড থাকবে, কোডিং বা মেসেজের মাধ্যমে ডায়নামিক আসবে)
-let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [];
+// ডিভাইস কন্টাক্টস (পূর্বের কন্টাক্ট অক্ষুণ্ণ রেখে অফিশিয়াল সাপোর্ট সবার উপরে পিন থাকবে)
+let savedDeviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || '[]');
+let officialSupportObj = {
+    name: "rorraxy",
+    phone: "+8801332008886",
+    appUser: true,
+    isOnline: true,
+    isOfficialSupport: true,
+    avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png",
+    subTitle: "official support"
+};
+
+let deviceContacts = savedDeviceContacts.filter(c => !c.isOfficialSupport);
+deviceContacts.unshift(officialSupportObj);
+localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
 
 const RTC_CONFIG = {
     iceServers: [
@@ -121,10 +134,35 @@ function switchTab(tab) {
 function renderDeviceContacts() {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
+
+    let officialSupport = deviceContacts.find(c => c.isOfficialSupport) || officialSupportObj;
+
+    const officialHtml = `
+        <div class="flex justify-between items-center px-4 py-3 my-1 theme-card rounded-2xl border border-[#F5D061]/30 bg-[#F5D061]/5 shadow-lg">
+            <div onclick="openChat('${officialSupport.phone}', '${officialSupport.name}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
+                <div class="relative shrink-0">
+                    <img src="${officialSupport.avatar}" class="w-10 h-10 rounded-full object-cover bg-black border border-[#F5D061]/60">
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black bg-[#2ed573]"></span>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center space-x-1.5">
+                        <p class="text-xs font-bold gold-gradient-text truncate">${officialSupport.name}</p>
+                        <span class="text-[8px] px-1.5 py-0.2 rounded gold-btn text-black font-extrabold uppercase">Official</span>
+                    </div>
+                    <p class="text-[10px] text-[#F5D061] font-medium tracking-wide">${officialSupport.subTitle}</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-1 shrink-0 pl-2">
+                <button onclick="event.stopPropagation(); openChat('${officialSupport.phone}', '${officialSupport.name}');" class="p-2 text-[#F5D061] hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${officialSupport.phone}', '${officialSupport.name}'); startWhatsAppCall('audio')" class="p-2 text-[#F5D061] hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${officialSupport.phone}', '${officialSupport.name}'); startWhatsAppCall('video')" class="p-2 text-[#F5D061] hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+            </div>
+        </div>`;
+
     const contactsHtml = deviceContacts.filter(c => !c.isOfficialSupport).map(c => {
         const info = getCountryInfo(c.phone);
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-[#F5D061] font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
@@ -135,14 +173,15 @@ function renderDeviceContacts() {
                 </div>
                 <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>${subText}</div>
             </div>
-            <div class="flex items-center space-x-1.5 shrink-0 pl-2">
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+            <div class="flex items-center space-x-1 shrink-0 pl-2">
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-[#F5D061] hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-[#F5D061] hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-[#F5D061] hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
             </div>
         </div>`;
     }).join('');
-    listContainer.innerHTML = `<div id="directDialSlot"></div>` + contactsHtml;
+
+    listContainer.innerHTML = officialHtml + `<div id="directDialSlot"></div>` + contactsHtml;
 }
 
 function renderCallsHistory() {
@@ -153,7 +192,7 @@ function renderCallsHistory() {
         listContainer.innerHTML = `
             <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 m-auto">
                 <div class="w-12 h-12 rounded-2xl theme-card flex items-center justify-center">
-                    <i class="fa-solid fa-phone-slash text-amber-300 text-lg"></i>
+                    <i class="fa-solid fa-phone-slash text-[#F5D061] text-lg"></i>
                 </div>
                 <p class="text-xs font-bold gold-gradient-text">No recent calls</p>
                 <p class="text-[10px] text-gray-400">Your audio and video call history will appear here.</p>
@@ -177,12 +216,12 @@ function renderCallsHistory() {
                     ${avatarImg}
                     <div class="min-w-0">
                         <p class="text-xs font-semibold gold-gradient-text truncate">${contact.name}</p>
-                        <p class="text-[10px] text-gray-400"><i class="fa-solid fa-${call.type === 'video' ? 'video' : 'phone'} mr-1 text-amber-300"></i> ${call.status || 'Completed'} • ${timeStr}</p>
+                        <p class="text-[10px] text-gray-400"><i class="fa-solid fa-${call.type === 'video' ? 'video' : 'phone'} mr-1 text-[#F5D061]"></i> ${call.status || 'Completed'} • ${timeStr}</p>
                     </div>
                 </div>
                 <div class="flex space-x-2 shrink-0">
-                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
-                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 text-[#F5D061] hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('video')" class="p-2 text-[#F5D061] hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
                 </div>
             </div>`;
         }).join('');
@@ -742,7 +781,6 @@ function startIncomingCallPolling() {
                 try { sig = JSON.parse(data.signal.magic_code); } catch (e) { return; }
                 if (!sig || !sig.ts) return;
 
-                // পুরানো বা ফেলে আসা সিগন্যাল ইগনোর করার জন্য সময় চেক (১৫ সেকেন্ডের বেশি পুরনো হলে রিং হবে না)
                 if (Date.now() - sig.ts > 15000) return;
 
                 const modal = document.getElementById('whatsAppCallModal');
@@ -797,7 +835,7 @@ function filterContent() {
                 <p class="text-[10px] text-gray-300">${q}</p>
             </div>
             <div class="flex space-x-1.5">
-                <button onclick="openChat('${q}', '${q}')" class="p-2 text-amber-300 hover:bg-white/10 cursor-pointer" title="Open Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+                <button onclick="openChat('${q}', '${q}')" class="p-2 text-[#F5D061] hover:bg-white/10 cursor-pointer" title="Open Chat"><i class="fa-solid fa-comment text-xs"></i></button>
             </div>
         </div>`;
     }
@@ -805,7 +843,7 @@ function filterContent() {
     const contactsHtml = filtered.map(c => {
         const info = getCountryInfo(c.phone);
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-[#F5D061] font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
@@ -816,10 +854,10 @@ function filterContent() {
                 </div>
                 <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>${subText}</div>
             </div>
-            <div class="flex items-center space-x-1.5 shrink-0 pl-2">
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+            <div class="flex items-center space-x-1 shrink-0 pl-2">
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-[#F5D061] hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-[#F5D061] hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-[#F5D061] hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
             </div>
         </div>`;
     }).join('');
@@ -862,7 +900,6 @@ function loadMessages() {
     const clearTs = chatClearTimestamps[key] || 0;
     let msgs = localMessageStore[key] || [];
     
-    // ফিল্টার করে ডিলিট হওয়া বা ক্লিয়ার টাইমের আগের মেসেজ বাদ দেওয়া
     msgs = msgs.filter(m => !(m.timestamp <= clearTs || (m.id && deletedMessageIds.includes(m.id))));
     localMessageStore[key] = msgs;
     persistMessages();
@@ -890,7 +927,7 @@ function loadMessages() {
                 contentHtml = `<div class="relative group my-1">
                     <img src="${m.media_url}" class="rounded-xl max-w-xs max-h-52 object-cover border border-white/10 shadow-md">
                     <div class="absolute top-2 right-2 flex space-x-1.5">
-                        <a href="${m.media_url}" download="image.jpg" class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <a href="${m.media_url}" download="image.jpg" class="p-1 text-[#F5D061] hover:text-white text-xs cursor-pointer" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
                         <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
@@ -898,15 +935,15 @@ function loadMessages() {
                 contentHtml = `<div class="relative my-1">
                     <video src="${m.media_url}" controls class="rounded-xl max-w-xs max-h-52 border border-white/10 shadow-md"></video>
                     <div class="absolute top-2 right-2 flex space-x-1.5">
-                        <a href="${m.media_url}" download="video.mp4" class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <a href="${m.media_url}" download="video.mp4" class="p-1 text-[#F5D061] hover:text-white text-xs cursor-pointer" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
                         <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
             } else {
                 contentHtml = `<div class="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/10 my-1 space-x-3">
-                    <span class="text-xs underline text-amber-300 truncate max-w-[150px]"><i class="fa-solid fa-file mr-1"></i> ${escapeHtml(m.message_text || 'File')}</span>
+                    <span class="text-xs underline text-[#F5D061] truncate max-w-[150px]"><i class="fa-solid fa-file mr-1"></i> ${escapeHtml(m.message_text || 'File')}</span>
                     <div class="flex space-x-2 shrink-0">
-                        <a href="${m.media_url}" download class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <a href="${m.media_url}" download class="p-1 text-[#F5D061] hover:text-white text-xs cursor-pointer" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
                         <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
