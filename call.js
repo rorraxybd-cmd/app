@@ -1,17 +1,28 @@
 let currentTab = 'contact', currentActiveRecipient = null;
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
-let callRingInterval = null, activeAudioCtx = null, callPollInterval = null, chatPollInterval = null, globalUserSyncInterval = null;
+let callRingInterval = null, activeAudioCtx = null, callPollInterval = null, chatPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
 let peerConnection = null, localStream = null, remoteStream = null;
 let isMicMuted = false, lastHandledSignalTs = 0;
-let isLocalMain = false; 
+let isLocalMain = false; // PiP Video Swap
 
 let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
 let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
 let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
 
-let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [];
+// ডিভাইস কন্টাক্টস (প্রথমে rorraxy এবং অফিসিয়াল সাপোর্ট ডিফল্টভাবে সবার উপরে পিন থাকবে)
+let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [
+    {
+        name: "rorraxy",
+        phone: "+8801332008886",
+        appUser: true,
+        isOnline: true,
+        isOfficialSupport: true,
+        avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png",
+        subTitle: "official support"
+    }
+];
 
 const RTC_CONFIG = {
     iceServers: [
@@ -40,14 +51,9 @@ function showToast(msg, isErr = false) {
 function initAppAfterVerification() {
     if (typeof cleanupExpiredMessages === 'function') cleanupExpiredMessages();
     syncGlobalNetworkUsers();
-    setTimeout(() => { 
-        switchTab('contact'); 
-    }, 100);
-    startBackgroundCallPolling();
+    setTimeout(() => { switchTab('contact'); }, 100);
+    startIncomingCallPolling();
     startChatPolling();
-
-    if (globalUserSyncInterval) clearInterval(globalUserSyncInterval);
-    globalUserSyncInterval = setInterval(syncGlobalNetworkUsers, 5000);
 }
 
 async function syncGlobalNetworkUsers() {
@@ -56,56 +62,41 @@ async function syncGlobalNetworkUsers() {
         if (res.ok) {
             const data = await res.json();
             if (data.success && Array.isArray(data.users)) {
-                const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
-                const myPhone = normPhone(profile.phone || '');
-                let hasNewUser = false;
-                
+                const myPhone = normPhone(getActiveProfile().phone);
                 data.users.forEach(u => {
                     const uPhone = normPhone(u.phone_number);
                     if (uPhone && uPhone !== myPhone) {
                         const existingIdx = deviceContacts.findIndex(dc => normPhone(dc.phone) === uPhone);
-                        if (uPhone !== '8801538187301' && u.display_name !== 'rorraxy Support') {
-                            const defaultAvatar = 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
-                            const userAvatar = u.avatar_url && u.avatar_url !== 'undefined' ? u.avatar_url : defaultAvatar;
-                            
-                            if (existingIdx === -1) {
-                                deviceContacts.push({
-                                    name: u.display_name || uPhone,
-                                    phone: uPhone,
-                                    appUser: true,
-                                    isOnline: u.is_online === 1,
-                                    avatar: userAvatar,
-                                    lastMsg: "Tap to message"
-                                });
-                                hasNewUser = true;
-                            } else {
-                                if (deviceContacts[existingIdx].isOnline !== (u.is_online === 1) || 
-                                    deviceContacts[existingIdx].name !== (u.display_name || deviceContacts[existingIdx].name)) {
-                                    hasNewUser = true;
-                                }
-                                deviceContacts[existingIdx].isOnline = u.is_online === 1;
-                                if (u.display_name) deviceContacts[existingIdx].name = u.display_name;
-                                if (userAvatar) deviceContacts[existingIdx].avatar = userAvatar;
-                            }
+                        if (existingIdx === -1) {
+                            deviceContacts.push({
+                                name: u.display_name || uPhone,
+                                phone: uPhone,
+                                appUser: true,
+                                isOnline: u.is_online === 1,
+                                avatar: u.avatar_url || null,
+                                lastMsg: "Tap to message"
+                            });
+                        } else {
+                            deviceContacts[existingIdx].isOnline = u.is_online === 1;
+                            if (u.display_name) deviceContacts[existingIdx].name = u.display_name;
+                            if (u.avatar_url) deviceContacts[existingIdx].avatar = u.avatar_url;
                         }
                     }
                 });
                 localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
-                if (hasNewUser) {
-                    if (currentTab === 'contact') renderDeviceContacts();
-                    else if (currentTab === 'chat') renderChatStories();
-                    else if (currentTab === 'discover' && typeof renderDiscoverDirectory === 'function') {
-                        renderDiscoverDirectory(document.getElementById('searchInput')?.value || '');
-                    }
-                }
+                if (currentTab === 'contact' || currentTab === 'chat') renderDeviceContacts();
             }
         }
     } catch (e) {}
 }
 
+function openWorldLink() {
+    window.open('https://rorraxy.com', '_blank');
+}
+
 function switchTab(tab) {
     currentTab = tab;
-    ['discover', 'calls', 'chat', 'contact', 'profile'].forEach(t => {
+    ['profile', 'calls', 'chat', 'contact', 'world'].forEach(t => {
         const isSel = (t === tab);
         const lbl = document.getElementById('label' + t.charAt(0).toUpperCase() + t.slice(1));
         const icn = document.getElementById('icon' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -114,28 +105,16 @@ function switchTab(tab) {
     });
 
     const sb = document.getElementById('searchBarContainer');
-    const searchInput = document.getElementById('searchInput');
-
     if (tab === 'profile') { 
         if (sb) sb.style.display = 'none'; 
         if (typeof renderProfileView === 'function') renderProfileView(); 
     } else if (tab === 'calls') {
         if (sb) sb.style.display = 'none';
         renderCallsHistory();
-    } else if (tab === 'discover') {
-        if (sb) sb.style.display = 'block';
-        if (searchInput) {
-            searchInput.value = '';
-            searchInput.placeholder = 'Search any country worldwide...';
-        }
-        if (typeof selectedDiscoverCountry !== 'undefined') selectedDiscoverCountry = null;
-        if (typeof renderDiscoverDirectory === 'function') renderDiscoverDirectory();
     } else {
         if (sb) sb.style.display = 'block';
-        if (searchInput) {
-            searchInput.value = '';
-            searchInput.placeholder = 'Search local name or dial number...';
-        }
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) searchInput.value = '';
         if (tab === 'chat') renderChatStories();
         else { syncGlobalNetworkUsers(); renderDeviceContacts(); }
     }
@@ -153,55 +132,62 @@ function renderDeviceContacts() {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
-    const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
-    const myPhone = normPhone(profile.phone || '');
-    const myCountryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(myPhone) : { name: 'Bangladesh', flag: '🇧🇩' };
-
-    // কন্টাক্ট ফিল্টারিং আরও নিরাপদ করা হলো যাতে লিস্ট খালি না থাকে
-    const localContacts = deviceContacts.filter(c => {
-        if (c.isOfficialSupport || c.phone === '8801538187301') return false;
-        const cleanPhone = normPhone(c.phone);
-        if (myCountryInfo.name === 'Bangladesh') {
-            return cleanPhone.startsWith('880');
-        }
-        const cInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { name: '' };
-        return cInfo.name === myCountryInfo.name || !cInfo.name || cInfo.name === 'Global';
-    });
-
-    if (localContacts.length === 0) {
-        listContainer.innerHTML = `
-            <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 m-auto">
-                <span class="text-3xl">${myCountryInfo.flag || '🇧🇩'}</span>
-                <p class="text-xs font-bold gold-gradient-text">No local contacts in ${myCountryInfo.name}</p>
-                <p class="text-[10px] text-gray-400">Tap <b>Discover 🌍</b> below to connect with users from 200+ countries.</p>
-            </div>`;
-        return;
+    let officialSupport = deviceContacts.find(c => c.isOfficialSupport);
+    if (!officialSupport) {
+        officialSupport = {
+            name: "rorraxy",
+            phone: "+8801332008886",
+            appUser: true,
+            isOnline: true,
+            isOfficialSupport: true,
+            avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png",
+            subTitle: "official support"
+        };
+        deviceContacts.unshift(officialSupport);
     }
 
-    const contactsHtml = localContacts.map(c => {
-        const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🇧🇩', name: 'Bangladesh' };
-        const defaultAvatar = 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
-        const avatarUrl = c.avatar && c.avatar !== 'undefined' ? c.avatar : defaultAvatar;
-        const avatarImg = `<img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover bg-black">`;
-        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${info.name} • +${c.phone}</p>`;
+    const officialHtml = `
+        <div class="flex justify-between items-center px-4 py-3 my-1 theme-card rounded-2xl border border-amber-400/40 bg-amber-400/10 shadow-md">
+            <div onclick="openChat('${officialSupport.phone}', '${officialSupport.name}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
+                <div class="relative shrink-0">
+                    <img src="${officialSupport.avatar}" class="w-10 h-10 rounded-full object-cover bg-black border border-amber-400">
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black bg-[#2ed573]"></span>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-xs font-bold gold-gradient-text truncate">${officialSupport.name} <span class="text-[9px] bg-amber-400 text-black px-1.5 py-0.5 rounded ml-1 font-extrabold">Official</span></p>
+                    <p class="text-[10px] text-amber-300 font-medium">${officialSupport.subTitle}</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-1.5 shrink-0 pl-2">
+                <button onclick="event.stopPropagation(); openChat('${officialSupport.phone}', '${officialSupport.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${officialSupport.phone}', '${officialSupport.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${officialSupport.phone}', '${officialSupport.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+            </div>
+        </div>`;
+
+    const contactsHtml = deviceContacts.filter(c => !c.isOfficialSupport).map(c => {
+        const info = getCountryInfo(c.phone);
+        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
             <div onclick="openChat('${c.phone}', '${c.name}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
                 <div class="relative shrink-0">
                     ${avatarImg}
-                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline ? 'bg-[#2ed573]' : 'bg-amber-400'}"></span>
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span>
                 </div>
                 <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>${subText}</div>
             </div>
-            <div class="flex items-center space-x-2 shrink-0 pl-3">
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-sm"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-sm"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-sm"></i></button>
+            <div class="flex items-center space-x-1.5 shrink-0 pl-2">
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
             </div>
         </div>`;
     }).join('');
-    listContainer.innerHTML = `<div id="directDialSlot"></div>` + contactsHtml;
+
+    listContainer.innerHTML = officialHtml + `<div id="directDialSlot"></div>` + contactsHtml;
 }
 
 function renderCallsHistory() {
@@ -223,13 +209,11 @@ function renderCallsHistory() {
     listContainer.innerHTML = `
         <div class="flex justify-between items-center px-3 py-1">
             <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Recent Calls</span>
-            <button onclick="clearAllCallHistory()" class="text-[10px] text-pink-400 hover:underline font-semibold cursor-pointer">Clear All</button>
+            <button onclick="clearAllCallHistory()" class="text-[10px] text-red-400 hover:underline font-semibold cursor-pointer">Clear All</button>
         </div>` + 
         callHistoryNotifications.map((call, idx) => {
             const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(call.phone)) || { name: call.phone, avatar: null };
-            const defaultAvatar = 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
-            const avatarUrl = contact.avatar && contact.avatar !== 'undefined' ? contact.avatar : defaultAvatar;
-            const avatarImg = `<img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover bg-black">`;
+            const avatarImg = contact.avatar ? `<img src="${contact.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${contact.name.charAt(0)}</div>`;
             const timeStr = new Date(call.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             return `
@@ -242,8 +226,8 @@ function renderCallsHistory() {
                     </div>
                 </div>
                 <div class="flex space-x-2 shrink-0">
-                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-sm"></i></button>
-                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-sm"></i></button>
+                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
                 </div>
             </div>`;
         }).join('');
@@ -261,12 +245,12 @@ function openChat(phone, name) {
     let targetContact = deviceContacts.find(c => normPhone(c.phone) === cp);
     
     if (!targetContact) {
-        targetContact = { name: name || cp, phone: cp, appUser: true, isOnline: true, avatar: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg' };
+        targetContact = { name: name || cp, phone: cp, appUser: true, isOnline: true, avatar: null };
         deviceContacts.push(targetContact);
         localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
     }
 
-    const avatarUrl = targetContact.avatar && targetContact.avatar !== 'undefined' ? targetContact.avatar : 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
+    const avatarUrl = targetContact.avatar ? targetContact.avatar : 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png';
 
     currentActiveRecipient = { phone: cp, name: targetContact.name, isOnline: true, avatar: avatarUrl };
     document.getElementById('activeChatHeader').style.display = 'flex';
@@ -294,8 +278,7 @@ async function sendTextMessage() {
     inp.value = '';
     toggleSendButton();
     
-    const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
-    const key = normPhone(currentActiveRecipient.phone), me = normPhone(profile.phone || '');
+    const key = normPhone(currentActiveRecipient.phone), me = normPhone(getActiveProfile().phone);
     if (!localMessageStore[key]) localMessageStore[key] = [];
     
     const msgId = 'm_' + Date.now() + '_' + Math.random();
@@ -303,14 +286,6 @@ async function sendTextMessage() {
     localMessageStore[key].push(msg);
     appendBubble(msg);
     persistMessages();
-
-    if (key === '8801538187301') {
-        let officialContact = deviceContacts.find(c => c.phone === '8801538187301');
-        if (!officialContact) {
-            deviceContacts.push({ name: 'rorraxy Support', phone: '8801538187301', subTitle: 'Official Support Team', isOfficialSupport: true, avatar: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg' });
-            localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
-        }
-    }
 
     try {
         await fetch('/api/chat?action=send_chat_message', {
@@ -323,8 +298,7 @@ async function sendTextMessage() {
 
 async function fetchMessagesFromCloud() {
     if (!currentActiveRecipient) return;
-    const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
-    const me = normPhone(profile.phone || '');
+    const me = normPhone(getActiveProfile().phone);
     const key = normPhone(currentActiveRecipient.phone);
     try {
         const res = await fetch(`/api/chat?action=get_chat_messages&phone=${encodeURIComponent(key)}&my_phone=${encodeURIComponent(me)}`);
@@ -374,6 +348,7 @@ function startChatPolling() {
     chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 3000);
 }
 
+// WebRTC কলিং এবং অডিও/ভিডিও কলিং
 function startContinuousRinging() {
     stopContinuousRinging();
     const playTone = () => {
@@ -383,16 +358,16 @@ function startContinuousRinging() {
             const osc = activeAudioCtx.createOscillator();
             const gain = activeAudioCtx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(520, activeAudioCtx.currentTime);
-            gain.gain.setValueAtTime(0.15, activeAudioCtx.currentTime);
+            osc.frequency.setValueAtTime(440, activeAudioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, activeAudioCtx.currentTime);
             osc.connect(gain);
             gain.connect(activeAudioCtx.destination);
             osc.start();
-            osc.stop(activeAudioCtx.currentTime + 0.6);
+            osc.stop(activeAudioCtx.currentTime + 0.5);
         } catch (e) {}
     };
     playTone();
-    callRingInterval = setInterval(playTone, 2200);
+    callRingInterval = setInterval(playTone, 2000);
 }
 
 function stopContinuousRinging() {
@@ -410,7 +385,7 @@ function startCallDurationTimer() {
         const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
         const secs = String(callSeconds % 60).padStart(2, '0');
         const lbl = document.getElementById('callStatusLabel');
-        if (lbl) lbl.innerText = `${mins}:${secs}`;
+        if (lbl) lbl.innerText = `Connected • ${mins}:${secs}`;
     }, 1000);
 }
 
@@ -433,7 +408,7 @@ async function setupLocalMedia(mode) {
         applyVideoStreamsToDom();
         return localStream;
     } catch (err) {
-        showToast("Microphone & Camera permission granted automatically", false);
+        showToast("Microphone or Camera permission required", true);
         return null;
     }
 }
@@ -504,8 +479,7 @@ async function startWhatsAppCall(mode) {
         showToast("Select a contact first", true);
         return;
     }
-    const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
-    const myPhone = normPhone(profile.phone || '');
+    const myPhone = normPhone(getActiveProfile().phone);
     const peerPhone = normPhone(currentActiveRecipient.phone);
 
     if (myPhone === peerPhone) {
@@ -517,7 +491,7 @@ async function startWhatsAppCall(mode) {
     activeCallPeer = currentActiveRecipient;
     isCallActive = true;
 
-    renderCallModal(activeCallPeer.name, activeCallPeer.avatar, `Calling...`, mode, false);
+    renderCallModal(activeCallPeer.name, activeCallPeer.avatar, `Calling ${activeCallPeer.name}...`, mode, false);
     startContinuousRinging();
 
     await setupLocalMedia(mode);
@@ -562,8 +536,7 @@ async function acceptWhatsAppCall() {
     startCallDurationTimer();
     showToast("Call Connected!");
 
-    const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
-    const myPhone = normPhone(profile.phone || '');
+    const myPhone = normPhone(getActiveProfile().phone);
     const peerPhone = normPhone(activeCallPeer.phone);
 
     updateInCallButtons();
@@ -624,8 +597,7 @@ async function endWhatsAppCall() {
     const modal = document.getElementById('whatsAppCallModal');
     if (modal) modal.remove();
 
-    const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
-    const myPhone = normPhone(profile.phone || '');
+    const myPhone = normPhone(getActiveProfile().phone);
     const peerPhone = activeCallPeer ? normPhone(activeCallPeer.phone) : '';
     activeCallPeer = null;
 
@@ -650,6 +622,9 @@ async function toggleVideoSwitch() {
     const newMode = currentCallType === 'audio' ? 'video' : 'audio';
     currentCallType = newMode;
     
+    const badge = document.getElementById('callTypeBadge');
+    if (badge) badge.innerText = `${newMode} call`;
+
     const videoBox = document.getElementById('videoStreamsBox');
     const infoBox = document.getElementById('callerInfoBox');
 
@@ -673,8 +648,7 @@ async function toggleVideoSwitch() {
             try {
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
-                const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
-                const myPhone = normPhone(profile.phone || '');
+                const myPhone = normPhone(getActiveProfile().phone);
                 const peerPhone = normPhone(activeCallPeer.phone);
                 await fetch('/api/chat?action=send_call_signal', {
                     method: 'POST',
@@ -729,14 +703,14 @@ function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     
     modal.innerHTML = `
         <div class="w-full max-w-md flex justify-between items-center text-center pt-4">
-            <div></div>
+            <span id="callTypeBadge" class="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-[11px] font-bold uppercase tracking-wider">${mode} call</span>
             <p id="callStatusLabel" class="text-xs text-gray-300 font-medium">${statusText}</p>
             <div class="w-16"></div>
         </div>
 
         <div class="flex-1 flex flex-col items-center justify-center w-full max-w-3xl relative my-auto">
             <div id="callerInfoBox" class="${mode === 'video' ? 'hidden' : 'flex'} flex-col items-center space-y-4">
-                <img src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg'}" class="w-32 h-32 rounded-full object-cover border-4 border-amber-400/60 shadow-2xl animate-pulse bg-black">
+                <img src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-32 h-32 rounded-full object-cover border-4 border-amber-400/60 shadow-2xl animate-pulse bg-black">
                 <h2 class="text-2xl font-extrabold gold-gradient-text tracking-wide">${peerName}</h2>
             </div>
 
@@ -791,11 +765,10 @@ function updateInCallButtons() {
     `;
 }
 
-function startBackgroundCallPolling() {
+function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
     callPollInterval = setInterval(async () => {
-        const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
-        const myPhone = normPhone(profile.phone || '');
+        const myPhone = normPhone(getActiveProfile().phone);
         if (!myPhone) return;
 
         try {
@@ -814,7 +787,7 @@ function startBackgroundCallPolling() {
                 try { sig = JSON.parse(data.signal.magic_code); } catch (e) { return; }
                 if (!sig || !sig.ts) return;
 
-                if (Date.now() - sig.ts > 18000) return;
+                if (Date.now() - sig.ts > 15000) return;
 
                 const modal = document.getElementById('whatsAppCallModal');
                 if (sig.status === 'ringing' && !isCallActive && !modal && sig.ts > lastHandledSignalTs) {
@@ -824,7 +797,7 @@ function startBackgroundCallPolling() {
 
                     let callerContact = deviceContacts.find(c => normPhone(c.phone) === callerPhone);
                     if (!callerContact) {
-                        callerContact = { name: callerPhone, phone: callerPhone, appUser: true, isOnline: true, avatar: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg' };
+                        callerContact = { name: callerPhone, phone: callerPhone, appUser: true, isOnline: true };
                         deviceContacts.push(callerContact);
                         localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
                     }
@@ -849,36 +822,15 @@ function startBackgroundCallPolling() {
                 }
             }
         } catch (e) {}
-    }, 1500);
+    }, 2000);
 }
 
 function filterContent() {
     const q = document.getElementById('searchInput').value.trim();
-
-    if (currentTab === 'discover') {
-        if (typeof renderDiscoverDirectory === 'function') {
-            renderDiscoverDirectory(q);
-        }
-        return;
-    }
-
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
-    const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
-    const myPhone = normPhone(profile.phone || '');
-    const myCountryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(myPhone) : { name: 'Bangladesh' };
-
-    const filtered = deviceContacts.filter(c => {
-        if (c.isOfficialSupport || c.phone === '8801538187301') return false;
-        const cleanPhone = normPhone(c.phone);
-        if (myCountryInfo.name === 'Bangladesh') {
-            return cleanPhone.startsWith('880') && (c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q));
-        }
-        const cInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { name: '' };
-        const isLocal = cInfo.name === myCountryInfo.name || !cInfo.name || cInfo.name === 'Global';
-        return isLocal && (c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q));
-    });
+    const filtered = deviceContacts.filter(c => !c.isOfficialSupport && (c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q)));
     
     let directDialHtml = '';
     if (q.length >= 3 && !filtered.some(c => c.phone === q || c.name.toLowerCase() === q.toLowerCase())) {
@@ -895,25 +847,23 @@ function filterContent() {
     }
 
     const contactsHtml = filtered.map(c => {
-        const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🇧🇩', name: 'Bangladesh' };
-        const defaultAvatar = 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
-        const avatarUrl = c.avatar && c.avatar !== 'undefined' ? c.avatar : defaultAvatar;
-        const avatarImg = `<img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover bg-black">`;
-        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${info.name} • +${c.phone}</p>`;
+        const info = getCountryInfo(c.phone);
+        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone}</p>`;
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
             <div onclick="openChat('${c.phone}', '${c.name}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
                 <div class="relative shrink-0">
                     ${avatarImg}
-                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline ? 'bg-[#2ed573]' : 'bg-amber-400'}"></span>
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span>
                 </div>
                 <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>${subText}</div>
             </div>
-            <div class="flex items-center space-x-2 shrink-0 pl-3">
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-sm"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-sm"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-sm"></i></button>
+            <div class="flex items-center space-x-1.5 shrink-0 pl-2">
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
             </div>
         </div>`;
     }).join('');
@@ -973,8 +923,7 @@ function loadMessages() {
     }
 
     container.innerHTML = msgs.map((m, idx) => {
-        const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
-        const isMe = normPhone(m.phone_number) === normPhone(profile.phone || '');
+        const isMe = normPhone(m.phone_number) === normPhone(getActiveProfile().phone);
         let contentHtml = '';
         
         if (m.type === 'text' || !m.media_url) {
@@ -983,25 +932,25 @@ function loadMessages() {
             if (m.type === 'image') {
                 contentHtml = `<div class="relative group my-1">
                     <img src="${m.media_url}" class="rounded-xl max-w-xs max-h-52 object-cover border border-white/10 shadow-md">
-                    <div class="absolute top-2 right-2 flex space-x-2">
-                        <a href="${m.media_url}" download="image.jpg" class="p-1.5 rounded-lg bg-black/60 text-pink-400 hover:text-pink-300 text-xs cursor-pointer shadow" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
-                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1.5 rounded-lg bg-black/60 text-pink-500 hover:text-pink-400 text-xs cursor-pointer shadow" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                    <div class="absolute top-2 right-2 flex space-x-1.5">
+                        <a href="${m.media_url}" download="image.jpg" class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
             } else if (m.type === 'video') {
                 contentHtml = `<div class="relative my-1">
                     <video src="${m.media_url}" controls class="rounded-xl max-w-xs max-h-52 border border-white/10 shadow-md"></video>
-                    <div class="absolute top-2 right-2 flex space-x-2">
-                        <a href="${m.media_url}" download="video.mp4" class="p-1.5 rounded-lg bg-black/60 text-pink-400 hover:text-pink-300 text-xs cursor-pointer shadow" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
-                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1.5 rounded-lg bg-black/60 text-pink-500 hover:text-pink-400 text-xs cursor-pointer shadow" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                    <div class="absolute top-2 right-2 flex space-x-1.5">
+                        <a href="${m.media_url}" download="video.mp4" class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
             } else {
                 contentHtml = `<div class="flex items-center justify-between p-2.5 rounded-xl bg-black/40 border border-white/10 my-1 space-x-3">
                     <span class="text-xs underline text-amber-300 truncate max-w-[150px]"><i class="fa-solid fa-file mr-1"></i> ${escapeHtml(m.message_text || 'File')}</span>
                     <div class="flex space-x-2 shrink-0">
-                        <a href="${m.media_url}" download class="p-1.5 rounded-lg bg-black/60 text-pink-400 hover:text-pink-300 text-xs cursor-pointer shadow" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
-                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1.5 rounded-lg bg-black/60 text-pink-500 hover:text-pink-400 text-xs cursor-pointer shadow"><i class="fa-solid fa-trash"></i></button>
+                        <a href="${m.media_url}" download class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
+                        <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>`;
             }
@@ -1014,7 +963,7 @@ function loadMessages() {
             </div>
         </div>`;
     }).join('');
-    setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
+    container.scrollTop = container.scrollHeight;
 }
 
 function autoDeleteAfterDownload(key, index) {
@@ -1084,17 +1033,12 @@ function renderChatStories() {
     sidebarList.innerHTML = keys.map(k => {
         const msgs = localMessageStore[k];
         const last = msgs[msgs.length - 1] || {};
-        const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(k)) || { name: k, avatar: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg' };
-        const avatarUrl = contact.avatar && contact.avatar !== 'undefined' ? contact.avatar : 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
+        const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(k)) || { name: k, avatar: '' };
         return `
         <div onclick="openChat('${k}', '${contact.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
-            <div class="flex items-center space-x-3 min-w-0 flex-1">
-                <img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">
-                <div class="min-w-0 flex-1"><p class="text-xs font-semibold gold-gradient-text truncate">${contact.name}</p><p class="text-[10px] text-gray-400 truncate max-w-[150px]">${last.message_text || 'Media attachment'}</p></div>
-            </div>
-            <div class="flex items-center space-x-1.5 shrink-0 pl-2">
-                <button onclick="event.stopPropagation(); openChat('${k}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${k}', '${contact.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+            <div class="flex items-center space-x-3 min-w-0">
+                <img src="${contact.avatar || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">
+                <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${contact.name}</p><p class="text-[10px] text-gray-400 truncate max-w-[180px]">${last.message_text || 'Media attachment'}</p></div>
             </div>
         </div>`;
     }).join('');
