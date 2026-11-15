@@ -9,8 +9,7 @@ const ASSETS_TO_CACHE = [
   '/discover.js',
   '/verify.css',
   '/verify.js',
-  '/call.js',
-  '/p2p_file_transfer.js'
+  '/call.js'
 ];
 
 self.addEventListener('install', (event) => {
