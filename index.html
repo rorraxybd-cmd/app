@@ -18,14 +18,33 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
     <link rel="stylesheet" href="/discover.css?v=1.9">
+    <style>
+        :root {
+            --bg-main: #04120b;
+            --surface: #0a2316;
+            --card: #0e311e;
+        }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-main); color: #ffffff; }
+        .brand-title-font { font-family: 'Cinzel', serif; }
+        .gold-gradient-text { background: linear-gradient(135deg, #F5D061 0%, #AA771C 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .pink-gradient-text { background: linear-gradient(135deg, #EC4899 0%, #be185d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .gold-btn { background: linear-gradient(135deg, #F5D061 0%, #AA771C 100%); color: #000; font-weight: 700; transition: transform 0.2s; }
+        .gold-btn:hover { transform: scale(1.02); }
+        .pink-btn { background: linear-gradient(135deg, #EC4899 0%, #be185d 100%); color: #fff; }
+        .theme-surface { background-color: var(--surface); }
+        .theme-card { background-color: var(--card); }
+        .theme-input { background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(245, 208, 97, 0.2); }
+        .chat-bubble-me { background: linear-gradient(135deg, #0e311e 0%, #164e2d 100%); border: 1px solid rgba(245, 208, 97, 0.3); }
+        .chat-bubble-them { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
 </head>
 <body class="h-[100dvh] w-full flex flex-col overflow-hidden fixed inset-0">
 
     <!-- Auto-Verify & Install Overlay -->
-    <div id="verifyOverlay" style="display: none;">
-        <div class="verify-card space-y-5 text-center shadow-2xl">
+    <div id="verifyOverlay" style="display: none;" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center p-4">
+        <div class="verify-card space-y-5 text-center shadow-2xl w-full max-w-sm theme-surface p-6 rounded-3xl border border-amber-400/30">
             <div class="space-y-3">
-                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover;">
+                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="mx-auto" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover;">
                 <h1 class="brand-title-font text-3xl font-extrabold gold-gradient-text">MESSAGE</h1>
                 <p class="text-[11px] text-white/75 tracking-widest font-semibold uppercase">Private Global Messenger</p>
                 <div id="pwaInstallContainer" class="pt-3">
@@ -38,15 +57,15 @@
             <div id="verifyStep1" class="space-y-4 text-left hidden">
                 <div class="space-y-1.5">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text">FULL NAME <span class="text-red-500">*</span></label>
-                    <input type="text" id="vFullName" placeholder="Enter your full name" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-white/10">
+                    <input type="text" id="vFullName" placeholder="Enter your full name" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none">
                 </div>
                 <div class="space-y-1.5">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text">MOBILE NUMBER <span class="text-red-500">*</span></label>
                     <div class="flex space-x-2 w-full">
-                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer shrink-0">
-                            <!-- দেশসমূহ এখানে লোড হবে -->
+                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none cursor-pointer shrink-0">
+                            <!-- দেশসমূহ ডায়নামিক্যালি লোড হবে -->
                         </select>
-                        <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-white/10">
+                        <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none">
                     </div>
                 </div>
                 <button onclick="submitVerifyStep1()" class="w-full py-3.5 gold-btn text-xs rounded-xl cursor-pointer mt-2 font-bold flex items-center justify-center space-x-2 shadow-lg">
@@ -69,7 +88,7 @@
     <!-- Header Bar -->
     <header class="theme-surface px-4 py-3 flex justify-between items-center shrink-0 z-30 border-b border-white/5">
         <div class="flex items-center space-x-3">
-            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean object-cover" style="width: 42px; height: 42px; border-radius: 50%;">
+            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="object-cover" style="width: 42px; height: 42px; border-radius: 50%;">
             <div>
                 <div class="flex items-center space-x-1.5">
                     <h1 class="brand-title-font font-extrabold text-lg sm:text-xl gold-gradient-text leading-none">MESSAGE</h1>
@@ -115,7 +134,7 @@
             </div>
         </div>
 
-        <!-- Workspace Section (Chat & Call) -->
+        <!-- Workspace Section (Chat, Discover, Profile & Call) -->
         <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full min-h-0 z-10 relative" style="background-color: var(--bg-main);">
             <div id="activeChatHeader" class="theme-surface px-4 py-3 hidden items-center justify-between shrink-0 border-b border-white/5">
                 <div class="flex items-center space-x-3">
@@ -138,6 +157,7 @@
                 </div>
             </div>
 
+            <!-- Main Chat Messages / Dynamic View Container -->
             <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 flex flex-col justify-start">
                 <div class="flex flex-col items-center justify-center space-y-3 max-w-xs text-center m-auto">
                     <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center">
@@ -154,7 +174,7 @@
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
                         <input type="file" id="universalFileInput" accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.zip,.txt" multiple class="hidden" onchange="handleUniversalFileUpload(this)">
                     </label>
-                    <input type="text" id="messageInput" placeholder="Write a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1 min-w-0 selectable-text" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
+                    <input type="text" id="messageInput" placeholder="Write a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1 min-w-0" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
                     <button id="sendBtn" onclick="sendTextMessage()" class="hidden cursor-pointer hover:scale-110 transition-transform p-1 shrink-0 items-center justify-center">
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
@@ -194,11 +214,18 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- Modular JavaScript Files Connection -->
+    <!-- Image Fullscreen Modal View -->
+    <div id="imageLightboxModal" class="fixed inset-0 z-50 bg-black/95 flex items-center justify-center hidden p-4" onclick="this.classList.add('hidden')">
+        <img id="lightboxImage" src="" class="max-w-full max-h-full rounded-2xl object-contain border border-white/20 shadow-2xl">
+    </div>
+
+    <!-- Modular JavaScript & CSS Connections -->
     <script src="/discover.js?v=1.9"></script>
     <script src="/verify.js?v=5.9"></script>
     <script src="/call.js?v=5.9"></script>
-    <script src="/p2p_file_transfer.js?v=5.9"></script>
+    <script src="/message.js?v=5.9"></script>
+    <script src="/transfer.js?v=5.9"></script>
+
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('verifyOverlay');
@@ -213,6 +240,31 @@
                 }
             }
         });
+
+        // Image Lightbox View Helper
+        function openImageLightbox(url) {
+            const modal = document.getElementById('imageLightboxModal');
+            const img = document.getElementById('lightboxImage');
+            if (modal && img) {
+                img.src = url;
+                modal.classList.remove('hidden');
+            }
+        }
+
+        // Profile Share functionality pointing to chat.rorraxy.com
+        function shareProfileLink() {
+            const shareUrl = 'https://chat.rorraxy.com';
+            if (navigator.share) {
+                navigator.share({
+                    title: 'MESSAGE | rorraxy.com',
+                    text: 'Connect with me on rorraxy MESSAGE encrypted messenger!',
+                    url: shareUrl,
+                }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(shareUrl);
+                if (typeof showToast === 'function') showToast("Profile link copied to clipboard!");
+            }
+        }
     </script>
 </body>
 </html>
