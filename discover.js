@@ -138,6 +138,7 @@ const GLOBAL_CONTINENTS_DATA = [
 
 let selectedDiscoverCountry = null;
 
+// Discover Directory View (with internal search for countries)
 function renderDiscoverDirectory(searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
@@ -152,8 +153,12 @@ function renderDiscoverDirectory(searchQuery = '') {
     const allUsers = deviceContacts.filter(c => !c.isOfficialSupport && c.phone !== '8801538187301');
 
     let html = `
-        <div class="discover-wrapper p-3">
-            <div class="discover-hero mb-3">
+        <div class="discover-wrapper p-3 space-y-3">
+            <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
+                <input type="text" id="discoverCountrySearch" placeholder="Search country name..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderDiscoverDirectory(this.value)">
+                <i class="fa-solid fa-magnifying-glass text-amber-300 text-xs"></i>
+            </div>
+            <div class="discover-hero mb-2">
                 <h2 class="discover-hero-title">Global Network Directory</h2>
                 <p class="discover-hero-sub">Select any country to connect directly across borders</p>
             </div>
@@ -174,11 +179,10 @@ function renderDiscoverDirectory(searchQuery = '') {
         filteredCountries.forEach(country => {
             const countryUsers = allUsers.filter(u => {
                 const info = typeof getCountryInfo === 'function' ? getCountryInfo(u.phone) : { name: '' };
-                return (info.name && info.name.toLowerCase() === country.name.toLowerCase()) || normPhone(u.phone).startsWith(country.code);
+                return (info.name && info.name.toLowerCase() === country.name.toLowerCase()) || String(u.phone || '').replace(/[\s\-\(\)]/g, '').startsWith(country.code);
             });
 
             const count = countryUsers.length;
-            const badgeClass = count > 0 ? 'discover-user-badge active-users' : 'discover-user-badge';
             const badgeText = count > 0 ? `${count} Active` : `+${country.code}`;
 
             html += `
@@ -199,27 +203,27 @@ function renderDiscoverDirectory(searchQuery = '') {
 
 function openDiscoverCountry(flag, countryName, dialCode) {
     selectedDiscoverCountry = { flag, name: countryName, code: dialCode };
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) searchInput.value = '';
     renderCountryContactsView(selectedDiscoverCountry);
 }
 
 function backToDiscoverContinents() {
     selectedDiscoverCountry = null;
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) searchInput.value = '';
     renderDiscoverDirectory();
 }
 
-function renderCountryContactsView(countryObj) {
+// Country specific view with internal search bar for members
+function renderCountryContactsView(countryObj, searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
     let deviceContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const allUsers = deviceContacts.filter(c => !c.isOfficialSupport && c.phone !== '8801538187301');
+    
     const matchedUsers = allUsers.filter(u => {
         const info = typeof getCountryInfo === 'function' ? getCountryInfo(u.phone) : { name: '' };
-        return (info.name && info.name.toLowerCase() === countryObj.name.toLowerCase()) || normPhone(u.phone).startsWith(countryObj.code);
+        const isMatchCountry = (info.name && info.name.toLowerCase() === countryObj.name.toLowerCase()) || String(u.phone || '').replace(/[\s\-\(\)]/g, '').startsWith(countryObj.code);
+        const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase()) || String(u.phone).includes(searchQuery);
+        return isMatchCountry && matchesSearch;
     });
 
     let usersHtml = '';
@@ -227,7 +231,7 @@ function renderCountryContactsView(countryObj) {
         usersHtml = `
             <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 theme-card rounded-2xl border border-white/5 mt-2">
                 <span class="text-4xl">${countryObj.flag}</span>
-                <p class="text-xs font-bold gold-gradient-text">No active members in ${countryObj.name} yet</p>
+                <p class="text-xs font-bold gold-gradient-text">No active members found in ${countryObj.name}</p>
                 <p class="text-[10px] text-gray-400">Anyone joining MESSAGE from ${countryObj.name} (+${countryObj.code}) will appear here automatically.</p>
             </div>
         `;
@@ -256,11 +260,11 @@ function renderCountryContactsView(countryObj) {
     }
 
     listContainer.innerHTML = `
-        <div class="pb-16 p-3">
-            <button onclick="backToDiscoverContinents()" class="discover-back-btn mb-3 flex items-center space-x-2 text-xs font-bold text-amber-300 px-3 py-1.5 rounded-xl bg-amber-400/10 cursor-pointer">
+        <div class="pb-16 p-3 space-y-3">
+            <button onclick="backToDiscoverContinents()" class="discover-back-btn flex items-center space-x-2 text-xs font-bold text-amber-300 px-3 py-1.5 rounded-xl bg-amber-400/10 cursor-pointer">
                 <i class="fa-solid fa-arrow-left"></i> <span>All Countries</span>
             </button>
-            <div class="flex items-center justify-between px-3 py-2 mb-2 rounded-xl bg-white/5 border border-amber-400/20">
+            <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-white/5 border border-amber-400/20">
                 <div class="flex items-center space-x-2">
                     <span class="text-xl">${countryObj.flag}</span>
                     <div>
@@ -270,48 +274,104 @@ function renderCountryContactsView(countryObj) {
                 </div>
                 <span class="text-[10px] font-bold text-amber-300 px-2 py-0.5 rounded-full bg-amber-400/10">${matchedUsers.length} Contacts</span>
             </div>
+            <!-- Country Internal Search Bar -->
+            <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
+                <input type="text" id="countryMemberSearch" placeholder="Search members in ${countryObj.name}..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderCountryContactsView(selectedDiscoverCountry, this.value)">
+                <i class="fa-solid fa-magnifying-glass text-amber-300 text-xs"></i>
+            </div>
             ${usersHtml}
         </div>
     `;
 }
 
-function renderContactsView() {
+// Contacts Tab View (with local search and Add New Contact feature)
+function renderContactsView(searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
-    
-    if (localContacts.length === 0) {
-        listContainer.innerHTML = `
+    const q = searchQuery.toLowerCase().trim();
+
+    const filteredContacts = localContacts.filter(c => 
+        c.name.toLowerCase().includes(q) || String(c.phone).includes(q)
+    );
+
+    let contactsHtml = '';
+    if (filteredContacts.length === 0) {
+        contactsHtml = `
             <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 theme-card rounded-2xl border border-white/5 mt-4">
                 <i class="fa-solid fa-address-book text-3xl text-amber-300"></i>
                 <p class="text-xs font-bold gold-gradient-text">No contacts found</p>
-                <p class="text-[10px] text-gray-400">Contacts from global network and local devices will appear here automatically.</p>
+                <p class="text-[10px] text-gray-400">Add a new contact or wait for global users to sync automatically.</p>
             </div>
         `;
+    } else {
+        contactsHtml = filteredContacts.map(c => {
+            const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐', name: 'Global' };
+            const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
+            
+            return `
+            <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card border border-white/5 cursor-pointer" onclick="openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}')">
+                <div class="flex items-center space-x-3 min-w-0">
+                    <div class="relative shrink-0">
+                        ${avatarImg}
+                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline ? 'bg-[#2ed573]' : 'bg-amber-400'}"></span>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>
+                        <p class="text-[10px] text-gray-400">${countryInfo.flag} ${countryInfo.name} • ${c.phone}</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-1 shrink-0">
+                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-sm"></i></button>
+                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-sm"></i></button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    listContainer.innerHTML = `
+        <div class="pb-20 p-3 space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Contacts Directory</h3>
+                <button onclick="openAddContactModal()" class="px-3 py-1.5 rounded-xl gold-btn text-[10px] font-extrabold flex items-center space-x-1.5 cursor-pointer shadow-md">
+                    <i class="fa-solid fa-user-plus text-xs"></i> <span>Add New</span>
+                </button>
+            </div>
+            <!-- Contacts Local Search Bar -->
+            <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
+                <input type="text" id="contactSearchInput" placeholder="Search contact by name or number..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderContactsView(this.value)">
+                <i class="fa-solid fa-magnifying-glass text-amber-300 text-xs"></i>
+            </div>
+            ${contactsHtml}
+        </div>
+    `;
+}
+
+// Add New Manual Contact Prompt / Modal Function
+function openAddContactModal() {
+    const name = prompt("Enter contact name:");
+    if (!name) return;
+    const phone = prompt("Enter mobile/phone number with country code (e.g. +88017...):");
+    if (!phone) return;
+
+    let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+    
+    if (localContacts.find(c => c.phone === cleanPhone)) {
+        if (typeof showToast === 'function') showToast("Contact already exists!", true);
         return;
     }
 
-    listContainer.innerHTML = localContacts.map(c => {
-        const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐', name: 'Global' };
-        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        
-        return `
-        <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card border border-white/5 cursor-pointer" onclick="openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}')">
-            <div class="flex items-center space-x-3 min-w-0">
-                <div class="relative shrink-0">
-                    ${avatarImg}
-                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline ? 'bg-[#2ed573]' : 'bg-amber-400'}"></span>
-                </div>
-                <div class="min-w-0">
-                    <p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>
-                    <p class="text-[10px] text-gray-400">${countryInfo.flag} ${countryInfo.name} • ${c.phone}</p>
-                </div>
-            </div>
-            <div class="flex items-center space-x-1 shrink-0">
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-sm"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-sm"></i></button>
-            </div>
-        </div>`;
-    }).join('');
+    localContacts.push({
+        name: name.trim(),
+        phone: cleanPhone,
+        avatar: "",
+        isOnline: true,
+        appUser: false
+    });
+
+    localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
+    if (typeof showToast === 'function') showToast("Contact added successfully!");
+    renderContactsView();
 }
