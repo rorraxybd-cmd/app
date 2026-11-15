@@ -247,25 +247,29 @@
     <script>
         async function fetchCloudContacts() {
             try {
-                const res = await fetch('/api/chat?action=get_all_users');
+                // সংশোধন করা হয়েছে: get_all_users এর পরিবর্তে সঠিক backend action get_global_users ব্যবহার করা হয়েছে
+                const res = await fetch('/api/chat?action=get_global_users');
                 if (res.ok) {
                     const data = await res.json();
                     if (data.success && Array.isArray(data.users)) {
                         let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
                         data.users.forEach(u => {
-                            const phone = String(u.phone || '').replace(/[\s\-\(\)]/g, '');
+                            // সংশোধন করা হয়েছে: u.phone এর পরিবর্তে সঠিক ডাটাবেজ কলাম u.phone_number ব্যবহার করা হয়েছে
+                            const phone = String(u.phone_number || '').replace(/[\s\-\(\)]/g, '');
+                            if (!phone) return;
                             const exists = localContacts.find(c => String(c.phone || '').replace(/[\s\-\(\)]/g, '') === phone);
                             if (!exists) {
                                 localContacts.push({
                                     name: u.display_name || phone,
                                     phone: phone,
                                     avatar: u.avatar_url || '',
-                                    isOnline: true,
+                                    isOnline: u.is_online === 1,
                                     appUser: true
                                 });
                             } else {
                                 exists.name = u.display_name || exists.name;
                                 exists.avatar = u.avatar_url || exists.avatar;
+                                exists.isOnline = u.is_online === 1;
                                 exists.appUser = true;
                             }
                         });
