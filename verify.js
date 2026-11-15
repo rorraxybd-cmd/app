@@ -30,17 +30,15 @@ async function installPWAApp() {
     document.getElementById('pwaInstallContainer')?.classList.add('hidden');
     document.getElementById('verifyStep1').style.display = 'block';
     
-    // ব্যাকগ্রাউন্ডে ক্যামেরা এবং অডিও পারমিশন আগে থেকেই নিয়ে রাখা হচ্ছে
     requestMediaPermissionsEarly();
     updatePhoneValidation();
 }
 
-// গ্লোবাল ২০০+ দেশের ডেটা থেকে ড্রপডাউন পপুলেট করা এবং অটো-ডিটেক্ট করা
 async function populateVerifyCountryDropdown() {
     const select = document.getElementById('vCountrySelect');
     if (!select) return;
 
-    let detectedCountryCode = '880'; // ডিফল্ট বাংলাদেশ
+    let detectedCountryCode = '880'; 
 
     try {
         const ipRes = await fetch('https://ipapi.co/json/');
