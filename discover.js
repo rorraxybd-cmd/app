@@ -211,7 +211,7 @@ function backToDiscoverContinents() {
     renderDiscoverDirectory();
 }
 
-// Country specific view with internal search bar for members
+// Country specific view with internal search bar for members (Phone numbers hidden, 3 golden action icons added)
 function renderCountryContactsView(countryObj, searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
@@ -222,7 +222,7 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
     const matchedUsers = allUsers.filter(u => {
         const info = typeof getCountryInfo === 'function' ? getCountryInfo(u.phone) : { name: '' };
         const isMatchCountry = (info.name && info.name.toLowerCase() === countryObj.name.toLowerCase()) || String(u.phone || '').replace(/[\s\-\(\)]/g, '').startsWith(countryObj.code);
-        const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase()) || String(u.phone).includes(searchQuery);
+        const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase());
         return isMatchCountry && matchesSearch;
     });
 
@@ -232,7 +232,7 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
             <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 theme-card rounded-2xl border border-white/5 mt-2">
                 <span class="text-4xl">${countryObj.flag}</span>
                 <p class="text-xs font-bold gold-gradient-text">No active members found in ${countryObj.name}</p>
-                <p class="text-[10px] text-gray-400">Anyone joining MESSAGE from ${countryObj.name} (+${countryObj.code}) will appear here automatically.</p>
+                <p class="text-[10px] text-gray-400">Anyone joining MESSAGE from ${countryObj.name} will appear here automatically.</p>
             </div>
         `;
     } else {
@@ -247,13 +247,20 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
                     </div>
                     <div class="min-w-0">
                         <p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>
-                        <p class="text-[10px] text-gray-400">${countryObj.flag} ${countryObj.name} • +${c.phone}</p>
+                        <p class="text-[10px] text-gray-400">${countryObj.flag} ${countryObj.name}</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-2 shrink-0 pl-3">
-                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-sm"></i></button>
-                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-sm"></i></button>
-                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-sm"></i></button>
+                <!-- 3 Golden Action Icons: Chat, Audio Call, Video Call -->
+                <div class="flex items-center space-x-1 shrink-0 pl-2">
+                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat">
+                        <i class="fa-solid fa-comment text-sm" style="color: #F5D061;"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call">
+                        <i class="fa-solid fa-phone text-sm" style="color: #F5D061;"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call">
+                        <i class="fa-solid fa-video text-sm" style="color: #F5D061;"></i>
+                    </button>
                 </div>
             </div>`;
         }).join('');
@@ -284,7 +291,7 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
     `;
 }
 
-// Contacts Tab View (with local search and Add New Contact feature)
+// Contacts Tab View (Phone numbers hidden, 3 golden action icons added)
 function renderContactsView(searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
@@ -293,7 +300,7 @@ function renderContactsView(searchQuery = '') {
     const q = searchQuery.toLowerCase().trim();
 
     const filteredContacts = localContacts.filter(c => 
-        c.name.toLowerCase().includes(q) || String(c.phone).includes(q)
+        c.name.toLowerCase().includes(q)
     );
 
     let contactsHtml = '';
@@ -319,12 +326,20 @@ function renderContactsView(searchQuery = '') {
                     </div>
                     <div class="min-w-0">
                         <p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>
-                        <p class="text-[10px] text-gray-400">${countryInfo.flag} ${countryInfo.name} • ${c.phone}</p>
+                        <p class="text-[10px] text-gray-400">${countryInfo.flag} ${countryInfo.name}</p>
                     </div>
                 </div>
+                <!-- 3 Golden Action Icons: Chat, Audio Call, Video Call -->
                 <div class="flex items-center space-x-1 shrink-0">
-                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-sm"></i></button>
-                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-sm"></i></button>
+                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat">
+                        <i class="fa-solid fa-comment text-sm" style="color: #F5D061;"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call">
+                        <i class="fa-solid fa-phone text-sm" style="color: #F5D061;"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call">
+                        <i class="fa-solid fa-video text-sm" style="color: #F5D061;"></i>
+                    </button>
                 </div>
             </div>`;
         }).join('');
@@ -340,7 +355,7 @@ function renderContactsView(searchQuery = '') {
             </div>
             <!-- Contacts Local Search Bar -->
             <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
-                <input type="text" id="contactSearchInput" placeholder="Search contact by name or number..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderContactsView(this.value)">
+                <input type="text" id="contactSearchInput" placeholder="Search contact by name..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderContactsView(this.value)">
                 <i class="fa-solid fa-magnifying-glass text-amber-300 text-xs"></i>
             </div>
             ${contactsHtml}
