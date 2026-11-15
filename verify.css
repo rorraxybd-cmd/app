@@ -77,7 +77,6 @@ body {
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
 }
 
-/* লোগো বড় করা হয়েছে (মোবাইল ও কম্পিউটারের জন্য নিখুঁত) */
 .header-logo-clean {
     width: 95px;
     height: 95px;
@@ -100,7 +99,6 @@ body {
     overflow-y: auto;
 }
 
-/* ভেরিফিকেশন কার্ডের সাইজ বড় ও প্রিমিয়াম করা হয়েছে */
 .verify-card {
     background: #0e0e0e;
     border-radius: 28px;
