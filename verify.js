@@ -2,14 +2,14 @@ let deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let isVerifiedSession = localStorage.getItem('salaam_verified_v18') === 'true';
 
-const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'salaam'];
+const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'message'];
 
 let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v18') || 'null') || [{
     name: "Mr. Masudar",
     phone: "+8801700000000",
     username: "mrmasudar",
     themeColor: "emerald",
-    avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg"
+    avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg"
 }];
 
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -30,7 +30,6 @@ async function installPWAApp() {
     document.getElementById('pwaInstallContainer')?.classList.add('hidden');
     document.getElementById('verifyStep1').style.display = 'block';
     
-    requestMediaPermissionsEarly();
     populateVerifyCountryDropdown();
 }
 
@@ -63,7 +62,6 @@ async function populateVerifyCountryDropdown() {
         GLOBAL_CONTINENTS_DATA.forEach(continent => {
             continent.countries.forEach(c => {
                 const isSelected = (c.code === detectedCountryCode) ? 'selected' : '';
-                // কান্ট্রি কোড ও পতাকা প্রথমে রাখা হয়েছে যাতে কেটে না যায়
                 html += `<option value="+${c.code}|10" ${isSelected}>${c.flag} +${c.code} (${c.name})</option>`;
             });
         });
@@ -100,16 +98,6 @@ function updatePhoneValidation() {
     phoneInput.placeholder = "1700000000";
 }
 
-async function requestMediaPermissionsEarly() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            audio: { echoCancellation: true, noiseSuppression: true }, 
-            video: true 
-        });
-        stream.getTracks().forEach(track => track.stop());
-    } catch (err) {}
-}
-
 async function submitVerifyStep1() {
     const name = document.getElementById('vFullName').value.trim();
     const selectData = document.getElementById('vCountrySelect').value.split('|');
@@ -133,7 +121,6 @@ async function submitVerifyStep1() {
     document.getElementById('verifyStep1').style.display = 'none';
     document.getElementById('verifyStep2').style.display = 'block';
     
-    // কোডটি সরাসরি ইনপুট বক্সে অটো-ফিল হয়ে যাবে
     const otpInput = document.getElementById('vOtpInput');
     if (otpInput) otpInput.value = generatedOtpCode;
 
@@ -146,8 +133,6 @@ async function submitVerifyStep2() {
 
     isVerifiedSession = true;
     localStorage.setItem('salaam_verified_v18', 'true');
-    
-    await requestMediaPermissionsEarly();
 
     try {
         const res = await fetch(`/api/chat?action=get_user_profile&phone=${encodeURIComponent(tempVerifyPhone)}`);
@@ -159,7 +144,7 @@ async function submitVerifyStep2() {
                     phone: tempVerifyPhone,
                     username: data.user.username || ('user_' + Math.floor(1000 + Math.random() * 9000)),
                     themeColor: data.user.themeColor || "emerald",
-                    avatar: data.user.avatar_url || "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg"
+                    avatar: data.user.avatar_url || "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg"
                 };
                 saveProfiles();
             } else {
@@ -423,3 +408,4 @@ function deleteAllNotifications() {
     renderNotificationsDropdown();
     showToast("Cleared unpinned notifications");
 }
+```[cite: 5]
