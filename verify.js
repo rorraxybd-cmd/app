@@ -227,7 +227,6 @@ function renderProfileView(isEditing = false) {
 
     const phoneStr = profile.phone || '';
     const maskedPhone = phoneStr.length > 6 ? phoneStr.substring(0, 5) + '******' + phoneStr.slice(-2) : phoneStr;
-    const profileShareUrl = `chat.rorraxy.com/${profile.username || 'user'}`;
 
     const searchBarContainer = document.getElementById('searchBarContainer');
     if (searchBarContainer) searchBarContainer.style.display = 'none';
@@ -252,11 +251,11 @@ function renderProfileView(isEditing = false) {
                     </p>
                 </div>
 
-                <!-- Share Profile Box (শুধু ক্লিন ইউআরএল) -->
+                <!-- সুন্দর পরিপাটি শেয়ার বাটন (বাটনে কোনো বড় ইউআরএল লেখা থাকবে না, ক্লিকের পর জাস্ট লিংক কপি হবে) -->
                 <div class="pt-2">
                     <button onclick="shareProfileLink()" class="w-full py-3 px-4 rounded-2xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 text-xs font-bold border border-amber-400/30 flex items-center justify-center space-x-2 transition cursor-pointer shadow-inner">
                         <i class="fa-solid fa-share-nodes"></i>
-                        <span class="truncate">${profileShareUrl}</span>
+                        <span>Share Profile Link</span>
                     </button>
                 </div>
             </div>
