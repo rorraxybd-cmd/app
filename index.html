@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=17.0">
+    <link rel="stylesheet" href="/discover.css?v=18.0">
     <style>
         :root {
             --bg-main: #030305;
@@ -245,13 +245,43 @@
     </div>
 
     <!-- Modular JavaScript Files Connection -->
-    <script src="/discover.js?v=17.0"></script>
-    <script src="/verify.js?v=17.0"></script>
-    <script src="/call.js?v=17.0"></script>
-    <script src="/message.js?v=17.0"></script>
-    <script src="/transfer.js?v=17.0"></script>
+    <script src="/discover.js?v=18.0"></script>
+    <script src="/verify.js?v=18.0"></script>
+    <script src="/call.js?v=18.0"></script>
+    <script src="/message.js?v=18.0"></script>
+    <script src="/transfer.js?v=18.0"></script>
     
     <script>
+        // ক্লাউড থেকে সব রেজিস্টার্ড ইউজার ফেচ করে কন্টাক্ট লিস্ট আপডেট করার ফাংশন
+        async function fetchCloudContacts() {
+            try {
+                const res = await fetch('/api/chat?action=get_all_users');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.users)) {
+                        let localContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || '[]');
+                        data.users.forEach(u => {
+                            const phone = String(u.phone || '').replace(/[\s\-\(\)]/g, '');
+                            const exists = localContacts.find(c => String(c.phone || '').replace(/[\s\-\(\)]/g, '') === phone);
+                            if (!exists) {
+                                localContacts.push({
+                                    name: u.display_name || phone,
+                                    phone: phone,
+                                    avatar: u.avatar_url || '',
+                                    isOnline: true,
+                                    appUser: true
+                                });
+                            } else {
+                                exists.name = u.display_name || exists.name;
+                                exists.avatar = u.avatar_url || exists.avatar;
+                            }
+                        });
+                        localStorage.setItem('salaam_contacts_v18', JSON.stringify(localContacts));
+                    }
+                }
+            } catch (e) {}
+        }
+
         // সুনির্দিষ্ট ট্যাব সুইচিং এবং মডিউল রেন্ডারিং লজিক
         function switchTab(tabName) {
             const tabs = ['Profile', 'Discover', 'Contact', 'Chat', 'Calls'];
@@ -311,7 +341,9 @@
                 if (typeof selectedDiscoverCountry !== 'undefined') selectedDiscoverCountry = null;
                 if (typeof renderDiscoverDirectory === 'function') renderDiscoverDirectory();
             } else if (tabName === 'contact') {
-                if (typeof renderContactsView === 'function') renderContactsView();
+                fetchCloudContacts().then(() => {
+                    if (typeof renderContactsView === 'function') renderContactsView();
+                });
             } else if (tabName === 'chat') {
                 if (typeof renderChatHistoryList === 'function') renderChatHistoryList();
             } else if (tabName === 'calls') {
@@ -346,6 +378,7 @@
         function initAppAfterVerification() {
             const overlay = document.getElementById('verifyOverlay');
             if (overlay) overlay.style.display = 'none';
+            fetchCloudContacts();
             switchTab('contact');
             if (typeof startIncomingCallPolling === 'function') {
                 startIncomingCallPolling();
