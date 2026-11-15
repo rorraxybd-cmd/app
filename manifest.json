@@ -1,12 +1,12 @@
 {
-  "name": "SALAAM - rorraxy.com",
-  "short_name": "SALAAM",
-  "description": "Secure Real-Time P2P Messenger by rorraxy.com",
+  "name": "MESSAGE - rorraxy.com",
+  "short_name": "MESSAGE",
+  "description": "Secure Real-Time Messenger by rorraxy.com",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#030305",
-  "theme_color": "#030305",
+  "background_color": "#04120b",
+  "theme_color": "#04120b",
   "orientation": "portrait",
   "icons": [
     {
