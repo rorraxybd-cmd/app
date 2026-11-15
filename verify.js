@@ -1,413 +1,112 @@
-let deferredPrompt = null;
-let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
-let isVerifiedSession = localStorage.getItem('salaam_verified_v18') === 'true';
-
-const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'salaam'];
-
-let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v18') || 'null') || [{
-    name: "Mr. Masudar",
-    phone: "+8801700000000",
-    username: "mrmasudar",
-    themeColor: "emerald",
-    avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg"
-}];
-
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    document.getElementById('pwaInstallContainer')?.classList.remove('hidden');
-});
-
-async function installPWAApp() {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const choiceResult = await deferredPrompt.userChoice;
-        if (choiceResult.outcome === 'accepted') {
-            document.getElementById('pwaInstallContainer')?.classList.add('hidden');
-        }
-        deferredPrompt = null;
-    }
-    document.getElementById('pwaInstallContainer')?.classList.add('hidden');
-    document.getElementById('verifyStep1').style.display = 'block';
-    updatePhoneValidation();
+:root, [data-theme="emerald"] {
+    --bg-main: #020d08;
+    --bg-surface: #04120b;
+    --bg-card: #071910;
+    --bg-input: #091f15;
+    --bg-bubble-me: linear-gradient(135deg, rgba(13, 46, 30, 0.96) 0%, rgba(7, 28, 18, 0.96) 100%);
+    --bg-bubble-them: rgba(7, 22, 15, 0.88);
+    --bubble-border: rgba(46, 213, 115, 0.22);
+    --gold-gradient: linear-gradient(135deg, #F5D061 0%, #FCF6BA 35%, #D4AF37 65%, #FBF5B7 85%, #AA771C 100%);
+    --pink-solid: linear-gradient(135deg, #EC4899 0%, #ff2e7e 100%);
+    --text-white: #ffffff;
+    --text-gray: #9ca3af;
 }
 
-// গ্লোবাল ২০০+ দেশের ডেটা থেকে ড্রপডাউন স্বয়ংক্রিয়ভাবে পপুলেট করার ফাংশন
-function populateVerifyCountryDropdown() {
-    const select = document.getElementById('vCountrySelect');
-    if (!select) return;
-
-    if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined' && Array.isArray(GLOBAL_CONTINENTS_DATA)) {
-        let html = '';
-        GLOBAL_CONTINENTS_DATA.forEach(continent => {
-            continent.countries.forEach(c => {
-                const isSelected = (c.code === '880' && c.name === 'Bangladesh') ? 'selected' : '';
-                html += `<option value="+${c.code}|10" ${isSelected}>${c.flag} ${c.name} (+${c.code})</option>`;
-            });
-        });
-        select.innerHTML = html;
-    } else {
-        select.innerHTML = `<option value="+880|10" selected>🇧🇩 Bangladesh (+880)</option>`;
-    }
-    updatePhoneValidation();
+[data-theme="black"] {
+    --bg-main: #000000;
+    --bg-surface: #070707;
+    --bg-card: #0e0e0e;
+    --bg-input: #121212;
+    --bg-bubble-me: linear-gradient(135deg, rgba(28, 24, 16, 0.96) 0%, rgba(18, 15, 10, 0.96) 100%);
+    --bg-bubble-them: rgba(20, 20, 20, 0.88);
+    --bubble-border: rgba(245, 208, 97, 0.2);
+    --gold-gradient: linear-gradient(135deg, #F5D061 0%, #D4AF37 100%);
 }
 
-function getCountryInfo(phone) {
-    const p = String(phone || '').replace(/[\s\-\(\)]/g, '');
-    if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined') {
-        for (const cont of GLOBAL_CONTINENTS_DATA) {
-            for (const c of cont.countries) {
-                if (p.startsWith('+' + c.code) || p.startsWith(c.code)) {
-                    return { code: '+' + c.code, name: c.name, flag: c.flag };
-                }
-            }
-        }
-    }
-    return { code: 'OTHER', name: 'Global', flag: '🌍' };
+[data-theme="luxury"] {
+    --bg-main: #0c0a09;
+    --bg-surface: #1c1917;
+    --bg-card: #292524;
+    --bg-input: #44403c;
+    --bg-bubble-me: linear-gradient(135deg, rgba(120, 53, 15, 0.9) 0%, rgba(69, 26, 3, 0.9) 100%);
+    --bg-bubble-them: rgba(41, 37, 36, 0.9);
+    --bubble-border: rgba(251, 191, 36, 0.3);
+    --gold-gradient: linear-gradient(135deg, #FBBF24 0%, #F59E0B 50%, #B45309 100%);
 }
 
-function getActiveProfile() { return savedProfiles[0]; }
-function saveProfiles() { localStorage.setItem('salaam_profiles_v18', JSON.stringify(savedProfiles)); }
-function normPhone(p) { return String(p || '').replace(/[\s\-\(\)]/g, ''); }
-
-async function detectUserIp() {
-    try {
-        const res = await fetch('https://ipapi.co/json/').catch(() => null);
-        if (res && res.ok) { let data = await res.json(); userDeviceIp = data.ip || 'Unknown'; }
-    } catch (e) { userDeviceIp = 'Unknown'; }
+* {
+    box-sizing: border-box;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
 }
 
-function updatePhoneValidation() {
-    const select = document.getElementById('vCountrySelect'), phoneInput = document.getElementById('vPhoneInput');
-    if (!select || !phoneInput) return;
-    const val = select.value.split('|');
-    phoneInput.maxLength = val[1] || 10;
-    phoneInput.placeholder = "Enter phone number";
+*::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
-async function submitVerifyStep1() {
-    const name = document.getElementById('vFullName').value.trim();
-    const selectData = document.getElementById('vCountrySelect').value.split('|');
-    const countryCode = selectData[0], requiredLen = parseInt(selectData[1], 10) || 10;
-    const phone = document.getElementById('vPhoneInput').value.trim();
-
-    if (!name) { showToast("Please enter your full name", true); return; }
-    if (!phone || phone.length < 6) { showToast(`Enter valid phone number`, true); return; }
-
-    tempVerifyName = name; tempVerifyPhone = countryCode + phone;
-    generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-    if (userDeviceIp === "Unknown" || userDeviceIp === "Detecting...") { await detectUserIp(); }
-
-    try {
-        await fetch('/api/chat?action=send_magic_link', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ display_name: tempVerifyName, phone: tempVerifyPhone, magic_code: generatedOtpCode, ip: userDeviceIp })
-        });
-    } catch (e) {}
-
-    document.getElementById('verifyStep1').style.display = 'none';
-    document.getElementById('verifyStep2').style.display = 'block';
-    document.getElementById('vDisplayCode').innerText = generatedOtpCode;
-    showToast("Verification code ready");
+body {
+    background-color: var(--bg-main);
+    color: var(--text-white);
+    font-family: 'Poppins', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+    margin: 0;
+    padding: 0;
 }
 
-function autoFillOtp() { document.getElementById('vOtpInput').value = generatedOtpCode; }
+.theme-surface { background-color: var(--bg-surface); }
+.theme-card { background-color: var(--bg-card); }
+.theme-input { background-color: var(--bg-input); }
+.brand-title-font { font-family: 'Cinzel', serif; letter-spacing: 0.16em; }
+.gold-gradient-text { background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.pink-gradient-text { background: var(--pink-solid); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.gold-btn { background: var(--gold-gradient); color: #000000; font-weight: 600; }
+.pink-btn { background: var(--pink-solid); color: #ffffff; font-weight: 600; }
 
-async function requestMediaPermissionsEarly() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            audio: { echoCancellation: true, noiseSuppression: true }, 
-            video: true 
-        });
-        stream.getTracks().forEach(track => track.stop());
-    } catch (err) {}
+.chat-bubble-me {
+    background: var(--bg-bubble-me);
+    border: 1px solid var(--bubble-border);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
 }
 
-async function submitVerifyStep2() {
-    const entered = document.getElementById('vOtpInput').value.trim();
-    if (entered !== generatedOtpCode) { showToast("Invalid code", true); return; }
-
-    isVerifiedSession = true;
-    localStorage.setItem('salaam_verified_v18', 'true');
-    
-    await requestMediaPermissionsEarly();
-
-    try {
-        const res = await fetch(`/api/chat?action=get_user_profile&phone=${encodeURIComponent(tempVerifyPhone)}`);
-        if (res.ok) {
-            const data = await res.json();
-            if (data.success && data.user) {
-                savedProfiles[0] = {
-                    name: data.user.display_name || tempVerifyName,
-                    phone: tempVerifyPhone,
-                    username: data.user.username || ('user_' + Math.floor(1000 + Math.random() * 9000)),
-                    themeColor: data.user.themeColor || "emerald",
-                    avatar: data.user.avatar_url || "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg"
-                };
-                saveProfiles();
-            } else {
-                const p = getActiveProfile();
-                p.name = tempVerifyName; p.phone = tempVerifyPhone;
-                saveProfiles();
-            }
-        }
-    } catch (e) {
-        const p = getActiveProfile();
-        p.name = tempVerifyName; p.phone = tempVerifyPhone;
-        saveProfiles();
-    }
-
-    if (userDeviceIp === "Unknown" || userDeviceIp === "Detecting...") { await detectUserIp(); }
-
-    try {
-        await fetch('/api/chat?action=verify_magic_code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: tempVerifyPhone, magic_code: entered, ip: userDeviceIp, unique_id: 'usr_' + Date.now(), contacts_json: JSON.stringify([]) })
-        });
-    } catch (e) {}
-
-    if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-    
-    const overlay = document.getElementById('verifyOverlay');
-    if (overlay) overlay.style.display = 'none';
-    
-    showToast("Verified & Connected");
-    
-    if (typeof initAppAfterVerification === 'function') {
-        initAppAfterVerification();
-    } else if (typeof switchTab === 'function') {
-        switchTab('contact');
-    }
+.chat-bubble-them {
+    background: var(--bg-bubble-them);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
 }
 
-function checkInitialVerification() {
-    detectUserIp();
-    populateVerifyCountryDropdown();
-    const overlay = document.getElementById('verifyOverlay');
-    if (!isVerifiedSession) {
-        if (overlay) overlay.style.display = 'flex';
-        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-            document.getElementById('pwaInstallContainer')?.classList.add('hidden');
-            document.getElementById('verifyStep1').style.display = 'block';
-            updatePhoneValidation();
-        } else {
-            document.getElementById('pwaInstallContainer')?.classList.remove('hidden');
-        }
-    } else {
-        if (overlay) overlay.style.display = 'none';
-        if (typeof initAppAfterVerification === 'function') {
-            initAppAfterVerification();
-        } else {
-            setTimeout(() => {
-                if (typeof initAppAfterVerification === 'function') {
-                    initAppAfterVerification();
-                } else if (typeof switchTab === 'function') {
-                    switchTab('contact');
-                }
-            }, 300);
-        }
-    }
+/* লোগো বড় করা হয়েছে (মোবাইল ও কম্পিউটারের জন্য নিখুঁত) */
+.header-logo-clean {
+    width: 95px;
+    height: 95px;
+    object-fit: contain;
+    background: transparent !important;
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
 }
 
-function renderProfileView() {
-    const profile = getActiveProfile();
-    const sidebarList = document.getElementById('sidebarContentList');
-    if (!sidebarList) return;
-
-    const phoneStr = profile.phone || '';
-    const maskedPhone = phoneStr.length > 6 ? phoneStr.substring(0, 5) + '******' + phoneStr.slice(-2) : phoneStr;
-
-    sidebarList.innerHTML = `
-        <div class="p-4 space-y-4">
-            <div class="text-center space-y-2 theme-card p-5 rounded-3xl border border-amber-400/20 shadow-xl">
-                <div class="relative w-24 h-24 mx-auto">
-                    <img id="profileAvatarPreview" src="${profile.avatar}" class="w-24 h-24 rounded-full object-cover border-2 border-amber-400/60 bg-black shadow-lg">
-                    <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full pink-btn flex items-center justify-center cursor-pointer shadow-md hover:scale-110 transition" title="Change Photo">
-                        <i class="fa-solid fa-camera text-xs"></i>
-                        <input type="file" accept="image/*" class="hidden" onchange="handleProfileAvatarChange(this)">
-                    </label>
-                </div>
-                <div>
-                    <h3 class="text-base font-bold gold-gradient-text">Mr. ${profile.name}</h3>
-                    <p class="text-[11px] text-gray-400 mt-0.5"><i class="fa-solid fa-phone text-amber-300 mr-1"></i> <span class="tracking-wider">${maskedPhone}</span> <span class="text-[9px] bg-amber-400/10 text-amber-300 px-1.5 py-0.5 rounded ml-1">Secret</span></p>
-                </div>
-            </div>
-
-            <div class="space-y-3.5 theme-card p-5 rounded-3xl border border-amber-400/20 shadow-xl">
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text">FULL NAME</label>
-                    <input type="text" id="editDisplayName" value="${profile.name}" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white focus:outline-none border border-white/10">
-                </div>
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text">USERNAME</label>
-                    <input type="text" id="editUsername" value="${profile.username}" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white focus:outline-none border border-white/10" placeholder="username">
-                </div>
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text">THEME STYLE</label>
-                    <select id="editThemeColor" onchange="previewThemeStyle(this.value)" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer">
-                        <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>emerald Dark (Default)</option>
-                        <option value="luxury" ${profile.themeColor==='luxury'?'selected':''}>Luxury Blue</option>
-                        <option value="black" ${profile.themeColor==='black'?'selected':''}>Classic Black</option>
-                    </select>
-                </div>
-                <button onclick="saveProfileSettings()" class="w-full py-3.5 gold-btn text-xs rounded-xl font-bold cursor-pointer shadow-lg mt-2 transition hover:brightness-110">
-                    SAVE & SYNC PROFILE
-                </button>
-            </div>
-        </div>
-    `;
+#verifyOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.92);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow-y: auto;
 }
 
-function previewThemeStyle(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    const profile = getActiveProfile();
-    profile.themeColor = theme;
-    saveProfiles();
-}
-
-function handleProfileAvatarChange(input) {
-    if (!input.files || !input.files[0]) return;
-    const file = input.files[0];
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = new Image();
-        img.onload = async function() {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 350;
-            const MAX_HEIGHT = 350;
-            let width = img.width;
-            let height = img.height;
-
-            if (width > height) {
-                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-            } else {
-                if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
-            
-            const profile = getActiveProfile();
-            profile.avatar = compressedDataUrl;
-            saveProfiles();
-            
-            const avatarPreview = document.getElementById('profileAvatarPreview');
-            if (avatarPreview) avatarPreview.src = compressedDataUrl;
-
-            try {
-                await fetch('/api/chat?action=update_profile', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: profile.phone, avatar_url: compressedDataUrl })
-                });
-                showToast("Profile photo optimized & synced");
-            } catch (err) {
-                showToast("Saved locally", true);
-            }
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
-async function saveProfileSettings() {
-    const newName = document.getElementById('editDisplayName').value.trim();
-    const newUsername = document.getElementById('editUsername').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-    const newTheme = document.getElementById('editThemeColor').value;
-    
-    if (!newName) { showToast("Display name cannot be empty", true); return; }
-    if (RESERVED_USERNAMES.includes(newUsername)) { showToast("Username is reserved", true); return; }
-
-    const profile = getActiveProfile();
-    profile.name = newName;
-    if (newUsername) profile.username = newUsername;
-    profile.themeColor = newTheme;
-    saveProfiles();
-    document.documentElement.setAttribute('data-theme', newTheme);
-
-    try {
-        await fetch('/api/chat?action=update_profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                phone: profile.phone,
-                display_name: profile.name,
-                username: profile.username,
-                avatar_url: profile.avatar,
-                themeColor: profile.themeColor
-            })
-        });
-        showToast("Profile synced successfully");
-        renderProfileView();
-    } catch (e) {
-        showToast("Saved locally", true);
-    }
-}
-
-let notificationStore = JSON.parse(localStorage.getItem('salaam_notifications_v1') || '[]');
-
-function toggleNotificationPanel() {
-    const panel = document.getElementById('notificationPanel');
-    if (!panel) return;
-    if (panel.classList.contains('hidden')) {
-        panel.classList.remove('hidden');
-        renderNotificationsDropdown();
-    } else {
-        panel.classList.add('hidden');
-    }
-}
-
-function renderNotificationsDropdown() {
-    const container = document.getElementById('notificationListContainer');
-    if (!container) return;
-
-    if (notificationStore.length === 0) {
-        container.innerHTML = `<p class="text-center text-gray-500 py-4 text-[11px]">No new notifications</p>`;
-        document.getElementById('headerNotifBadge')?.classList.add('hidden');
-        return;
-    }
-
-    container.innerHTML = notificationStore.map((n, idx) => `
-        <div class="flex items-center justify-between p-2 rounded-xl bg-black/40 border border-white/5 space-x-2">
-            <div class="flex items-center space-x-2 min-w-0">
-                <input type="checkbox" ${n.keepPinned ? 'checked' : ''} onchange="togglePinNotification(${idx})" class="accent-amber-400 cursor-pointer" title="Keep important">
-                <p class="truncate text-white text-[11px]">${n.text}</p>
-            </div>
-            <button onclick="deleteSingleNotification(${idx})" class="text-gray-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-trash"></i></button>
-        </div>
-    `).join('');
-
-    const badge = document.getElementById('headerNotifBadge');
-    if (badge) {
-        badge.innerText = notificationStore.length;
-        badge.classList.remove('hidden');
-    }
-}
-
-function togglePinNotification(idx) {
-    if (notificationStore[idx]) {
-        notificationStore[idx].keepPinned = !notificationStore[idx].keepPinned;
-        localStorage.setItem('salaam_notifications_v1', JSON.stringify(notificationStore));
-    }
-}
-
-function deleteSingleNotification(idx) {
-    notificationStore.splice(idx, 1);
-    localStorage.setItem('salaam_notifications_v1', JSON.stringify(notificationStore));
-    renderNotificationsDropdown();
-}
-
-function deleteAllNotifications() {
-    notificationStore = notificationStore.filter(n => n.keepPinned);
-    localStorage.setItem('salaam_notifications_v1', JSON.stringify(notificationStore));
-    renderNotificationsDropdown();
-    showToast("Cleared unpinned notifications");
+/* ভেরিফিকেশন কার্ডের সাইজ বড় ও প্রিমিয়াম করা হয়েছে */
+.verify-card {
+    background: #0e0e0e;
+    border-radius: 28px;
+    padding: 32px 26px;
+    max-width: 440px;
+    width: 100%;
+    border: 1.5px solid rgba(212, 175, 55, 0.35);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
 }
