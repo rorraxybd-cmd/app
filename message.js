@@ -8,7 +8,6 @@ function persistMessages() {
     localStorage.setItem('salaam_messages_v18', JSON.stringify(localMessageStore)); 
 }
 
-// প্রয়োজনীয় সেফটি হেল্পার ফাংশনসমূহ (মেসেজ সেন্ড ও রেন্ডার সচল রাখার জন্য)
 function normPhone(p) {
     return String(p || '').replace(/[\s\-\(\)\+]/g, '');
 }
@@ -247,4 +246,3 @@ function loadMessages() {
     }).join('');
     container.scrollTop = container.scrollHeight;
 }
-```[cite: 15]
