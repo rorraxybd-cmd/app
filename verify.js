@@ -363,7 +363,7 @@ async function saveProfileSettings() {
     }
 }
 
-let notificationStore = JSON.parse(localStorage.getItem('salaam_notifications_v1'] || '[]');
+let notificationStore = JSON.parse(localStorage.getItem('salaam_notifications_v1') || '[]');
 
 function toggleNotificationPanel() {
     const panel = document.getElementById('notificationPanel');
