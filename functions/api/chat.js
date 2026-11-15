@@ -10,14 +10,12 @@ export async function onRequest(context) {
         'Content-Type': 'application/json'
     };
 
-    // CORS Preflight Request হ্যান্ডেল করা
     if (request.method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
     }
 
     try {
         switch (action) {
-            // ১. গ্লোবাল ইউজার লিস্ট ফেচ করা
             case 'get_global_users': {
                 if (request.method !== 'GET') break;
                 const { results } = await env.chat.prepare(
@@ -26,7 +24,6 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true, users: results || [] }, corsHeaders);
             }
 
-            // ২. নির্দিষ্ট ইউজারের প্রোফাইল ফেচ করা
             case 'get_user_profile': {
                 if (request.method !== 'GET') break;
                 const phone = url.searchParams.get('phone');
@@ -36,23 +33,22 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true, user: user || null }, corsHeaders);
             }
 
-            // ৩. কল সিগন্যাল পাঠানো
             case 'send_call_signal': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
-                const { caller_phone, receiver_phone, call_type, status } = body;
+                const { caller_phone, receiver_phone, call_type, status, rtc_data } = body;
                 const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
                 const callId = 'call_' + receiver_phone;
-                
+                const signalPayload = JSON.stringify({ caller: caller_phone, type: call_type, status, rtc: rtc_data || null, ts: Date.now() });
+
                 await env.chat.prepare(
                     `INSERT OR REPLACE INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, is_verified, is_online, expires_at, updated_at) 
                      VALUES (?, 'call_signal', ?, ?, ?, ?, 1, 1, ?, CURRENT_TIMESTAMP)`
-                ).bind(callId, caller_phone, receiver_phone, caller_phone, `${call_type}:${status}`, expiresAt).run();
+                ).bind(callId, caller_phone, receiver_phone, caller_phone, signalPayload, expiresAt).run();
 
                 return jsonResponse({ success: true }, corsHeaders);
             }
 
-            // ৪. কল সিগন্যাল চেক করা
             case 'check_call_signal': {
                 if (request.method !== 'GET') break;
                 const phone = url.searchParams.get('phone');
@@ -63,35 +59,26 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true, signal: res || null }, corsHeaders);
             }
 
-            // ৫. চ্যাট মেসেজ পাঠানো
             case 'send_chat_message': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
-                const { sender_phone, receiver_phone, message_text, media_url, message_type, file_size } = body;
+                const { sender_phone, receiver_phone, message_text, media_url, message_type } = body;
                 
                 const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
                 const payload = `${message_type || 'text'}:${message_text || ''}:${media_url || ''}`;
-                const msgId = 'msg_' + Date.now() + Math.random();
+                const msgId = 'msg_' + Date.now() + '_' + Math.random();
 
                 await env.chat.prepare(
-                    `INSERT INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, message_text, media_url, message_status, file_size, expires_at, is_verified, is_online, updated_at) 
-                     VALUES (?, 'chat_msg', ?, ?, ?, ?, ?, ?, 'sent', ?, ?, 1, 1, CURRENT_TIMESTAMP)`
+                    `INSERT INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, message_text, media_url, message_status, expires_at, is_verified, is_online, updated_at) 
+                     VALUES (?, 'chat_msg', ?, ?, ?, ?, ?, ?, 'sent', ?, 1, 1, CURRENT_TIMESTAMP)`
                 ).bind(
-                    msgId, 
-                    sender_phone, 
-                    receiver_phone, 
-                    sender_phone, 
-                    payload, 
-                    message_text || '', 
-                    media_url || '', 
-                    file_size || 0,
-                    expiresAt
+                    msgId, sender_phone, receiver_phone, sender_phone, payload, 
+                    message_text || '', media_url || '', expiresAt
                 ).run();
 
                 return jsonResponse({ success: true, message_id: msgId }, corsHeaders);
             }
 
-            // ৬. চ্যাট মেসেজগুলো রিড করা (এখানে id যুক্ত করা হয়েছে)
             case 'get_chat_messages': {
                 if (request.method !== 'GET') break;
                 const phone = url.searchParams.get('phone');
@@ -104,7 +91,6 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true, messages: results || [] }, corsHeaders);
             }
 
-            // নতুন: ৭. ক্লাউড ডাটাবেজ থেকে চ্যাট হিস্ট্রি ডিলিট বা ক্লিয়ার করা
             case 'clear_chat_history': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
@@ -117,113 +103,28 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true }, corsHeaders);
             }
 
-            // ৮. ম্যাজিক লিংক পাঠানো
-            case 'send_magic_link': {
+            case 'delete_single_message': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
-                const { display_name, phone, magic_code, ip } = body;
-                const clientIp = (ip && ip !== 'Detecting...' && ip !== 'Unknown') ? ip : (request.headers.get('CF-Connecting-IP') || 'Unknown');
-                const defaultUsername = 'user_' + Math.floor(1000 + Math.random() * 9000);
-                const userId = 'user_' + phone;
+                const { message_id } = body;
 
-                const existing = await env.chat.prepare(
-                    "SELECT username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND phone_number = ?"
-                ).bind(phone).first();
-
-                const finalUsername = existing && existing.username ? existing.username : defaultUsername;
-
-                await env.chat.prepare(
-                    `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, username, magic_code, ip_address, is_verified, is_online) 
-                     VALUES (?, 'user', ?, ?, ?, ?, ?, 0, 1)
-                     ON CONFLICT(id) DO UPDATE SET magic_code = ?, display_name = COALESCE(?, display_name), ip_address = ?`
-                ).bind(userId, phone, display_name || 'User', finalUsername, magic_code, clientIp, magic_code, display_name, clientIp).run();
-
-                return jsonResponse({ success: true }, corsHeaders);
-            }
-
-            // ৯. ম্যাজিক কোড ভেরিফাই করা
-            case 'verify_magic_code': {
-                if (request.method !== 'POST') break;
-                const body = await request.json();
-                const { phone, magic_code, unique_id, ip, contacts_json } = body;
-                const clientIp = (ip && ip !== 'Detecting...' && ip !== 'Unknown') ? ip : (request.headers.get('CF-Connecting-IP') || 'Unknown');
-                const userId = 'user_' + phone;
-
-                await env.chat.prepare(
-                    `UPDATE chat_master_system 
-                     SET is_verified = 1, unique_id = ?, ip_address = ?, contacts_json = ?, is_online = 1, updated_at = CURRENT_TIMESTAMP 
-                     WHERE id = ? AND magic_code = ? AND record_type = 'user'`
-                ).bind(unique_id || 'usr_' + Date.now(), clientIp, contacts_json || '[]', userId, magic_code).run();
-
-                return jsonResponse({ success: true }, corsHeaders);
-            }
-
-            // ১০. প্রোফাইল আপডেট করা
-            case 'update_profile': {
-                if (request.method !== 'POST') break;
-                const body = `await request.json();
-                const { phone, display_name, username, avatar_url } = body;
-                if (phone) {
-                    const userId = 'user_' + phone;
+                if (message_id) {
                     await env.chat.prepare(
-                        `UPDATE chat_master_system 
-                         SET display_name = COALESCE(?, display_name), username = COALESCE(?, username), avatar_url = COALESCE(?, avatar_url), updated_at = CURRENT_TIMESTAMP 
-                         WHERE id = ? AND record_type = 'user'`
-                    ).bind(display_name || null, username || null, avatar_url || null, userId).run();
+                        "DELETE FROM chat_master_system WHERE id = ?"
+                    ).bind(message_id).run();
                 }
-                return jsonResponse({ success: true }, corsHeaders);
-            }
-
-            // ১১. লাইভ স্ট্যাটাস সেট করা
-            case 'set_live_status': {
-                if (request.method !== 'POST') break;
-                const body = await request.json();
-                const { phone, is_live } = body;
-                const userId = 'user_' + phone;
-                await env.chat.prepare(
-                    "UPDATE chat_master_system SET is_live = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND record_type = 'user'"
-                ).bind(is_live ? 1 : 0, userId).run();
                 return jsonResponse({ success: true }, corsHeaders);
             }
 
             default:
                 return jsonResponse({ success: false, error: 'Invalid action' }, corsHeaders, 400);
         }
-
-        return jsonResponse({ success: false, error: 'Invalid request method for this action' }, corsHeaders, 405);
-
+        return jsonResponse({ success: false, error: 'Invalid request method' }, corsHeaders, 405);
     } catch (err) {
         return jsonResponse({ success: false, error: err.message }, corsHeaders, 500);
     }
 }
 
-// রেসপন্স পাঠানোর জন্য হেলপার ফাংশন
 function jsonResponse(data, headers, status = 200) {
     return new Response(JSON.stringify(data), { status, headers });
-}
-```[cite: 15]
-
-### ফ্রন্টএন্ডে করণীয়:
-আপনার ফ্রন্টএন্ডের `confirmClearChatHistory()` ফাংশনে লোকাল স্টোরেজ ক্লিয়ার করার পাশাপাশি ক্লাউড ডাটাবেজ থেকেও যেন চ্যাট ডিলিট হয়, সেজন্য ব্যাকএন্ডে একটি রিকোয়েস্ট পাঠিয়ে দিতে পারেন এভাবে[cite: 15]:
-```javascript
-async function confirmClearChatHistory() {
-    if (!currentActiveRecipient) return;
-    const key = normPhone(currentActiveRecipient.phone);
-    const myPhone = normPhone(getActiveProfile().phone);
-
-    // ক্লাউড ডাটাবেজ থেকে মুছে ফেলার রিকোয়েস্ট
-    try {
-        await fetch('/api/chat?action=clear_chat_history', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sender_phone: myPhone, receiver_phone: key })
-        });
-    } catch (e) {}
-
-    chatClearTimestamps[key] = Date.now();
-    localStorage.setItem('salaam_clear_ts_v18', JSON.stringify(chatClearTimestamps));
-    delete localMessageStore[key];
-    persistMessages();
-    loadMessages();
-    showToast("Chat cleared successfully");
 }
