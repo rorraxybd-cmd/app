@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=1.8">
+    <link rel="stylesheet" href="/discover.css?v=1.9">
 </head>
 <body class="h-[100dvh] w-full flex flex-col overflow-hidden fixed inset-0">
 
@@ -25,7 +25,7 @@
     <div id="verifyOverlay" style="display: none;">
         <div class="verify-card space-y-5 text-center shadow-2xl">
             <div class="space-y-3">
-                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg" alt="Logo" class="header-logo-clean mx-auto">
+                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png" alt="Logo" class="header-logo-clean mx-auto">
                 <h1 class="brand-title-font text-3xl font-extrabold gold-gradient-text">SALAAM</h1>
                 <p class="text-[11px] text-white/75 tracking-widest font-semibold uppercase">Private Global Messenger</p>
                 <div id="pwaInstallContainer" class="pt-3">
@@ -44,7 +44,7 @@
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text">MOBILE NUMBER <span class="text-red-500">*</span></label>
                     <div class="flex space-x-2 w-full">
                         <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer shrink-0">
-                            <!-- অটো-ডিটেক্ট হয়ে দেশসমূহ এখানে আসবে -->
+                            <!-- দেশসমূহ এখানে লোড হবে -->
                         </select>
                         <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-white/10">
                     </div>
@@ -69,7 +69,7 @@
     <!-- Header Bar -->
     <header class="theme-surface px-4 py-3 flex justify-between items-center shrink-0 z-30 border-b border-white/5">
         <div class="flex items-center space-x-3">
-            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg" alt="Logo" class="header-logo-clean" style="width: 42px; height: 42px;">
+            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png" alt="Logo" class="header-logo-clean" style="width: 42px; height: 42px;">
             <div>
                 <div class="flex items-center space-x-1.5">
                     <h1 class="brand-title-font font-extrabold text-lg sm:text-xl gold-gradient-text leading-none">SALAAM</h1>
@@ -123,7 +123,7 @@
                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                     </button>
                     <div class="flex items-center space-x-3">
-                        <div class="relative"><img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg" class="w-9 h-9 rounded-full object-cover bg-black"></div>
+                        <div class="relative"><img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png" class="w-9 h-9 rounded-full object-cover bg-black"></div>
                         <div>
                             <div class="flex items-center space-x-1.5">
                                 <span id="activeChatTitle" class="font-semibold text-white text-xs tracking-wide">Select a contact</span>
@@ -195,10 +195,10 @@
     </div>
 
     <!-- Modular JavaScript Files Connection -->
-    <script src="/discover.js?v=1.8"></script>
-    <script src="/verify.js?v=5.8"></script>
-    <script src="/call.js?v=5.8"></script>
-    <script src="/p2p_file_transfer.js?v=5.8"></script>
+    <script src="/discover.js?v=1.9"></script>
+    <script src="/verify.js?v=5.9"></script>
+    <script src="/call.js?v=5.9"></script>
+    <script src="/p2p_file_transfer.js?v=5.9"></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('verifyOverlay');
