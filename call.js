@@ -40,11 +40,13 @@ function showToast(msg, isErr = false) {
 function initAppAfterVerification() {
     if (typeof cleanupExpiredMessages === 'function') cleanupExpiredMessages();
     syncGlobalNetworkUsers();
-    setTimeout(() => { switchTab('contact'); }, 100);
+    setTimeout(() => { 
+        switchTab('contact'); 
+    }, 100);
     startBackgroundCallPolling();
     startChatPolling();
 
-    // প্রতি ৫ সেকেন্ড পরপর স্বয়ংক্রিয়ভাবে নতুন গ্লোবাল ইউজার সিঙ্ক হবে (যাতে যেকোনো ডিভাইস বা ব্রাউজার থেকে ঢুকলেই কন্টাক্টে চলে আসে)
+    // প্রতি ৫ সেকেন্ড পরপর ব্যাকগ্রাউন্ডে গ্লোবাল ইউজার সিঙ্ক হবে যাতে নতুন কেউ ভেরিফাই করলেই কন্টাক্টে চলে আসে
     if (globalUserSyncInterval) clearInterval(globalUserSyncInterval);
     globalUserSyncInterval = setInterval(syncGlobalNetworkUsers, 5000);
 }
@@ -55,7 +57,8 @@ async function syncGlobalNetworkUsers() {
         if (res.ok) {
             const data = await res.json();
             if (data.success && Array.isArray(data.users)) {
-                const myPhone = normPhone(getActiveProfile().phone);
+                const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
+                const myPhone = normPhone(profile.phone || '');
                 let hasNewUser = false;
                 
                 data.users.forEach(u => {
@@ -63,13 +66,16 @@ async function syncGlobalNetworkUsers() {
                     if (uPhone && uPhone !== myPhone) {
                         const existingIdx = deviceContacts.findIndex(dc => normPhone(dc.phone) === uPhone);
                         if (uPhone !== '8801538187301' && u.display_name !== 'rorraxy Support') {
+                            const defaultAvatar = 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
+                            const userAvatar = u.avatar_url && u.avatar_url !== 'undefined' ? u.avatar_url : defaultAvatar;
+                            
                             if (existingIdx === -1) {
                                 deviceContacts.push({
                                     name: u.display_name || uPhone,
                                     phone: uPhone,
                                     appUser: true,
                                     isOnline: u.is_online === 1,
-                                    avatar: u.avatar_url || null,
+                                    avatar: userAvatar,
                                     lastMsg: "Tap to message"
                                 });
                                 hasNewUser = true;
@@ -80,7 +86,7 @@ async function syncGlobalNetworkUsers() {
                                 }
                                 deviceContacts[existingIdx].isOnline = u.is_online === 1;
                                 if (u.display_name) deviceContacts[existingIdx].name = u.display_name;
-                                if (u.avatar_url) deviceContacts[existingIdx].avatar = u.avatar_url;
+                                if (userAvatar) deviceContacts[existingIdx].avatar = userAvatar;
                             }
                         }
                     }
@@ -136,17 +142,37 @@ function switchTab(tab) {
 function renderDeviceContacts() {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
-    const contactsHtml = deviceContacts.filter(c => !c.isOfficialSupport && c.phone !== '8801538187301').map(c => {
-        const info = getCountryInfo(c.phone);
-        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${info.name} • ${c.phone}</p>`;
+    
+    // নিশ্চিত করার জন্য প্রতিবার রেন্ডার করার আগে ক্লাউড থেকে লেটেস্ট ইউজার সিংশন কল করা হয়
+    syncGlobalNetworkUsers();
+
+    const validContacts = deviceContacts.filter(c => !c.isOfficialSupport && c.phone !== '8801538187301');
+
+    if (validContacts.length === 0) {
+        listContainer.innerHTML = `
+            <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 m-auto">
+                <div class="w-12 h-12 rounded-2xl theme-card flex items-center justify-center">
+                    <i class="fa-solid fa-address-book text-amber-300 text-lg"></i>
+                </div>
+                <p class="text-xs font-bold gold-gradient-text">No contacts found yet</p>
+                <p class="text-[10px] text-gray-400">Verified users will automatically appear here.</p>
+            </div>`;
+        return;
+    }
+
+    const contactsHtml = validContacts.map(c => {
+        const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐', name: 'Global' };
+        const defaultAvatar = 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
+        const avatarUrl = c.avatar && c.avatar !== 'undefined' ? c.avatar : defaultAvatar;
+        const avatarImg = `<img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover bg-black">`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${info.name} • +${c.phone}</p>`;
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
             <div onclick="openChat('${c.phone}', '${c.name}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
                 <div class="relative shrink-0">
                     ${avatarImg}
-                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span>
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline ? 'bg-[#2ed573]' : 'bg-amber-400'}"></span>
                 </div>
                 <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>${subText}</div>
             </div>
@@ -183,7 +209,9 @@ function renderCallsHistory() {
         </div>` + 
         callHistoryNotifications.map((call, idx) => {
             const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(call.phone)) || { name: call.phone, avatar: null };
-            const avatarImg = contact.avatar ? `<img src="${contact.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${contact.name.charAt(0)}</div>`;
+            const defaultAvatar = 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
+            const avatarUrl = contact.avatar && contact.avatar !== 'undefined' ? contact.avatar : defaultAvatar;
+            const avatarImg = `<img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover bg-black">`;
             const timeStr = new Date(call.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             return `
@@ -215,12 +243,12 @@ function openChat(phone, name) {
     let targetContact = deviceContacts.find(c => normPhone(c.phone) === cp);
     
     if (!targetContact) {
-        targetContact = { name: name || cp, phone: cp, appUser: true, isOnline: true, avatar: null };
+        targetContact = { name: name || cp, phone: cp, appUser: true, isOnline: true, avatar: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg' };
         deviceContacts.push(targetContact);
         localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
     }
 
-    const avatarUrl = targetContact.avatar ? targetContact.avatar : 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png';
+    const avatarUrl = targetContact.avatar && targetContact.avatar !== 'undefined' ? targetContact.avatar : 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
 
     currentActiveRecipient = { phone: cp, name: targetContact.name, isOnline: true, avatar: avatarUrl };
     document.getElementById('activeChatHeader').style.display = 'flex';
@@ -248,7 +276,8 @@ async function sendTextMessage() {
     inp.value = '';
     toggleSendButton();
     
-    const key = normPhone(currentActiveRecipient.phone), me = normPhone(getActiveProfile().phone);
+    const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
+    const key = normPhone(currentActiveRecipient.phone), me = normPhone(profile.phone || '');
     if (!localMessageStore[key]) localMessageStore[key] = [];
     
     const msgId = 'm_' + Date.now() + '_' + Math.random();
@@ -260,7 +289,7 @@ async function sendTextMessage() {
     if (key === '8801538187301') {
         let officialContact = deviceContacts.find(c => c.phone === '8801538187301');
         if (!officialContact) {
-            deviceContacts.push({ name: 'rorraxy Support', phone: '8801538187301', subTitle: 'Official Support Team', isOfficialSupport: true, avatar: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png' });
+            deviceContacts.push({ name: 'rorraxy Support', phone: '8801538187301', subTitle: 'Official Support Team', isOfficialSupport: true, avatar: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg' });
             localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
         }
     }
@@ -276,7 +305,8 @@ async function sendTextMessage() {
 
 async function fetchMessagesFromCloud() {
     if (!currentActiveRecipient) return;
-    const me = normPhone(getActiveProfile().phone);
+    const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
+    const me = normPhone(profile.phone || '');
     const key = normPhone(currentActiveRecipient.phone);
     try {
         const res = await fetch(`/api/chat?action=get_chat_messages&phone=${encodeURIComponent(key)}&my_phone=${encodeURIComponent(me)}`);
@@ -456,7 +486,8 @@ async function startWhatsAppCall(mode) {
         showToast("Select a contact first", true);
         return;
     }
-    const myPhone = normPhone(getActiveProfile().phone);
+    const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
+    const myPhone = normPhone(profile.phone || '');
     const peerPhone = normPhone(currentActiveRecipient.phone);
 
     if (myPhone === peerPhone) {
@@ -513,7 +544,8 @@ async function acceptWhatsAppCall() {
     startCallDurationTimer();
     showToast("Call Connected!");
 
-    const myPhone = normPhone(getActiveProfile().phone);
+    const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
+    const myPhone = normPhone(profile.phone || '');
     const peerPhone = normPhone(activeCallPeer.phone);
 
     updateInCallButtons();
@@ -574,7 +606,8 @@ async function endWhatsAppCall() {
     const modal = document.getElementById('whatsAppCallModal');
     if (modal) modal.remove();
 
-    const myPhone = normPhone(getActiveProfile().phone);
+    const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
+    const myPhone = normPhone(profile.phone || '');
     const peerPhone = activeCallPeer ? normPhone(activeCallPeer.phone) : '';
     activeCallPeer = null;
 
@@ -622,7 +655,8 @@ async function toggleVideoSwitch() {
             try {
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
-                const myPhone = normPhone(getActiveProfile().phone);
+                const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
+                const myPhone = normPhone(profile.phone || '');
                 const peerPhone = normPhone(activeCallPeer.phone);
                 await fetch('/api/chat?action=send_call_signal', {
                     method: 'POST',
@@ -684,7 +718,7 @@ function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
 
         <div class="flex-1 flex flex-col items-center justify-center w-full max-w-3xl relative my-auto">
             <div id="callerInfoBox" class="${mode === 'video' ? 'hidden' : 'flex'} flex-col items-center space-y-4">
-                <img src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-32 h-32 rounded-full object-cover border-4 border-amber-400/60 shadow-2xl animate-pulse bg-black">
+                <img src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg'}" class="w-32 h-32 rounded-full object-cover border-4 border-amber-400/60 shadow-2xl animate-pulse bg-black">
                 <h2 class="text-2xl font-extrabold gold-gradient-text tracking-wide">${peerName}</h2>
             </div>
 
@@ -742,7 +776,8 @@ function updateInCallButtons() {
 function startBackgroundCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
     callPollInterval = setInterval(async () => {
-        const myPhone = normPhone(getActiveProfile().phone);
+        const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
+        const myPhone = normPhone(profile.phone || '');
         if (!myPhone) return;
 
         try {
@@ -771,7 +806,7 @@ function startBackgroundCallPolling() {
 
                     let callerContact = deviceContacts.find(c => normPhone(c.phone) === callerPhone);
                     if (!callerContact) {
-                        callerContact = { name: callerPhone, phone: callerPhone, appUser: true, isOnline: true };
+                        callerContact = { name: callerPhone, phone: callerPhone, appUser: true, isOnline: true, avatar: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg' };
                         deviceContacts.push(callerContact);
                         localStorage.setItem('salaam_contacts_v18', JSON.stringify(deviceContacts));
                     }
@@ -821,16 +856,18 @@ function filterContent() {
     }
 
     const contactsHtml = filtered.map(c => {
-        const info = getCountryInfo(c.phone);
-        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${info.name} • ${c.phone}</p>`;
+        const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐', name: 'Global' };
+        const defaultAvatar = 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
+        const avatarUrl = c.avatar && c.avatar !== 'undefined' ? c.avatar : defaultAvatar;
+        const avatarImg = `<img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover bg-black">`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${info.name} • +${c.phone}</p>`;
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
             <div onclick="openChat('${c.phone}', '${c.name}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
                 <div class="relative shrink-0">
                     ${avatarImg}
-                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline?'bg-[#2ed573]':'bg-amber-400'}"></span>
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline ? 'bg-[#2ed573]' : 'bg-amber-400'}"></span>
                 </div>
                 <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>${subText}</div>
             </div>
@@ -897,7 +934,8 @@ function loadMessages() {
     }
 
     container.innerHTML = msgs.map((m, idx) => {
-        const isMe = normPhone(m.phone_number) === normPhone(getActiveProfile().phone);
+        const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
+        const isMe = normPhone(m.phone_number) === normPhone(profile.phone || '');
         let contentHtml = '';
         
         if (m.type === 'text' || !m.media_url) {
@@ -1007,11 +1045,12 @@ function renderChatStories() {
     sidebarList.innerHTML = keys.map(k => {
         const msgs = localMessageStore[k];
         const last = msgs[msgs.length - 1] || {};
-        const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(k)) || { name: k, avatar: '' };
+        const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(k)) || { name: k, avatar: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg' };
+        const avatarUrl = contact.avatar && contact.avatar !== 'undefined' ? contact.avatar : 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg';
         return `
         <div onclick="openChat('${k}', '${contact.name}')" class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 cursor-pointer rounded-2xl theme-card border border-white/5">
             <div class="flex items-center space-x-3 min-w-0 flex-1">
-                <img src="${contact.avatar || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">
+                <img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">
                 <div class="min-w-0 flex-1"><p class="text-xs font-semibold gold-gradient-text truncate">${contact.name}</p><p class="text-[10px] text-gray-400 truncate max-w-[150px]">${last.message_text || 'Media attachment'}</p></div>
             </div>
             <div class="flex items-center space-x-1.5 shrink-0 pl-2">
