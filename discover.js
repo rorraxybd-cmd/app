@@ -138,12 +138,10 @@ const GLOBAL_CONTINENTS_DATA = [
 
 let selectedDiscoverCountry = null;
 
-// Robust openChat function with automatic Chat Tab highlight & workspace switch & fixed bottom input bar
 function openChat(phone, name, avatar = '') {
     const recipient = { phone, name, avatar };
     window.currentActiveRecipient = recipient;
 
-    // Switch bottom nav highlight to Chat tab automatically
     const tabs = ['Profile', 'Discover', 'Contact', 'Chat', 'Calls'];
     tabs.forEach(t => {
         const icon = document.getElementById('icon' + t);
@@ -174,7 +172,7 @@ function openChat(phone, name, avatar = '') {
     const workspace = document.getElementById('workspaceSection');
     if (workspace) {
         workspace.classList.remove('hidden');
-        workspace.style.display = 'flex'; // Ensures flex display so input bar stays at bottom properly on mobile & desktop
+        workspace.style.display = 'flex';
     }
 
     const chatHeader = document.getElementById('activeChatHeader');
@@ -199,7 +197,6 @@ function openChat(phone, name, avatar = '') {
     }
 }
 
-// Discover Directory View
 function renderDiscoverDirectory(searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
@@ -272,7 +269,6 @@ function backToDiscoverContinents() {
     renderDiscoverDirectory();
 }
 
-// Country specific view with clean bottom-nav style SVG icons (Chat, Audio Call, Video Call) & Secret Phone
 function renderCountryContactsView(countryObj, searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
@@ -312,7 +308,6 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
                         <p class="text-[10px] text-gray-400">${countryObj.flag} ${countryObj.name}</p>
                     </div>
                 </div>
-                <!-- 3 Clean SVG Action Icons matching bottom navigation bar style -->
                 <div class="flex items-center space-x-2 shrink-0 pl-2">
                     <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/20" title="Chat">
                         <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
@@ -343,7 +338,6 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
                 </div>
                 <span class="text-[10px] font-bold text-amber-300 px-2 py-0.5 rounded-full bg-amber-400/10">${matchedUsers.length} Contacts</span>
             </div>
-            <!-- Country Internal Search Bar -->
             <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
                 <input type="text" id="countryMemberSearch" placeholder="Search members in ${countryObj.name}..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderCountryContactsView(selectedDiscoverCountry, this.value)">
                 <i class="fa-solid fa-magnifying-glass text-amber-300 text-xs"></i>
@@ -353,7 +347,6 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
     `;
 }
 
-// Contacts Tab View (Phone numbers secret, 3 SVG action icons, simplified Add New)
 function renderContactsView(searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
@@ -392,7 +385,6 @@ function renderContactsView(searchQuery = '') {
                         <p class="text-[10px] text-gray-400">${countryInfo.flag} ${countryInfo.name}</p>
                     </div>
                 </div>
-                <!-- 3 Clean SVG Action Icons matching bottom navigation bar style -->
                 <div class="flex items-center space-x-2 shrink-0">
                     <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/20" title="Chat">
                         <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
@@ -416,7 +408,6 @@ function renderContactsView(searchQuery = '') {
                     <i class="fa-solid fa-user-plus text-xs"></i> <span>Add New</span>
                 </button>
             </div>
-            <!-- Contacts Local Search Bar -->
             <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
                 <input type="text" id="contactSearchInput" placeholder="Search contact by name..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderContactsView(this.value)">
                 <i class="fa-solid fa-magnifying-glass text-amber-300 text-xs"></i>
@@ -426,7 +417,6 @@ function renderContactsView(searchQuery = '') {
     `;
 }
 
-// Single-step smooth Add New Contact Modal/Prompt
 function openAddContactModal() {
     let existingModal = document.getElementById('addContactModalOverlay');
     if (existingModal) existingModal.remove();
@@ -497,4 +487,3 @@ function saveNewContactFromModal() {
     if (typeof showToast === 'function') showToast("Contact added successfully!");
     renderContactsView();
 }
-```[cite: 11]
