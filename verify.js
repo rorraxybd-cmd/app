@@ -219,30 +219,26 @@ function checkInitialVerification() {
     }
 }
 
-// স্মার্ট নেটিভ শেয়ার এবং ক্লিন ইউআরএল কপি ফাংশন
+// ক্লিন কপি এবং নেটিভ শেয়ার ফাংশন
 function shareProfileLink() {
     const profile = getActiveProfile();
-    const cleanUrl = `chat.rorraxy.com/${profile.username || 'user'}`;
-    const shareData = {
-        title: 'MESSAGE | rorraxy.com',
-        text: `Connect with ${profile.name} on MESSAGE:`,
-        url: `https://${cleanUrl}`
-    };
-
+    const profileUrl = `chat.rorraxy.com/${profile.username || 'user'}`;
+    
     if (navigator.share) {
-        navigator.share(shareData).catch((err) => {
-            console.log('Share canceled or failed:', err);
-        });
+        navigator.share({
+            title: 'MESSAGE by rorraxy.com',
+            url: profileUrl
+        }).catch(() => {});
     } else {
-        navigator.clipboard.writeText(cleanUrl).then(() => {
-            if (typeof showToast === 'function') showToast(`Copied: ${cleanUrl}`);
+        navigator.clipboard.writeText(profileUrl).then(() => {
+            if (typeof showToast === 'function') showToast(`Copied: ${profileUrl}`);
         }).catch(() => {
             if (typeof showToast === 'function') showToast("Failed to copy link", true);
         });
     }
 }
 
-// পরিপাটি ও গোছালো সেটিংস/প্রোফাইল ভিউ
+// সেটিংস/প্রোফাইল ভিউ
 function renderProfileView(isEditing = false) {
     const profile = getActiveProfile();
     const sidebarList = document.getElementById('sidebarContentList');
@@ -274,7 +270,6 @@ function renderProfileView(isEditing = false) {
                     </p>
                 </div>
 
-                <!-- ক্লিন পিঙ্ক কালার টেক্সটযুক্ত শেয়ার প্রোফাইল বাটন -->
                 <div class="pt-2">
                     <button onclick="shareProfileLink()" class="w-full py-3.5 px-4 rounded-2xl theme-input hover:border-pink-500/50 transition cursor-pointer shadow-inner flex items-center justify-center">
                         <span class="text-xs font-extrabold pink-gradient-text tracking-wider uppercase">Share Profile</span>
@@ -323,8 +318,8 @@ function renderProfileView(isEditing = false) {
                             <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">THEME STYLE</label>
                             <select id="editThemeColor" onchange="previewThemeStyle(this.value)" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-amber-400/20 cursor-pointer">
                                 <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>Emerald Dark (Default)</option>
-                                <option value="luxury" ${profile.themeColor==='luxury'?'selected':''}>Luxury Blue</option>
-                                <option value="black" ${profile.themeColor==='black'?'selected':''}>Classic Black</option>
+                                <option value="skyblue" ${profile.themeColor==='skyblue'?'selected':''}>Sky Blue (Modern)</option>
+                                <option value="black" ${profile.themeColor==='black'?'selected':''}>Classic Black (Pure)</option>
                             </select>
                         </div>
 
