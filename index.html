@@ -451,16 +451,3 @@
     </script>
 </body>
 </html>
-```
-
----
-
-### ৩. থিম স্টাইল অপশন সিলেকশন (`verify.js` এর ভেতর থিম অপশন)
-আপনার `verify.js` ফাইলের থিম ড্রপডাউনে স্কাই ব্লু এবং ব্ল্যাক থিম সঠিকভাবে সিলেকশন নিশ্চিত করতে থিম ড্রপডাউন অপশনগুলো এভাবে আপডেট করুন:
-
-```html
-<select id="editThemeColor" onchange="previewThemeStyle(this.value)" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-amber-400/20 cursor-pointer">
-    <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>Emerald Dark (Default)</option>
-    <option value="skyblue" ${profile.themeColor==='skyblue'?'selected':''}>Sky Blue (Modern)</option>
-    <option value="black" ${profile.themeColor==='black'?'selected':''}>Classic Black (Pure)</option>
-</select>
