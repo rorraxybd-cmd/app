@@ -138,10 +138,38 @@ const GLOBAL_CONTINENTS_DATA = [
 
 let selectedDiscoverCountry = null;
 
-// Robust openChat function to ensure clicking contact opens chat seamlessly
+// Robust openChat function with automatic Chat Tab highlight & workspace switch
 function openChat(phone, name, avatar = '') {
     const recipient = { phone, name, avatar };
     window.currentActiveRecipient = recipient;
+
+    // Switch bottom nav highlight to Chat tab automatically
+    const tabs = ['Profile', 'Discover', 'Contact', 'Chat', 'Calls'];
+    tabs.forEach(t => {
+        const icon = document.getElementById('icon' + t);
+        const label = document.getElementById('label' + t);
+        if (icon) {
+            icon.classList.remove('text-[#EC4899]');
+            icon.classList.add('text-amber-300');
+            icon.style.stroke = '#F5D061';
+        }
+        if (label) {
+            label.classList.remove('pink-gradient-text', 'font-bold');
+            label.classList.add('gold-gradient-text', 'font-semibold');
+        }
+    });
+
+    const activeIcon = document.getElementById('iconChat');
+    const activeLabel = document.getElementById('labelChat');
+    if (activeIcon) {
+        activeIcon.classList.remove('text-amber-300');
+        activeIcon.classList.add('text-[#EC4899]');
+        activeIcon.style.stroke = '#EC4899';
+    }
+    if (activeLabel) {
+        activeLabel.classList.remove('gold-gradient-text', 'font-semibold');
+        activeLabel.classList.add('pink-gradient-text', 'font-bold');
+    }
 
     const workspace = document.getElementById('workspaceSection');
     if (workspace) workspace.classList.remove('hidden');
@@ -466,3 +494,4 @@ function saveNewContactFromModal() {
     if (typeof showToast === 'function') showToast("Contact added successfully!");
     renderContactsView();
 }
+```[cite: 13]
