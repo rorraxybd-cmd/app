@@ -328,6 +328,8 @@
                 if (typeof selectedDiscoverCountry !== 'undefined') selectedDiscoverCountry = null;
                 if (typeof renderDiscoverDirectory === 'function') renderDiscoverDirectory();
             } else if (tabName === 'contact') {
+                // Immediately render local contacts first, then fetch cloud updates in background
+                if (typeof renderContactsView === 'function') renderContactsView();
                 fetchCloudContacts().then(() => {
                     if (typeof renderContactsView === 'function') renderContactsView();
                 });
