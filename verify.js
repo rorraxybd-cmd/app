@@ -1,3 +1,4 @@
+// verify.js - Professional Verification & Profile Module (Complete)
 let deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let isVerifiedSession = localStorage.getItem('salaam_verified_v18') === 'true';
@@ -218,19 +219,22 @@ function checkInitialVerification() {
     }
 }
 
-// পরিপাটি ও গোছালো সেটিংস/প্রোফাইল ভিউ রেন্ডার ফাংশন
-function renderProfileView() {
+// পরিপাটি ও গোছালো সেটিংস/প্রোফাইল ভিউ (টগল এডিট মোড সহ)
+function renderProfileView(isEditing = false) {
     const profile = getActiveProfile();
     const sidebarList = document.getElementById('sidebarContentList');
     if (!sidebarList) return;
 
     const phoneStr = profile.phone || '';
     const maskedPhone = phoneStr.length > 6 ? phoneStr.substring(0, 5) + '******' + phoneStr.slice(-2) : phoneStr;
-    const profileShareUrl = `https://chat.rorraxy.com/${profile.username || 'user'}`;
+    const profileShareUrl = `chat.rorraxy.com/${profile.username || 'user'}`;
+
+    const searchBarContainer = document.getElementById('searchBarContainer');
+    if (searchBarContainer) searchBarContainer.style.display = 'none';
 
     sidebarList.innerHTML = `
         <div class="p-4 space-y-4 max-w-md mx-auto pb-24">
-            <!-- Profile Card -->
+            <!-- Profile Info Card -->
             <div class="text-center space-y-3 theme-card p-6 rounded-3xl border border-amber-400/20 shadow-2xl">
                 <div class="relative w-24 h-24 mx-auto">
                     <img id="profileAvatarPreview" src="${profile.avatar}" class="w-24 h-24 rounded-full object-cover bg-black shadow-lg border-2 border-amber-400/50">
@@ -248,44 +252,66 @@ function renderProfileView() {
                     </p>
                 </div>
 
-                <!-- Share Profile Box -->
+                <!-- Share Profile Box (শুধু ক্লিন ইউআরএল) -->
                 <div class="pt-2">
                     <button onclick="shareProfileLink()" class="w-full py-3 px-4 rounded-2xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 text-xs font-bold border border-amber-400/30 flex items-center justify-center space-x-2 transition cursor-pointer shadow-inner">
                         <i class="fa-solid fa-share-nodes"></i>
-                        <span class="truncate">Share Profile (${profileShareUrl})</span>
+                        <span class="truncate">${profileShareUrl}</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Edit Full Name & Username Section -->
+            <!-- Profile Information & Toggle Edit Section -->
             <div class="space-y-4 theme-card p-6 rounded-3xl border border-amber-400/20 shadow-2xl">
                 <div class="flex items-center justify-between border-b border-white/10 pb-2">
-                    <h4 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Edit Profile Settings</h4>
-                    <i class="fa-solid fa-user-pen text-amber-300 text-xs"></i>
-                </div>
-                
-                <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">FULL NAME</label>
-                    <input type="text" id="editDisplayName" value="${profile.name}" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-amber-400/20">
+                    <h4 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Profile Information</h4>
+                    <button onclick="renderProfileView(${!isEditing})" class="text-[11px] text-amber-300 hover:underline font-semibold flex items-center space-x-1 cursor-pointer">
+                        <i class="fa-solid ${isEditing ? 'fa-xmark' : 'fa-pen-to-square'}"></i>
+                        <span>${isEditing ? 'Cancel' : 'Edit Profile'}</span>
+                    </button>
                 </div>
 
-                <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">USERNAME (URL SLUG)</label>
-                    <input type="text" id="editUsername" value="${profile.username}" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-amber-400/20" placeholder="username">
-                </div>
+                ${!isEditing ? `
+                    <div class="space-y-3 pt-2 text-xs text-gray-300">
+                        <div class="flex justify-between items-center py-2 border-b border-white/5">
+                            <span class="text-gray-400 font-medium">Full Name</span>
+                            <span class="font-bold text-white">${profile.name}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/5">
+                            <span class="text-gray-400 font-medium">Username</span>
+                            <span class="font-bold text-amber-300">@${profile.username}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-gray-400 font-medium">Theme Style</span>
+                            <span class="font-bold text-white capitalize">${profile.themeColor || 'Emerald'}</span>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="space-y-3.5 pt-1">
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">FULL NAME</label>
+                            <input type="text" id="editDisplayName" value="${profile.name}" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-amber-400/20">
+                        </div>
 
-                <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">THEME STYLE</label>
-                    <select id="editThemeColor" onchange="previewThemeStyle(this.value)" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-amber-400/20 cursor-pointer">
-                        <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>Emerald Dark (Default)</option>
-                        <option value="luxury" ${profile.themeColor==='luxury'?'selected':''}>Luxury Blue</option>
-                        <option value="black" ${profile.themeColor==='black'?'selected':''}>Classic Black</option>
-                    </select>
-                </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">USERNAME</label>
+                            <input type="text" id="editUsername" value="${profile.username}" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-amber-400/20" placeholder="username">
+                        </div>
 
-                <button onclick="saveProfileSettings()" class="w-full py-4 gold-btn text-xs rounded-xl font-extrabold cursor-pointer shadow-lg mt-3 transition hover:brightness-110 uppercase tracking-wider">
-                    SAVE & SYNC PROFILE
-                </button>
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">THEME STYLE</label>
+                            <select id="editThemeColor" onchange="previewThemeStyle(this.value)" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-amber-400/20 cursor-pointer">
+                                <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>Emerald Dark (Default)</option>
+                                <option value="luxury" ${profile.themeColor==='luxury'?'selected':''}>Luxury Blue</option>
+                                <option value="black" ${profile.themeColor==='black'?'selected':''}>Classic Black</option>
+                            </select>
+                        </div>
+
+                        <button onclick="saveProfileSettings()" class="w-full py-3.5 gold-btn text-xs rounded-xl font-extrabold cursor-pointer shadow-lg mt-2 transition hover:brightness-110 uppercase tracking-wider">
+                            SAVE CHANGES
+                        </button>
+                    </div>
+                `}
             </div>
         </div>
     `;
@@ -340,9 +366,15 @@ function handleProfileAvatarChange(input) {
 }
 
 async function saveProfileSettings() {
-    const newName = document.getElementById('editDisplayName').value.trim();
-    const newUsername = document.getElementById('editUsername').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-    const newTheme = document.getElementById('editThemeColor').value;
+    const nameInput = document.getElementById('editDisplayName');
+    const userSelectInput = document.getElementById('editUsername');
+    const themeSelect = document.getElementById('editThemeColor');
+
+    if (!nameInput || !userSelectInput) return;
+
+    const newName = nameInput.value.trim();
+    const newUsername = userSelectInput.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const newTheme = themeSelect ? themeSelect.value : 'emerald';
     
     if (!newName) { if (typeof showToast === 'function') showToast("Display name cannot be empty", true); return; }
     if (RESERVED_USERNAMES.includes(newUsername)) { if (typeof showToast === 'function') showToast("Username is reserved", true); return; }
@@ -355,7 +387,7 @@ async function saveProfileSettings() {
     document.documentElement.setAttribute('data-theme', newTheme);
 
     if (typeof showToast === 'function') showToast("Profile updated successfully!");
-    renderProfileView();
+    renderProfileView(false);
 }
 
 let notificationStore = JSON.parse(localStorage.getItem('salaam_notifications_v1') || '[]');
