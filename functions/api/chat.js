@@ -71,12 +71,13 @@ export async function onRequest(context) {
                 
                 const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
                 const payload = `${message_type || 'text'}:${message_text || ''}:${media_url || ''}`;
+                const msgId = 'msg_' + Date.now() + Math.random();
 
                 await env.chat.prepare(
                     `INSERT INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, message_text, media_url, message_status, file_size, expires_at, is_verified, is_online, updated_at) 
                      VALUES (?, 'chat_msg', ?, ?, ?, ?, ?, ?, 'sent', ?, ?, 1, 1, CURRENT_TIMESTAMP)`
                 ).bind(
-                    'msg_' + Date.now() + Math.random(), 
+                    msgId, 
                     sender_phone, 
                     receiver_phone, 
                     sender_phone, 
@@ -87,23 +88,36 @@ export async function onRequest(context) {
                     expiresAt
                 ).run();
 
-                return jsonResponse({ success: true }, corsHeaders);
+                return jsonResponse({ success: true, message_id: msgId }, corsHeaders);
             }
 
-            // ৬. চ্যাট মেসেজগুলো রিড করা
+            // ৬. চ্যাট মেসেজগুলো রিড করা (এখানে id যুক্ত করা হয়েছে)
             case 'get_chat_messages': {
                 if (request.method !== 'GET') break;
                 const phone = url.searchParams.get('phone');
                 const myPhone = url.searchParams.get('my_phone');
                 
                 const { results } = await env.chat.prepare(
-                    "SELECT phone_number as sender_phone, magic_code as payload, media_url, message_text, created_at FROM chat_master_system WHERE record_type = 'chat_msg' AND ((phone_number = ? AND recipient_phone = ?) OR (phone_number = ? AND recipient_phone = ?)) ORDER BY updated_at ASC"
+                    "SELECT id, phone_number as sender_phone, magic_code as payload, media_url, message_text, created_at FROM chat_master_system WHERE record_type = 'chat_msg' AND ((phone_number = ? AND recipient_phone = ?) OR (phone_number = ? AND recipient_phone = ?)) ORDER BY updated_at ASC"
                 ).bind(phone, myPhone, myPhone, phone).all();
 
                 return jsonResponse({ success: true, messages: results || [] }, corsHeaders);
             }
 
-            // ৭. ম্যাজিক লিংক পাঠানো
+            // নতুন: ৭. ক্লাউড ডাটাবেজ থেকে চ্যাট হিস্ট্রি ডিলিট বা ক্লিয়ার করা
+            case 'clear_chat_history': {
+                if (request.method !== 'POST') break;
+                const body = await request.json();
+                const { sender_phone, receiver_phone } = body;
+
+                await env.chat.prepare(
+                    "DELETE FROM chat_master_system WHERE record_type = 'chat_msg' AND ((phone_number = ? AND recipient_phone = ?) OR (phone_number = ? AND recipient_phone = ?))"
+                ).bind(sender_phone, receiver_phone, receiver_phone, sender_phone).run();
+
+                return jsonResponse({ success: true }, corsHeaders);
+            }
+
+            // ৮. ম্যাজিক লিংক পাঠানো
             case 'send_magic_link': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
@@ -127,7 +141,7 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true }, corsHeaders);
             }
 
-            // ৮. ম্যাজিক কোড ভেরিফাই করা
+            // ৯. ম্যাজিক কোড ভেরিফাই করা
             case 'verify_magic_code': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
@@ -144,10 +158,10 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true }, corsHeaders);
             }
 
-            // ৯. প্রোফাইল আপডেট করা
+            // ১০. প্রোফাইল আপডেট করা
             case 'update_profile': {
                 if (request.method !== 'POST') break;
-                const body = await request.json();
+                const body = `await request.json();
                 const { phone, display_name, username, avatar_url } = body;
                 if (phone) {
                     const userId = 'user_' + phone;
@@ -160,7 +174,7 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true }, corsHeaders);
             }
 
-            // ১০. লাইভ স্ট্যাটাস সেট করা
+            // ১১. লাইভ স্ট্যাটাস সেট করা
             case 'set_live_status': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
@@ -186,4 +200,30 @@ export async function onRequest(context) {
 // রেসপন্স পাঠানোর জন্য হেলপার ফাংশন
 function jsonResponse(data, headers, status = 200) {
     return new Response(JSON.stringify(data), { status, headers });
+}
+```[cite: 15]
+
+### ফ্রন্টএন্ডে করণীয়:
+আপনার ফ্রন্টএন্ডের `confirmClearChatHistory()` ফাংশনে লোকাল স্টোরেজ ক্লিয়ার করার পাশাপাশি ক্লাউড ডাটাবেজ থেকেও যেন চ্যাট ডিলিট হয়, সেজন্য ব্যাকএন্ডে একটি রিকোয়েস্ট পাঠিয়ে দিতে পারেন এভাবে[cite: 15]:
+```javascript
+async function confirmClearChatHistory() {
+    if (!currentActiveRecipient) return;
+    const key = normPhone(currentActiveRecipient.phone);
+    const myPhone = normPhone(getActiveProfile().phone);
+
+    // ক্লাউড ডাটাবেজ থেকে মুছে ফেলার রিকোয়েস্ট
+    try {
+        await fetch('/api/chat?action=clear_chat_history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sender_phone: myPhone, receiver_phone: key })
+        });
+    } catch (e) {}
+
+    chatClearTimestamps[key] = Date.now();
+    localStorage.setItem('salaam_clear_ts_v18', JSON.stringify(chatClearTimestamps));
+    delete localMessageStore[key];
+    persistMessages();
+    loadMessages();
+    showToast("Chat cleared successfully");
 }
