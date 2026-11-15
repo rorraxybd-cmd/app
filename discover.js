@@ -294,7 +294,7 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
         `;
     } else {
         usersHtml = matchedUsers.map(c => {
-            const statusColor = c.isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]'; // অনলাইন হলে সবুজ, অফলাইন হলে লাল ডট
+            const statusColor = c.isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
             const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
             const safeName = c.name.replace(/'/g, "\\'");
             return `
@@ -370,7 +370,7 @@ function renderContactsView(searchQuery = '') {
         `;
     } else {
         contactsHtml = filteredContacts.map(c => {
-            const statusColor = c.isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]'; // অনলাইন হলে সবুজ, অফলাইন হলে লাল ডট
+            const statusColor = c.isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
             const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐', name: 'Global' };
             const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
             const safeName = c.name.replace(/'/g, "\\'");
@@ -471,7 +471,6 @@ function saveNewContactFromModal() {
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const cleanPhone = phone.replace(/[\s\-\(\)\+]/g, '');
 
-    // কঠোরভাবে ডুপ্লিকেট নম্বর চেক করা (একই মোবাইল নম্বরে একাধিক প্রোফাইল বা কন্টাক্ট সেভ হওয়া রোধ করবে)
     const exists = localContacts.find(c => String(c.phone || '').replace(/[\s\-\(\)\+]/g, '') === cleanPhone);
     if (exists) {
         if (typeof showToast === 'function') showToast("This phone number already exists in your contacts!", true);
@@ -482,7 +481,7 @@ function saveNewContactFromModal() {
         name: name,
         phone: cleanPhone,
         avatar: "",
-        isOnline: false, // ম্যানুয়ালি যোগ করা কন্টাক্ট ডিফল্ট অফলাইন (লাল ডট) থাকবে
+        isOnline: false,
         appUser: false
     });
 
@@ -491,4 +490,3 @@ function saveNewContactFromModal() {
     if (typeof showToast === 'function') showToast("Contact added successfully!");
     renderContactsView();
 }
-```[cite: 14]
