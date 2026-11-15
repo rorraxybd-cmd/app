@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=11.0">
+    <link rel="stylesheet" href="/discover.css?v=12.0">
     <style>
         :root {
             --bg-main: #030305;
@@ -226,7 +226,7 @@
     <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40 border-t border-white/5">
         <div class="flex items-center justify-around w-full px-3">
             <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none">
-                <svg id="iconProfile" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <svg id="iconProfile" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 <span id="labelProfile" class="nav-label text-[9px] gold-gradient-text font-semibold">Settings</span>
             </button>
             <button onclick="switchTab('discover')" id="tabDiscover" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none">
@@ -254,14 +254,80 @@
     </div>
 
     <!-- Modular JavaScript Files Connection -->
-    <script src="/discover.js?v=11.0"></script>
-    <script src="/verify.js?v=11.0"></script>
-    <script src="/call.js?v=11.0"></script>
-    <script src="/message.js?v=11.0"></script>
-    <script src="/transfer.js?v=11.0"></script>
+    <script src="/discover.js?v=12.0"></script>
+    <script src="/verify.js?v=12.0"></script>
+    <script src="/call.js?v=12.0"></script>
+    <script src="/message.js?v=12.0"></script>
+    <script src="/transfer.js?v=12.0"></script>
     
     <script>
-        // discover.js থেকে সমস্ত মহাদেশের দেশসমূহ এবং ডায়াল কোড ড্রপডাউনে লোড করার ফাংশন
+        // সমস্ত মেনু এবং ট্যাব সুইচিং লজিক (Settings, Discover, Contacts, Chats, Calls)
+        function switchTab(tabName) {
+            const tabs = ['Profile', 'Discover', 'Contact', 'Chat', 'Calls'];
+            tabs.forEach(t => {
+                const btn = document.getElementById('tab' + t);
+                if (btn) btn.classList.remove('scale-105');
+            });
+
+            const activeBtn = document.getElementById('tab' + (tabName.charAt(0).toUpperCase() + tabName.slice(1)));
+            if (activeBtn) activeBtn.classList.add('scale-105');
+
+            if (tabName === 'profile') {
+                if (typeof renderProfileView === 'function') renderProfileView();
+            } else if (tabName === 'discover') {
+                if (typeof renderDiscoverDirectory === 'function') renderDiscoverDirectory();
+            } else if (tabName === 'contact') {
+                if (typeof renderContactsView === 'function') renderContactsView();
+            } else if (tabName === 'chat') {
+                if (typeof renderChatHistoryList === 'function') renderChatHistoryList();
+            } else if (tabName === 'calls') {
+                if (typeof renderCallsHistoryView === 'function') renderCallsHistoryView();
+            }
+        }
+
+        // প্রোফাইল লিঙ্ক শেয়ার করার ফাংশন (chat.rorraxy.com/username)
+        function shareProfileLink() {
+            const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : { username: 'mrmasudar' };
+            const profileUrl = `https://chat.rorraxy.com/${profile.username || 'user'}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'MESSAGE by rorraxy.com',
+                    text: 'Connect with me on rorraxy MESSAGE',
+                    url: profileUrl
+                }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(profileUrl);
+                if (typeof showToast === 'function') showToast("Profile link copied!");
+            }
+        }
+
+        // পপআপ টোস্ট নোটিফিকেশন ফাংশন
+        function showToast(text, isError = false) {
+            const banner = document.getElementById('toastBanner');
+            const toastText = document.getElementById('toastText');
+            const toastDot = document.getElementById('toastDot');
+            if (!banner || !toastText) return;
+            
+            toastText.innerText = text;
+            if (toastDot) toastDot.style.backgroundColor = isError ? '#ff4757' : '#2ed573';
+            banner.classList.remove('hidden');
+            banner.style.display = 'flex';
+            setTimeout(() => {
+                banner.classList.add('hidden');
+                banner.style.display = 'none';
+            }, 3000);
+        }
+
+        function initAppAfterVerification() {
+            const overlay = document.getElementById('verifyOverlay');
+            if (overlay) overlay.style.display = 'none';
+            switchTab('contact');
+            if (typeof startIncomingCallPolling === 'function') {
+                startIncomingCallPolling();
+            }
+        }
+
         function loadCountryCodesIntoSelect() {
             const selectEl = document.getElementById('vCountrySelect');
             if (!selectEl) return;
@@ -283,7 +349,6 @@
             }
         }
 
-        // PWA Install Handler & Direct Skip Handler
         function handleCustomInstall() {
             if (typeof installPWAApp === 'function') {
                 installPWAApp();
@@ -306,9 +371,7 @@
             const overlay = document.getElementById('verifyOverlay');
             if (localStorage.getItem('salaam_verified_v18') === 'true') {
                 if (overlay) overlay.style.display = 'none';
-                if (typeof initAppAfterVerification === 'function') {
-                    initAppAfterVerification();
-                }
+                initAppAfterVerification();
             } else {
                 if (overlay) overlay.style.display = 'flex';
                 const installContainer = document.getElementById('pwaInstallContainer');
