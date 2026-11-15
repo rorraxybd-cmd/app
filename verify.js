@@ -5,9 +5,9 @@ let isVerifiedSession = localStorage.getItem('salaam_verified_v18') === 'true';
 const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'message'];
 
 let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v18') || 'null') || [{
-    name: "Mr. Masudar",
+    name: "rorraxy.com",
     phone: "+8801538187301",
-    username: "mrmasudar",
+    username: "rorraxy.com",
     themeColor: "emerald",
     avatar: "https://pub-e1469a425020465cb5f7971065e07a62.r2.dev/logo.jpg"
 }];
