@@ -18,8 +18,9 @@ export async function onRequest(context) {
         switch (action) {
             case 'get_global_users': {
                 if (request.method !== 'GET') break;
+                // is_verified ফিল্টারটি উঠিয়ে দেওয়া হয়েছে যাতে সব রেজিস্টার্ড ইউজার কন্টাক্ট লিস্টে শো করে
                 const { results } = await env.chat.prepare(
-                    "SELECT phone_number, display_name, username, avatar_url, is_online, is_live FROM chat_master_system WHERE record_type = 'user' AND is_verified = 1 ORDER BY updated_at DESC LIMIT 500"
+                    "SELECT phone_number, display_name, username, avatar_url, is_online, is_live FROM chat_master_system WHERE record_type = 'user' ORDER BY updated_at DESC LIMIT 500"
                 ).all();
                 return jsonResponse({ success: true, users: results || [] }, corsHeaders);
             }
