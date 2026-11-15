@@ -219,26 +219,30 @@ function checkInitialVerification() {
     }
 }
 
-// শুধু সাবডোমেন ও ইউআরএল সহ ক্লিন কপি এবং নেটিভ শেয়ার ফাংশন
+// স্মার্ট নেটিভ শেয়ার এবং ক্লিন ইউআরএল কপি ফাংশন
 function shareProfileLink() {
     const profile = getActiveProfile();
-    const profileUrl = `chat.rorraxy.com/${profile.username || 'user'}`;
-    
+    const cleanUrl = `chat.rorraxy.com/${profile.username || 'user'}`;
+    const shareData = {
+        title: 'MESSAGE | rorraxy.com',
+        text: `Connect with ${profile.name} on MESSAGE:`,
+        url: `https://${cleanUrl}`
+    };
+
     if (navigator.share) {
-        navigator.share({
-            title: 'MESSAGE by rorraxy.com',
-            url: profileUrl
-        }).catch(() => {});
+        navigator.share(shareData).catch((err) => {
+            console.log('Share canceled or failed:', err);
+        });
     } else {
-        navigator.clipboard.writeText(profileUrl).then(() => {
-            if (typeof showToast === 'function') showToast(`Copied: ${profileUrl}`);
+        navigator.clipboard.writeText(cleanUrl).then(() => {
+            if (typeof showToast === 'function') showToast(`Copied: ${cleanUrl}`);
         }).catch(() => {
             if (typeof showToast === 'function') showToast("Failed to copy link", true);
         });
     }
 }
 
-// পরিপাটি ও গোছালো সেটিংস/প্রোফাইল ভিউ (পিঙ্ক কালার শেয়ার প্রোফাইল বাটন সহ)
+// পরিপাটি ও গোছালো সেটিংস/প্রোফাইল ভিউ
 function renderProfileView(isEditing = false) {
     const profile = getActiveProfile();
     const sidebarList = document.getElementById('sidebarContentList');
@@ -270,7 +274,7 @@ function renderProfileView(isEditing = false) {
                     </p>
                 </div>
 
-                <!-- একদম ক্লিন পিঙ্ক কালার টেক্সটযুক্ত শেয়ার প্রোফাইল বাটন (কোনো আইকন বা লিংক ছাড়াই) -->
+                <!-- ক্লিন পিঙ্ক কালার টেক্সটযুক্ত শেয়ার প্রোফাইল বাটন -->
                 <div class="pt-2">
                     <button onclick="shareProfileLink()" class="w-full py-3.5 px-4 rounded-2xl theme-input hover:border-pink-500/50 transition cursor-pointer shadow-inner flex items-center justify-center">
                         <span class="text-xs font-extrabold pink-gradient-text tracking-wider uppercase">Share Profile</span>
