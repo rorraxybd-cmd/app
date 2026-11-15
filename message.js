@@ -1,11 +1,25 @@
 // message.js - Professional Chat & Messaging Module
 let chatPollInterval = null;
-let localMessageStore = JSON.parse(localStorage.getItem('message_messages_v18') || '{}');
-let deletedMessageIds = JSON.parse(localStorage.getItem('message_deleted_ids_v18') || '[]');
-let chatClearTimestamps = JSON.parse(localStorage.getItem('message_clear_ts_v18') || '{}');
+let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
+let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
+let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
 
 function persistMessages() { 
-    localStorage.setItem('message_messages_v18', JSON.stringify(localMessageStore)); 
+    localStorage.setItem('salaam_messages_v18', JSON.stringify(localMessageStore)); 
+}
+
+function toggleSendButton() {
+    const inp = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    if (!inp || !sendBtn) return;
+    
+    if (inp.value.trim().length > 0) {
+        sendBtn.classList.remove('hidden');
+        sendBtn.classList.add('flex');
+    } else {
+        sendBtn.classList.add('hidden');
+        sendBtn.classList.remove('flex');
+    }
 }
 
 async function sendTextMessage() {
@@ -97,7 +111,7 @@ function deleteSingleMessage(key, index) {
         if (msg.id) {
             if (!deletedMessageIds.includes(msg.id)) {
                 deletedMessageIds.push(msg.id);
-                localStorage.setItem('message_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+                localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
             }
             fetch('/api/chat?action=delete_message', {
                 method: 'POST',
@@ -117,7 +131,7 @@ function confirmClearChatHistory() {
     const key = normPhone(currentActiveRecipient.phone);
     
     chatClearTimestamps[key] = Date.now();
-    localStorage.setItem('message_clear_ts_v18', JSON.stringify(chatClearTimestamps));
+    localStorage.setItem('salaam_clear_ts_v18', JSON.stringify(chatClearTimestamps));
 
     if (localMessageStore[key]) {
         localMessageStore[key].forEach(m => {
@@ -125,7 +139,7 @@ function confirmClearChatHistory() {
                 deletedMessageIds.push(m.id);
             }
         });
-        localStorage.setItem('message_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+        localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
     }
     delete localMessageStore[key];
     persistMessages();
@@ -147,8 +161,8 @@ function loadMessages() {
     if (msgs.length === 0) {
         container.innerHTML = `
             <div class="flex flex-col items-center justify-center space-y-3 max-w-xs text-center m-auto">
-                <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center">
-                    <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center border border-amber-400/20 shadow-lg">
+                    <svg class="w-7 h-7 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                 </div>
                 <p class="text-sm font-bold gold-gradient-text">No messages yet</p>
                 <p class="text-[11px] text-gray-400">Send a message or start a call with ${currentActiveRecipient.name}.</p>
@@ -159,12 +173,16 @@ function loadMessages() {
     container.innerHTML = msgs.map((m, idx) => {
         const isMe = normPhone(m.phone_number) === normPhone(getActiveProfile().phone);
         let contentHtml = '';
-        
+        const timeStr = new Date(m.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
         if (m.type === 'text' || !m.media_url) {
             contentHtml = `
-            <div class="flex items-center justify-between space-x-2">
-                <p class="text-xs text-white leading-relaxed">${escapeHtml(m.message_text || '')}</p>
-                <button onclick="deleteSingleMessage('${key}', ${idx})" class="text-red-400/70 hover:text-red-400 text-[10px] cursor-pointer pl-1" title="Delete"><i class="fa-solid fa-trash"></i></button>
+            <div class="flex flex-col space-y-1">
+                <p class="text-xs text-white leading-relaxed break-words">${escapeHtml(m.message_text || '')}</p>
+                <div class="flex items-center justify-end space-x-1.5 mt-0.5">
+                    <span class="text-[9px] text-gray-400 font-medium">${timeStr}</span>
+                    <button onclick="deleteSingleMessage('${key}', ${idx})" class="text-red-400/70 hover:text-red-400 text-[9px] cursor-pointer" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                </div>
             </div>`;
         } else {
             if (m.type === 'image') {
@@ -195,12 +213,11 @@ function loadMessages() {
         }
 
         return `
-        <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1">
-            <div class="max-w-[75%] px-3.5 py-2.5 rounded-2xl ${isMe ? 'chat-bubble-me' : 'chat-bubble-them'} shadow-md relative">
+        <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1.5 px-2">
+            <div class="max-w-[80%] px-3.5 py-2.5 rounded-2xl ${isMe ? 'chat-bubble-me' : 'chat-bubble-them'} shadow-lg relative">
                 ${contentHtml}
             </div>
         </div>`;
     }).join('');
     container.scrollTop = container.scrollHeight;
 }
-```[cite: 17]
