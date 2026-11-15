@@ -258,7 +258,7 @@
                 if (res.ok) {
                     const data = await res.json();
                     if (data.success && Array.isArray(data.users)) {
-                        let localContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || '[]');
+                        let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
                         data.users.forEach(u => {
                             const phone = String(u.phone || '').replace(/[\s\-\(\)]/g, '');
                             const exists = localContacts.find(c => String(c.phone || '').replace(/[\s\-\(\)]/g, '') === phone);
@@ -275,7 +275,7 @@
                                 exists.avatar = u.avatar_url || exists.avatar;
                             }
                         });
-                        localStorage.setItem('salaam_contacts_v18', JSON.stringify(localContacts));
+                        localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
                     }
                 }
             } catch (e) {}
@@ -428,10 +428,10 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('verifyOverlay');
-            const savedTheme = JSON.parse(localStorage.getItem('salaam_profiles_v18') || '[{}]')[0]?.themeColor || 'emerald';
+            const savedTheme = JSON.parse(localStorage.getItem('message_profiles_v18') || '[{}]')[0]?.themeColor || 'emerald';
             document.documentElement.setAttribute('data-theme', savedTheme);
 
-            if (localStorage.getItem('salaam_verified_v18') === 'true') {
+            if (localStorage.getItem('message_verified_v18') === 'true') {
                 if (overlay) overlay.style.display = 'none';
                 initAppAfterVerification();
             } else {
