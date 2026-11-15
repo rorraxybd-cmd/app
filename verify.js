@@ -9,18 +9,8 @@ let savedProfiles = JSON.parse(localStorage.getItem('salaam_profiles_v18') || 'n
     phone: "+8801700000000",
     username: "mrmasudar",
     themeColor: "emerald",
-    avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png"
+    avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg"
 }];
-
-const COUNTRY_MAP = [
-    { code: '+880', name: 'Bangladesh', flag: '🇧🇩' },
-    { code: '+966', name: 'Saudi Arabia', flag: '🇸🇦' },
-    { code: '+971', name: 'UAE', flag: '🇦🇪' },
-    { code: '+91', name: 'India', flag: '🇮🇳' },
-    { code: '+92', name: 'Pakistan', flag: '🇵🇰' },
-    { code: '+1', name: 'USA / Canada', flag: '🇺🇸' },
-    { code: '+44', name: 'UK', flag: '🇬🇧' }
-];
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -42,10 +32,36 @@ async function installPWAApp() {
     updatePhoneValidation();
 }
 
+// গ্লোবাল ২০০+ দেশের ডেটা থেকে ড্রপডাউন স্বয়ংক্রিয়ভাবে পপুলেট করার ফাংশন
+function populateVerifyCountryDropdown() {
+    const select = document.getElementById('vCountrySelect');
+    if (!select) return;
+
+    if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined' && Array.isArray(GLOBAL_CONTINENTS_DATA)) {
+        let html = '';
+        GLOBAL_CONTINENTS_DATA.forEach(continent => {
+            continent.countries.forEach(c => {
+                const isSelected = (c.code === '880' && c.name === 'Bangladesh') ? 'selected' : '';
+                html += `<option value="+${c.code}|10" ${isSelected}>${c.flag} ${c.name} (+${c.code})</option>`;
+            });
+        });
+        select.innerHTML = html;
+    } else {
+        select.innerHTML = `<option value="+880|10" selected>🇧🇩 Bangladesh (+880)</option>`;
+    }
+    updatePhoneValidation();
+}
+
 function getCountryInfo(phone) {
     const p = String(phone || '').replace(/[\s\-\(\)]/g, '');
-    for (const c of COUNTRY_MAP) {
-        if (p.startsWith(c.code)) return c;
+    if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined') {
+        for (const cont of GLOBAL_CONTINENTS_DATA) {
+            for (const c of cont.countries) {
+                if (p.startsWith('+' + c.code) || p.startsWith(c.code)) {
+                    return { code: '+' + c.code, name: c.name, flag: c.flag };
+                }
+            }
+        }
     }
     return { code: 'OTHER', name: 'Global', flag: '🌍' };
 }
@@ -65,18 +81,18 @@ function updatePhoneValidation() {
     const select = document.getElementById('vCountrySelect'), phoneInput = document.getElementById('vPhoneInput');
     if (!select || !phoneInput) return;
     const val = select.value.split('|');
-    phoneInput.maxLength = val[1];
-    phoneInput.placeholder = "Enter " + val[1] + " digits";
+    phoneInput.maxLength = val[1] || 10;
+    phoneInput.placeholder = "Enter phone number";
 }
 
 async function submitVerifyStep1() {
     const name = document.getElementById('vFullName').value.trim();
     const selectData = document.getElementById('vCountrySelect').value.split('|');
-    const countryCode = selectData[0], requiredLen = parseInt(selectData[1], 10);
+    const countryCode = selectData[0], requiredLen = parseInt(selectData[1], 10) || 10;
     const phone = document.getElementById('vPhoneInput').value.trim();
 
     if (!name) { showToast("Please enter your full name", true); return; }
-    if (!phone || phone.length < requiredLen - 1) { showToast(`Enter valid number (${requiredLen} digits)`, true); return; }
+    if (!phone || phone.length < 6) { showToast(`Enter valid phone number`, true); return; }
 
     tempVerifyName = name; tempVerifyPhone = countryCode + phone;
     generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -128,7 +144,7 @@ async function submitVerifyStep2() {
                     phone: tempVerifyPhone,
                     username: data.user.username || ('user_' + Math.floor(1000 + Math.random() * 9000)),
                     themeColor: data.user.themeColor || "emerald",
-                    avatar: data.user.avatar_url || "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png"
+                    avatar: data.user.avatar_url || "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg"
                 };
                 saveProfiles();
             } else {
@@ -169,6 +185,7 @@ async function submitVerifyStep2() {
 
 function checkInitialVerification() {
     detectUserIp();
+    populateVerifyCountryDropdown();
     const overlay = document.getElementById('verifyOverlay');
     if (!isVerifiedSession) {
         if (overlay) overlay.style.display = 'flex';
