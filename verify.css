@@ -77,7 +77,6 @@ body {
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
 }
 
-/* লোগো ক্লিন ও প্রফেশনাল লুক */
 .header-logo-clean {
     width: 90px;
     height: 90px;
@@ -100,7 +99,6 @@ body {
     overflow-y: auto;
 }
 
-/* কার্ড ব্যাকগ্রাউন্ড একদম সফট, স্মুথ এবং প্রিমিয়াম */
 .verify-card {
     background: linear-gradient(145deg, #091610 0%, #050d09 100%);
     border-radius: 32px;
@@ -110,4 +108,13 @@ body {
     border: 1px solid rgba(212, 175, 55, 0.22);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(12px);
+}
+
+/* কান্ট্রি ড্রপডাউন লেখা ফিট করার জন্য ফিক্সড উইথ ও প্যাডিং */
+#vCountrySelect {
+    width: 155px;
+    min-width: 135px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
 }
