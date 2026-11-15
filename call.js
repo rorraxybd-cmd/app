@@ -4,14 +4,14 @@ let callRingInterval = null, activeAudioCtx = null, callPollInterval = null, cha
 let callTimerInterval = null, callSeconds = 0;
 let peerConnection = null, localStream = null, remoteStream = null;
 let isMicMuted = false, lastHandledSignalTs = 0;
-let isLocalMain = false; // PiP Video Swap
+let isLocalMain = false;
 
 let callHistoryNotifications = JSON.parse(localStorage.getItem('salaam_call_notifications') || '[]');
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
 let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
 let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
 
-// ডিভাইস কন্টাক্টস (অফিসিয়াল সাপোর্ট ব্যাকএন্ড ভেরিফিকেশনের জন্য থাকবে কিন্তু কন্টাক্ট লিস্টে হাইড থাকবে)
+// ডিভাইস কন্টাক্টস (অফিসিয়াল সাপোর্ট ব্যাকএন্ড ভেরিফিকেশনের জন্য থাকবে কিন্তু লিস্টে হাইড থাকবে)
 let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [
     {
         name: "rorraxy",
@@ -96,7 +96,7 @@ function openWorldLink() {
 
 function switchTab(tab) {
     currentTab = tab;
-    ['profile', 'calls', 'chat', 'contact', 'world'].forEach(t => {
+    ['profile', 'calls', 'chat', 'contact', 'discover'].forEach(t => {
         const isSel = (t === tab);
         const lbl = document.getElementById('label' + t.charAt(0).toUpperCase() + t.slice(1));
         const icn = document.getElementById('icon' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -111,6 +111,9 @@ function switchTab(tab) {
     } else if (tab === 'calls') {
         if (sb) sb.style.display = 'none';
         renderCallsHistory();
+    } else if (tab === 'discover') {
+        if (sb) sb.style.display = 'none';
+        if (typeof renderDiscoverView === 'function') renderDiscoverView();
     } else {
         if (sb) sb.style.display = 'block';
         const searchInput = document.getElementById('searchInput');
@@ -132,12 +135,10 @@ function renderDeviceContacts() {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
-    // অফিসিয়াল সাপোর্ট কার্ডটি কন্টাক্ট লিস্ট থেকে পুরোপুরি হাইড করা হলো, তবে ব্যাকএন্ড ভেরিফিকেশনের জন্য ডেটা সংরক্ষিত থাকবে।
-
-    const contactsHtml = deviceContacts.filter(c => !c.isOfficialSupport).map(c => {
-        const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '📍' };
-        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone || ''}</p>`;
+    const contactsHtml = deviceContacts.filter(c => !c.isOfficialSupport && c.phone && c.phone !== 'undefined').map(c => {
+        const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '' };
+        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${(c.name || 'U').charAt(0)}</div>`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag || ''} ${c.phone}</p>`;
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
@@ -149,9 +150,15 @@ function renderDeviceContacts() {
                 <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>${subText}</div>
             </div>
             <div class="flex items-center space-x-1.5 shrink-0 pl-2">
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                </button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg>
+                </button>
             </div>
         </div>`;
     }).join('');
@@ -195,7 +202,9 @@ function renderCallsHistory() {
                     </div>
                 </div>
                 <div class="flex space-x-2 shrink-0">
-                    <button onclick="openChat('${call.phone}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                    <button onclick="openChat('${call.phone}', '${contact.name}')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    </button>
                 </div>
             </div>`;
         }).join('');
@@ -249,18 +258,23 @@ async function sendTextMessage() {
     const key = normPhone(currentActiveRecipient.phone), me = normPhone(getActiveProfile().phone);
     if (!localMessageStore[key]) localMessageStore[key] = [];
     
-    const msgId = 'm_' + Date.now() + '_' + Math.random();
+    const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
     const msg = { id: msgId, phone_number: me, message_text: text, media_url: '', type: 'text', timestamp: Date.now() };
     localMessageStore[key].push(msg);
     appendBubble(msg);
     persistMessages();
 
     try {
-        await fetch('/api/chat?action=send_chat_message', {
+        const res = await fetch('/api/chat?action=send_chat_message', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sender_phone: me, receiver_phone: key, message_text: text, media_url: '', message_type: 'text' })
         });
+        const data = await res.json();
+        if (data.success && data.message_id) {
+            msg.id = data.message_id;
+            persistMessages();
+        }
     } catch (e) {}
 }
 
@@ -282,6 +296,7 @@ async function fetchMessagesFromCloud() {
                     const mId = m.id || ('m_' + (m.timestamp || Date.now()));
                     const mTimestamp = m.timestamp || Date.now();
                     
+                    // ডিলিট হওয়া বা চ্যাট ক্লিয়ার করার আগের মেসেজ স্কিপ করা
                     if (mTimestamp <= clearTs || deletedMessageIds.includes(mId)) return;
 
                     const mText = (m.message_text || '').trim();
@@ -316,7 +331,7 @@ function startChatPolling() {
     chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 3000);
 }
 
-// WebRTC কলিং এবং অডিও/ভিডিও কলিং
+// WebRTC কলিং ফাংশনসমূহ
 function startContinuousRinging() {
     stopContinuousRinging();
     const playTone = () => {
@@ -809,15 +824,17 @@ function filterContent() {
                 <p class="text-[10px] text-gray-300">${q}</p>
             </div>
             <div class="flex space-x-1.5">
-                <button onclick="openChat('${q}', '${q}')" class="p-2 text-amber-300 hover:bg-white/10 cursor-pointer" title="Open Chat"><i class="fa-solid fa-comment text-xs"></i></button>
+                <button onclick="openChat('${q}', '${q}')" class="p-2 text-amber-300 hover:bg-white/10 cursor-pointer" title="Open Chat">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                </button>
             </div>
         </div>`;
     }
 
     const contactsHtml = filtered.map(c => {
-        const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '📍' };
-        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
-        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag} ${c.phone || ''}</p>`;
+        const info = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '' };
+        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${(c.name || 'U').charAt(0)}</div>`;
+        const subText = c.subTitle ? `<p class="text-[10px] text-amber-300 font-medium">${c.subTitle}</p>` : `<p class="text-[10px] text-gray-400">${info.flag || ''} ${c.phone}</p>`;
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
@@ -829,9 +846,15 @@ function filterContent() {
                 <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>${subText}</div>
             </div>
             <div class="flex items-center space-x-1.5 shrink-0 pl-2">
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat"><i class="fa-solid fa-comment text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}');" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                </button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg>
+                </button>
             </div>
         </div>`;
     }).join('');
@@ -895,12 +918,16 @@ function loadMessages() {
         let contentHtml = '';
         
         if (m.type === 'text' || !m.media_url) {
-            contentHtml = `<p class="text-xs text-white leading-relaxed">${escapeHtml(m.message_text || '')}</p>`;
+            contentHtml = `
+            <div class="flex items-center justify-between space-x-2">
+                <p class="text-xs text-white leading-relaxed">${escapeHtml(m.message_text || '')}</p>
+                <button onclick="deleteSingleMessage('${key}', ${idx})" class="text-red-400/70 hover:text-red-400 text-[10px] cursor-pointer pl-1" title="Delete"><i class="fa-solid fa-trash"></i></button>
+            </div>`;
         } else {
             if (m.type === 'image') {
                 contentHtml = `<div class="relative group my-1">
                     <img src="${m.media_url}" class="rounded-xl max-w-xs max-h-52 object-cover border border-white/10 shadow-md">
-                    <div class="absolute top-2 right-2 flex space-x-1.5">
+                    <div class="absolute top-2 right-2 flex space-x-1.5 bg-black/50 backdrop-blur-sm rounded-lg p-1">
                         <a href="${m.media_url}" download="image.jpg" class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
                         <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     </div>
@@ -908,7 +935,7 @@ function loadMessages() {
             } else if (m.type === 'video') {
                 contentHtml = `<div class="relative my-1">
                     <video src="${m.media_url}" controls class="rounded-xl max-w-xs max-h-52 border border-white/10 shadow-md"></video>
-                    <div class="absolute top-2 right-2 flex space-x-1.5">
+                    <div class="absolute top-2 right-2 flex space-x-1.5 bg-black/50 backdrop-blur-sm rounded-lg p-1">
                         <a href="${m.media_url}" download="video.mp4" class="p-1 text-amber-300 hover:text-white text-xs cursor-pointer" title="Download" onclick="autoDeleteAfterDownload('${key}', ${idx})"><i class="fa-solid fa-download"></i></a>
                         <button onclick="deleteSingleMessage('${key}', ${idx})" class="p-1 text-red-400 hover:text-red-300 text-xs cursor-pointer" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     </div>
@@ -954,7 +981,7 @@ function autoDeleteAfterDownload(key, index) {
             localMessageStore[key].splice(index, 1);
             persistMessages();
             loadMessages();
-            showToast("ডাউনলোড সম্পন্ন হয়েছে ও সার্ভার থেকে মুছে ফেলা হয়েছে");
+            showToast("Downloaded & removed from server");
         }
     }, 1000);
 }
@@ -962,14 +989,21 @@ function autoDeleteAfterDownload(key, index) {
 function deleteSingleMessage(key, index) {
     if (localMessageStore[key] && localMessageStore[key][index]) {
         const msg = localMessageStore[key][index];
-        if (msg.id && !deletedMessageIds.includes(msg.id)) {
-            deletedMessageIds.push(msg.id);
-            localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+        if (msg.id) {
+            if (!deletedMessageIds.includes(msg.id)) {
+                deletedMessageIds.push(msg.id);
+                localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+            }
+            fetch('/api/chat?action=delete_message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message_id: msg.id })
+            }).catch(e => {});
         }
         localMessageStore[key].splice(index, 1);
         persistMessages();
         loadMessages();
-        showToast("সফলভাবে ডিলিট করা হয়েছে");
+        showToast("Deleted successfully");
     }
 }
 
@@ -1007,7 +1041,6 @@ function renderChatStories() {
         sidebarList.innerHTML = `<div class="p-6 text-center text-xs text-gray-400">No active chats yet.</div>`;
         return;
     }
-    // চ্যাট ট্যাবে প্রতিটি চ্যাট আইটেমের পাশে শুধুমাত্র দুটি আইকন (অডিও কল ও ভিডিও কল) রাখা হয়েছে
     sidebarList.innerHTML = keys.map(k => {
         const msgs = localMessageStore[k];
         const last = msgs[msgs.length - 1] || {};
@@ -1019,8 +1052,12 @@ function renderChatStories() {
                 <div class="min-w-0"><p class="text-xs font-semibold gold-gradient-text truncate">${contact.name}</p><p class="text-[10px] text-gray-400 truncate max-w-[180px]">${last.message_text || 'Media attachment'}</p></div>
             </div>
             <div class="flex items-center space-x-1.5 shrink-0 pl-2">
-                <button onclick="event.stopPropagation(); openChat('${k}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${k}', '${contact.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${k}', '${contact.name}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </button>
+                <button onclick="event.stopPropagation(); openChat('${k}', '${contact.name}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg>
+                </button>
             </div>
         </div>`;
     }).join('');
