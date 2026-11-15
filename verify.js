@@ -132,10 +132,13 @@ async function submitVerifyStep1() {
     document.getElementById('verifyStep1').style.display = 'none';
     document.getElementById('verifyStep2').style.display = 'block';
     document.getElementById('vDisplayCode').innerText = generatedOtpCode;
+    
+    // অটোমেটিকলি কোডটি ইনপুট বক্সে বসিয়ে দেওয়া হলো
+    const otpInput = document.getElementById('vOtpInput');
+    if (otpInput) otpInput.value = generatedOtpCode;
+
     showToast("Verification code ready");
 }
-
-function autoFillOtp() { document.getElementById('vOtpInput').value = generatedOtpCode; }
 
 async function submitVerifyStep2() {
     const entered = document.getElementById('vOtpInput').value.trim();
