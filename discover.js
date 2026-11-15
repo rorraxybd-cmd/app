@@ -1,4 +1,4 @@
-// discover.js - Global Directory & Contacts Sync Module (with Online/Offline Status)
+// discover.js - Global Directory & Contacts Sync Module (Fixed Chat Input Bar)
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -175,11 +175,18 @@ function openChat(phone, name, avatar = '') {
         workspace.style.display = 'flex';
     }
 
+    // Fixed: removed 'hidden' class from chatHeader and chatInputBar so they show up properly
     const chatHeader = document.getElementById('activeChatHeader');
-    if (chatHeader) chatHeader.style.display = 'flex';
+    if (chatHeader) {
+        chatHeader.classList.remove('hidden');
+        chatHeader.style.display = 'flex';
+    }
 
     const chatInput = document.getElementById('chatInputBar');
-    if (chatInput) chatInput.style.display = 'flex';
+    if (chatInput) {
+        chatInput.classList.remove('hidden');
+        chatInput.style.display = 'flex';
+    }
 
     const titleEl = document.getElementById('activeChatTitle');
     if (titleEl) titleEl.innerText = name;
@@ -191,7 +198,6 @@ function openChat(phone, name, avatar = '') {
     if (typeof fetchMessagesFromCloud === 'function') fetchMessagesFromCloud();
     if (typeof startChatPolling === 'function') startChatPolling();
 
-    // মোবাইলে চ্যাট ওপেন হলে সাইডবার এবং নিচের নেভিগেশন বার হাইড করা হবে যাতে মেসেজ ইনপুট বার পরিষ্কার দেখা যায়
     if (window.innerWidth < 768) {
         const sidebar = document.getElementById('sidebarSection');
         if (sidebar) sidebar.classList.add('hidden');
@@ -298,7 +304,6 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
         `;
     } else {
         usersHtml = matchedUsers.map(c => {
-            // অনলাইন বা অফলাইন স্ট্যাটাস এবং টেক্সট লেবেল
             const isOnline = c.isOnline === true || c.isOnline === 1 || c.isOnline === "1";
             const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
             const statusText = isOnline ? '<span class="text-[#2ed573] font-semibold">Online</span>' : '<span class="text-gray-400">Offline</span>';
@@ -382,7 +387,6 @@ function renderContactsView(searchQuery = '') {
         `;
     } else {
         contactsHtml = filteredContacts.map(c => {
-            // কন্টাক্ট লিস্টে অনলাইন বা অফলাইন স্ট্যাটাস এবং টেক্সট লেবেল
             const isOnline = c.isOnline === true || c.isOnline === 1 || c.isOnline === "1";
             const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
             const statusText = isOnline ? '<span class="text-[#2ed573] font-semibold">Online</span>' : '<span class="text-gray-400">Offline</span>';
