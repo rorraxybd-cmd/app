@@ -11,7 +11,7 @@ let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') |
 let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
 let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18') || '{}');
 
-// ডিভাইস কন্টাক্টস (প্রথমে rorraxy এবং অফিসিয়াল সাপোর্ট ডিফল্টভাবে সবার উপরে পিন থাকবে)
+// ডিভাইস কন্টাক্টস (অফিসিয়াল সাপোর্ট ডিফল্টভাবে সবার উপরে পিন থাকবে)
 let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [
     {
         name: "rorraxy",
@@ -211,7 +211,7 @@ function renderCallsHistory() {
             <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Recent Calls</span>
             <button onclick="clearAllCallHistory()" class="text-[10px] text-red-400 hover:underline font-semibold cursor-pointer">Clear All</button>
         </div>` + 
-        callHistoryNotifications.map((call, idx) => {
+        callHistoryNotifications.map((call) => {
             const contact = deviceContacts.find(c => normPhone(c.phone) === normPhone(call.phone)) || { name: call.phone, avatar: null };
             const avatarImg = contact.avatar ? `<img src="${contact.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${contact.name.charAt(0)}</div>`;
             const timeStr = new Date(call.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -967,17 +967,27 @@ function loadMessages() {
 }
 
 function autoDeleteAfterDownload(key, index) {
-    setTimeout(() => {
+    setTimeout(async () => {
         if (localMessageStore[key] && localMessageStore[key][index]) {
             const msg = localMessageStore[key][index];
-            if (msg.id && !deletedMessageIds.includes(msg.id)) {
-                deletedMessageIds.push(msg.id);
-                localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+            if (msg.id) {
+                if (!deletedMessageIds.includes(msg.id)) {
+                    deletedMessageIds.push(msg.id);
+                    localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+                }
+                // ক্লাউড সার্ভার থেকেও ডিলিট করার রিকোয়েস্ট পাঠানো
+                try {
+                    await fetch('/api/chat?action=download_and_delete_media', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message_id: msg.id })
+                    });
+                } catch (e) {}
             }
             localMessageStore[key].splice(index, 1);
             persistMessages();
             loadMessages();
-            showToast("Downloaded & cleaned up automatically");
+            showToast("ডাউনলোড সম্পন্ন হয়েছে ও সার্ভার থেকে মুছে ফেলা হয়েছে");
         }
     }, 1000);
 }
@@ -992,7 +1002,7 @@ function deleteSingleMessage(key, index) {
         localMessageStore[key].splice(index, 1);
         persistMessages();
         loadMessages();
-        showToast("Deleted successfully");
+        showToast("সফলভাবে ডিলিট করা হয়েছে");
     }
 }
 
