@@ -17,17 +17,18 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=2.0">
+    <link rel="stylesheet" href="/discover.css?v=9.0">
     <style>
         :root {
             --bg-main: #030305;
             --surface: #070d0a;
             --card: #08110c;
+            --gold-gradient: linear-gradient(135deg, #F5D061 0%, #FCF6BA 35%, #D4AF37 65%, #FBF5B7 85%, #AA771C 100%);
         }
         body { font-family: 'Poppins', sans-serif; background-color: var(--bg-main); color: #ffffff; }
-        .brand-title-font { font-family: 'Cinzel', serif; }
-        .gold-gradient-text { background: linear-gradient(135deg, #F5D061 0%, #AA771C 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .pink-gradient-text { background: linear-gradient(135deg, #EC4899 0%, #be185d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .brand-title-font { font-family: 'Cinzel', serif; letter-spacing: 0.16em; }
+        .gold-gradient-text { background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .pink-gradient-text { background: linear-gradient(135deg, #EC4899 0%, #ff2e7e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
         .verify-card {
             background: linear-gradient(145deg, #08110c 0%, #030305 100%);
@@ -35,26 +36,31 @@
             padding: 36px 28px;
             max-width: 440px;
             width: 100%;
-            border: 1.5px solid rgba(245, 208, 97, 0.3);
+            border: 1.5px solid rgba(245, 208, 97, 0.35);
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);
             backdrop-filter: blur(20px);
         }
-        .gold-btn { background: linear-gradient(135deg, #F5D061 0%, #AA771C 100%); color: #030305; font-weight: 700; box-shadow: 0 4px 15px rgba(245, 208, 97, 0.25); transition: transform 0.2s; }
+        .gold-btn { background: var(--gold-gradient); color: #030305; font-weight: 700; box-shadow: 0 4px 15px rgba(245, 208, 97, 0.3); transition: transform 0.2s; }
         .gold-btn:hover { transform: scale(1.02); }
         .theme-surface { background-color: var(--surface); }
         .theme-card { background-color: var(--card); }
-        .theme-input { background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(245, 208, 97, 0.2); }
+        .theme-input { background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(245, 208, 97, 0.25); color: #fff; }
         
         /* লোগোর সমস্ত শ্যাডো বা গ্লো সম্পূর্ণ রিমুভড (Clean) */
         .header-logo-clean {
-            width: 90px;
-            height: 90px;
+            width: 96px;
+            height: 96px;
             object-fit: cover;
             background: transparent !important;
             border-radius: 50%;
             box-shadow: none !important;
             filter: none !important;
             border: 1.5px solid rgba(245, 208, 97, 0.4);
+        }
+        #vCountrySelect {
+            width: 145px;
+            min-width: 130px;
+            font-weight: 700;
         }
     </style>
 </head>
@@ -68,7 +74,7 @@
             <div id="pwaInstallContainer" class="space-y-4">
                 <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto">
                 <h1 class="brand-title-font text-3xl font-extrabold gold-gradient-text">MESSAGE</h1>
-                <p class="text-[11px] text-white/75 tracking-widest font-semibold uppercase">Private Global Messenger</p>
+                <p class="text-[11px] text-white/80 tracking-[0.25em] font-semibold uppercase">Private Global Messenger</p>
                 <div class="pt-3">
                     <button onclick="handleCustomInstall()" class="gold-btn w-full py-4 rounded-xl text-xs font-extrabold tracking-wider shadow-lg inline-flex items-center justify-center space-x-2 cursor-pointer uppercase">
                         <i class="fa-solid fa-download"></i><span>INSTALL APP</span>
@@ -79,36 +85,38 @@
             <!-- Step 1: Name & Phone Number Form (Page 2) -->
             <div id="verifyStep1" class="space-y-4 text-left hidden">
                 <div class="text-center pb-1">
-                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto mb-2" style="width: 60px; height: 60px;">
-                    <h2 class="brand-title-font text-xl font-bold gold-gradient-text">Create Profile</h2>
+                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto mb-2" style="width: 64px; height: 64px;">
+                    <h2 class="brand-title-font text-2xl font-bold gold-gradient-text">Create Profile</h2>
+                    <p class="text-[10px] text-white/70 tracking-widest uppercase mt-0.5">Enter your details to connect</p>
                 </div>
                 <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">FULL NAME <span class="text-red-500">*</span></label>
-                    <input type="text" id="vFullName" placeholder="Enter your full name" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-white/10">
+                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">FULL NAME <span class="text-pink-500">*</span></label>
+                    <input type="text" id="vFullName" placeholder="Enter your full name" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
                 </div>
                 <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-red-500">*</span></label>
+                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-pink-500">*</span></label>
                     <div class="flex space-x-2 w-full">
-                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer shrink-0" style="width: 145px;">
-                            <!-- discover.js থেকে দেশ ও পতাকা লোড হবে -->
+                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none cursor-pointer shrink-0">
+                            <!-- discover.js থেকে দেশসমূহ ও পতাকা কোড সহ এখানে লোড হবে -->
                         </select>
-                        <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-white/10">
+                        <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
                     </div>
                 </div>
-                <button onclick="submitVerifyStep1()" class="w-full py-3.5 gold-btn text-xs rounded-xl cursor-pointer mt-2 font-bold flex items-center justify-center space-x-2 shadow-lg uppercase tracking-wider">
-                    <span>CONTINUE</span> <i class="fa-solid fa-circle-check" style="color: #EC4899;"></i>
+                <button onclick="submitVerifyStep1()" class="w-full py-4 gold-btn text-xs rounded-xl cursor-pointer mt-2 font-extrabold flex items-center justify-center space-x-2 shadow-lg uppercase tracking-wider">
+                    <span>CONTINUE</span> <i class="fa-solid fa-circle-check text-pink-600 text-sm"></i>
                 </button>
             </div>
 
             <!-- Step 2: OTP / Verification Code (Page 3) -->
             <div id="verifyStep2" class="space-y-4 text-left hidden">
                 <div class="space-y-2 text-center pt-2">
-                    <h2 class="brand-title-font text-xl font-bold gold-gradient-text">Verify Code</h2>
-                    <label class="text-[11px] font-bold tracking-wider gold-gradient-text block uppercase">AUTO-FILLED CODE <span class="text-emerald-400">✓</span></label>
-                    <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-xl font-extrabold tracking-[10px] px-4 py-4 rounded-xl text-white focus:outline-none border border-amber-400/40 shadow-inner">
+                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto mb-2" style="width: 64px; height: 64px;">
+                    <h2 class="brand-title-font text-2xl font-bold gold-gradient-text">Verify Code</h2>
+                    <label class="text-[11px] font-bold tracking-wider text-white block uppercase">AUTO-FILLED CODE <span class="text-emerald-400">✓</span></label>
+                    <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-2xl font-extrabold tracking-[12px] px-4 py-4 rounded-xl text-white focus:outline-none border border-amber-400/40 shadow-inner">
                 </div>
-                <button onclick="submitVerifyStep2()" class="w-full py-3.5 gold-btn text-xs rounded-xl cursor-pointer mt-3 font-bold flex items-center justify-center space-x-2 shadow-lg uppercase tracking-wider">
-                    <span>VERIFY & START</span> <i class="fa-solid fa-circle-check" style="color: #EC4899;"></i>
+                <button onclick="submitVerifyStep2()" class="w-full py-4 gold-btn text-xs rounded-xl cursor-pointer mt-3 font-extrabold flex items-center justify-center space-x-2 shadow-lg uppercase tracking-wider">
+                    <span>VERIFY & START</span> <i class="fa-solid fa-circle-check text-pink-600 text-sm"></i>
                 </button>
             </div>
         </div>
@@ -121,13 +129,13 @@
             <div>
                 <div class="flex items-center space-x-1.5">
                     <h1 class="brand-title-font font-extrabold text-lg sm:text-xl gold-gradient-text leading-none">MESSAGE</h1>
-                    <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.8 4.2L18.3 4.3L19.5 7.6L22 10L20.8 13.3L21.5 16.8L18.3 18.4L16.7 21.5L13.3 20.8L10 22L7.6 19.5L4.3 18.3L4.2 14.8L2 12L4.2 9.2L4.3 5.7L7.6 4.5L10 2L12 2Z" fill="#F5D061"/><path d="M8.5 12.2L10.8 14.5L15.6 9.5" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.8 4.2L18.3 4.3L19.5 7.6L22 10L20.8 13.3L21.5 16.8L18.3 18.4L16.7 21.5L13.3 20.8L10 22L7.6 19.5L4.3 18.3L4.2 14.8L2 12L4.2 9.2L4.3 5.7L7.6 4.5L10 2L12 2Z" fill="#F5D061"/><path d="M8.5 12.2L10.8 14.5L15.6 9.5" stroke="#030305" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
                 <a href="https://rorraxy.com" target="_blank" class="text-[11px] text-white/70 hover:text-amber-300 transition block tracking-wider mt-0.5">rorraxy.com</a>
             </div>
         </div>
         <div class="flex items-center space-x-2">
-            <button onclick="toggleNotificationPanel()" class="relative p-2.5 theme-card rounded-2xl hover:brightness-125 transition cursor-pointer border border-white/5">
+            <button onclick="toggleNotificationPanel()" class="relative p-2.5 theme-card rounded-2xl hover:brightness-125 transition cursor-pointer border border-amber-400/20">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                 <span id="headerNotifBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full pink-btn text-[9px] flex items-center justify-center font-bold">0</span>
             </button>
@@ -188,7 +196,7 @@
 
             <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 flex flex-col justify-start">
                 <div class="flex flex-col items-center justify-center space-y-3 max-w-xs text-center m-auto">
-                    <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center">
+                    <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center border border-amber-400/20">
                         <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                     </div>
                     <p class="text-sm font-bold gold-gradient-text">Welcome to rorraxy MESSAGE</p>
@@ -202,7 +210,7 @@
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
                         <input type="file" id="universalFileInput" accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.zip,.txt" multiple class="hidden" onchange="handleUniversalFileUpload(this)">
                     </label>
-                    <input type="text" id="messageInput" placeholder="Write a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1 min-w-0 selectable-text" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
+                    <input type="text" id="messageInput" placeholder="Write a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1 min-w-0" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
                     <button id="sendBtn" onclick="sendTextMessage()" class="hidden cursor-pointer hover:scale-110 transition-transform p-1 shrink-0 items-center justify-center">
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
@@ -215,7 +223,7 @@
     <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40 border-t border-white/5">
         <div class="flex items-center justify-around w-full px-3">
             <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none">
-                <svg id="iconProfile" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <svg id="iconProfile" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 <span id="labelProfile" class="nav-label text-[9px] gold-gradient-text font-semibold">Settings</span>
             </button>
             <button onclick="switchTab('discover')" id="tabDiscover" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none">
@@ -238,34 +246,53 @@
     </nav>
 
     <!-- Modals & Toasts -->
-    <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 theme-card text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden items-center space-x-2">
+    <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 theme-card text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden items-center space-x-2 border border-amber-400/30">
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- Modular JavaScript Files Connection (message.js & transfer.js যুক্ত করা হলো) -->
-    <script src="/discover.js?v=2.1"></script>
-    <script src="/verify.js?v=6.1"></script>
-    <script src="/call.js?v=6.1"></script>
-    <script src="/message.js?v=2.1"></script>
-    <script src="/transfer.js?v=2.1"></script>
+    <!-- Modular JavaScript Files Connection -->
+    <script src="/discover.js?v=9.0"></script>
+    <script src="/verify.js?v=9.0"></script>
+    <script src="/call.js?v=9.0"></script>
+    <script src="/message.js?v=9.0"></script>
+    <script src="/transfer.js?v=9.0"></script>
     
     <script>
-        // PWA Install & Seamless Step-by-Step Transition Handler
+        // discover.js থেকে কান্ট্রি ও ডায়াল কোডগুলো ড্রপডাউনে লোড করার ফাংশন
+        function loadCountryCodesIntoSelect() {
+            const selectEl = document.getElementById('vCountrySelect');
+            if (!selectEl) return;
+            
+            selectEl.innerHTML = '';
+            
+            if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined') {
+                GLOBAL_CONTINENTS_DATA.forEach(continent => {
+                    continent.countries.forEach(country => {
+                        const option = document.createElement('option');
+                        option.value = country.code;
+                        option.textContent = `${country.flag} +${country.code} (${country.name})`;
+                        if (country.name === 'Bangladesh') {
+                            option.selected = true;
+                        }
+                        selectEl.appendChild(option);
+                    });
+                });
+            }
+        }
+
+        // PWA Install & Step-by-Step Transition Handler
         function handleCustomInstall() {
             if (typeof installPWAApp === 'function') {
                 installPWAApp();
             }
             
-            // ইনস্টল বাটনে ক্লিক করার সাথে সাথেই পরবর্তী ফর্ম (নাম ও মোবাইল নম্বর) ধাপে চলে যাবে
             const installContainer = document.getElementById('pwaInstallContainer');
             const step1 = document.getElementById('verifyStep1');
             
             if (installContainer) installContainer.classList.add('hidden');
             if (step1) {
                 step1.classList.remove('hidden');
-                if (typeof loadCountryCodes === 'function') {
-                    loadCountryCodes();
-                }
+                loadCountryCodesIntoSelect();
             }
         }
 
@@ -280,9 +307,13 @@
                 if (overlay) overlay.style.display = 'flex';
                 const installContainer = document.getElementById('pwaInstallContainer');
                 const step1 = document.getElementById('verifyStep1');
+                const step2 = document.getElementById('verifyStep2');
                 
                 if (installContainer) installContainer.classList.remove('hidden');
                 if (step1) step1.classList.add('hidden');
+                if (step2) step2.classList.add('hidden');
+
+                loadCountryCodesIntoSelect();
 
                 if (typeof checkInitialVerification === 'function') {
                     checkInitialVerification();
