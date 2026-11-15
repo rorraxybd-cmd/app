@@ -1,4 +1,4 @@
-// discover.js - Global Directory & Contacts Sync Module
+// discover.js - Global Directory & Contacts Sync Module (with Online/Offline Status)
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -191,9 +191,13 @@ function openChat(phone, name, avatar = '') {
     if (typeof fetchMessagesFromCloud === 'function') fetchMessagesFromCloud();
     if (typeof startChatPolling === 'function') startChatPolling();
 
+    // মোবাইলে চ্যাট ওপেন হলে সাইডবার এবং নিচের নেভিগেশন বার হাইড করা হবে যাতে মেসেজ ইনপুট বার পরিষ্কার দেখা যায়
     if (window.innerWidth < 768) {
         const sidebar = document.getElementById('sidebarSection');
         if (sidebar) sidebar.classList.add('hidden');
+        
+        const bottomNav = document.getElementById('bottomNavBar');
+        if (bottomNav) bottomNav.classList.add('hidden');
     }
 }
 
@@ -294,7 +298,11 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
         `;
     } else {
         usersHtml = matchedUsers.map(c => {
-            const statusColor = c.isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
+            // অনলাইন বা অফলাইন স্ট্যাটাস এবং টেক্সট লেবেল
+            const isOnline = c.isOnline === true || c.isOnline === 1 || c.isOnline === "1";
+            const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
+            const statusText = isOnline ? '<span class="text-[#2ed573] font-semibold">Online</span>' : '<span class="text-gray-400">Offline</span>';
+
             const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
             const safeName = c.name.replace(/'/g, "\\'");
             return `
@@ -306,7 +314,11 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
                     </div>
                     <div class="min-w-0">
                         <p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>
-                        <p class="text-[10px] text-gray-400">${countryObj.flag} ${countryObj.name}</p>
+                        <div class="flex items-center space-x-1.5 text-[10px]">
+                            <span>${countryObj.flag} ${countryObj.name}</span>
+                            <span>•</span>
+                            ${statusText}
+                        </div>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2 shrink-0 pl-2">
@@ -370,7 +382,11 @@ function renderContactsView(searchQuery = '') {
         `;
     } else {
         contactsHtml = filteredContacts.map(c => {
-            const statusColor = c.isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
+            // কন্টাক্ট লিস্টে অনলাইন বা অফলাইন স্ট্যাটাস এবং টেক্সট লেবেল
+            const isOnline = c.isOnline === true || c.isOnline === 1 || c.isOnline === "1";
+            const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
+            const statusText = isOnline ? '<span class="text-[#2ed573] font-semibold">Online</span>' : '<span class="text-gray-400">Offline</span>';
+
             const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐', name: 'Global' };
             const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
             const safeName = c.name.replace(/'/g, "\\'");
@@ -384,7 +400,11 @@ function renderContactsView(searchQuery = '') {
                     </div>
                     <div class="min-w-0">
                         <p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>
-                        <p class="text-[10px] text-gray-400">${countryInfo.flag} ${countryInfo.name}</p>
+                        <div class="flex items-center space-x-1.5 text-[10px]">
+                            <span>${countryInfo.flag} ${countryInfo.name}</span>
+                            <span>•</span>
+                            ${statusText}
+                        </div>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2 shrink-0">
