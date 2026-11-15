@@ -245,9 +245,6 @@ function renderProfileView(isEditing = false) {
     const phoneStr = profile.phone || '';
     const maskedPhone = phoneStr.length > 6 ? phoneStr.substring(0, 5) + '******' + phoneStr.slice(-2) : phoneStr;
 
-    const searchBarContainer = document.getElementById('searchBarContainer');
-    if (searchBarContainer) searchBarContainer.style.display = 'none';
-
     sidebarList.innerHTML = `
         <div class="p-4 space-y-4 max-w-md mx-auto pb-24">
             <div class="text-center space-y-3 theme-card p-6 rounded-3xl border border-amber-400/20 shadow-2xl">
@@ -334,6 +331,7 @@ function previewThemeStyle(theme) {
     const profile = getActiveProfile();
     profile.themeColor = theme;
     saveProfiles();
+    if (typeof showToast === 'function') showToast(`Theme applied: ${theme}`);
 }
 
 function handleProfileAvatarChange(input) {
