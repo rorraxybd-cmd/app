@@ -12,15 +12,32 @@
     --text-gray: #9ca3af;
 }
 
+[data-theme="skyblue"] {
+    --bg-main: #020617;
+    --bg-surface: #0f172a;
+    --bg-card: #1e293b;
+    --bg-input: #334155;
+    --bg-bubble-me: linear-gradient(135deg, rgba(14, 116, 144, 0.96) 0%, rgba(3, 105, 161, 0.96) 100%);
+    --bg-bubble-them: rgba(30, 41, 59, 0.88);
+    --bubble-border: rgba(56, 189, 248, 0.3);
+    --gold-gradient: linear-gradient(135deg, #38bdf8 0%, #bae6fd 50%, #0284c7 100%);
+    --pink-solid: linear-gradient(135deg, #EC4899 0%, #ff2e7e 100%);
+    --text-white: #ffffff;
+    --text-gray: #9ca3af;
+}
+
 [data-theme="black"] {
-    --bg-main: #030305;
-    --bg-surface: #070707;
-    --bg-card: #0d0d0d;
-    --bg-input: #121212;
-    --bg-bubble-me: linear-gradient(135deg, rgba(28, 24, 16, 0.96) 0%, rgba(18, 15, 10, 0.96) 100%);
-    --bg-bubble-them: rgba(20, 20, 20, 0.88);
-    --bubble-border: rgba(245, 208, 97, 0.2);
-    --gold-gradient: linear-gradient(135deg, #F5D061 0%, #D4AF37 100%);
+    --bg-main: #000000;
+    --bg-surface: #0a0a0a;
+    --bg-card: #121212;
+    --bg-input: #1a1a1a;
+    --bg-bubble-me: linear-gradient(135deg, rgba(38, 38, 38, 0.96) 0%, rgba(20, 20, 20, 0.96) 100%);
+    --bg-bubble-them: rgba(18, 18, 18, 0.88);
+    --bubble-border: rgba(255, 255, 255, 0.15);
+    --gold-gradient: linear-gradient(135deg, #ffffff 0%, #a3a3a3 100%);
+    --pink-solid: linear-gradient(135deg, #EC4899 0%, #ff2e7e 100%);
+    --text-white: #ffffff;
+    --text-gray: #9ca3af;
 }
 
 * {
@@ -66,7 +83,6 @@ body {
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
 }
 
-/* লোগোর চারপাশের সমস্ত শ্যাডো বা গ্লো সম্পূর্ণ রিমুভ করা হলো */
 .header-logo-clean {
     width: 96px;
     height: 96px;
@@ -102,32 +118,14 @@ body {
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);
 }
 
-/* কান্ট্রি কোড ও ড্রপডাউন ডিজাইন */
 #vCountrySelect {
     width: 145px;
     min-width: 130px;
     font-weight: 700;
 }
-/* স্কাই ব্লু থিম */
-[data-theme="skyblue"] {
-    --bg-main: #020617;
-    --bg-surface: #0f172a;
-    --bg-card: #1e293b;
-    --bg-input: #334155;
-    --bg-bubble-me: linear-gradient(135deg, rgba(14, 116, 144, 0.96) 0%, rgba(3, 105, 161, 0.96) 100%);
-    --bg-bubble-them: rgba(30, 41, 59, 0.88);
-    --bubble-border: rgba(56, 189, 248, 0.3);
-    --gold-gradient: linear-gradient(135deg, #38bdf8 0%, #bae6fd 50%, #0284c7 100%);
-}
 
-/* ব্ল্যাক থিম */
-[data-theme="black"] {
-    --bg-main: #000000;
-    --bg-surface: #0a0a0a;
-    --bg-card: #121212;
-    --bg-input: #1a1a1a;
-    --bg-bubble-me: linear-gradient(135deg, rgba(38, 38, 38, 0.96) 0%, rgba(20, 20, 20, 0.96) 100%);
-    --bg-bubble-them: rgba(18, 18, 18, 0.88);
-    --bubble-border: rgba(255, 255, 255, 0.15);
-    --gold-gradient: linear-gradient(135deg, #ffffff 0%, #a3a3a3 100%);
+select.theme-input option {
+    background-color: var(--bg-card);
+    color: #ffffff;
+    padding: 10px;
 }
