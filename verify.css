@@ -108,3 +108,26 @@ body {
     min-width: 130px;
     font-weight: 700;
 }
+/* স্কাই ব্লু থিম */
+[data-theme="skyblue"] {
+    --bg-main: #020617;
+    --bg-surface: #0f172a;
+    --bg-card: #1e293b;
+    --bg-input: #334155;
+    --bg-bubble-me: linear-gradient(135deg, rgba(14, 116, 144, 0.96) 0%, rgba(3, 105, 161, 0.96) 100%);
+    --bg-bubble-them: rgba(30, 41, 59, 0.88);
+    --bubble-border: rgba(56, 189, 248, 0.3);
+    --gold-gradient: linear-gradient(135deg, #38bdf8 0%, #bae6fd 50%, #0284c7 100%);
+}
+
+/* ব্ল্যাক থিম */
+[data-theme="black"] {
+    --bg-main: #000000;
+    --bg-surface: #0a0a0a;
+    --bg-card: #121212;
+    --bg-input: #1a1a1a;
+    --bg-bubble-me: linear-gradient(135deg, rgba(38, 38, 38, 0.96) 0%, rgba(20, 20, 20, 0.96) 100%);
+    --bg-bubble-them: rgba(18, 18, 18, 0.88);
+    --bubble-border: rgba(255, 255, 255, 0.15);
+    --gold-gradient: linear-gradient(135deg, #ffffff 0%, #a3a3a3 100%);
+}
