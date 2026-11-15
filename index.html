@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=19.0">
+    <link rel="stylesheet" href="/discover.css?v=20.0">
     <style>
         :root {
             --bg-main: #030305;
@@ -205,7 +205,6 @@
                         <input type="file" id="universalFileInput" accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.zip,.txt" multiple class="hidden" onchange="handleUniversalFileUpload(this)">
                     </label>
                     <input type="text" id="messageInput" placeholder="Write a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1 min-w-0" onkeypress="if(event.key === 'Enter') sendTextMessage()">
-                    <!-- সেন্ড বাটন এখন সব সময় দৃশ্যমান থাকবে (hidden ক্লাস সরিয়ে দেওয়া হয়েছে) -->
                     <button id="sendBtn" onclick="sendTextMessage()" class="flex cursor-pointer hover:scale-110 transition-transform p-1 shrink-0 items-center justify-center" title="Send">
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
@@ -245,12 +244,12 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- Modular JavaScript Files Connection (Updated to v19.0 to bypass browser caching) -->
-    <script src="/discover.js?v=19.0"></script>
-    <script src="/verify.js?v=19.0"></script>
-    <script src="/call.js?v=19.0"></script>
-    <script src="/message.js?v=19.0"></script>
-    <script src="/transfer.js?v=19.0"></script>
+    <!-- Modular JavaScript Files Connection (Updated to v20.0) -->
+    <script src="/discover.js?v=20.0"></script>
+    <script src="/verify.js?v=20.0"></script>
+    <script src="/call.js?v=20.0"></script>
+    <script src="/message.js?v=20.0"></script>
+    <script src="/transfer.js?v=20.0"></script>
     
     <script>
         async function fetchCloudContacts() {
@@ -285,7 +284,7 @@
             } catch (e) {}
         }
 
-        // Mobile back to sidebar helper function
+        // Mobile back to sidebar helper function (Restores bottom nav bar on mobile)
         function backToSidebarMobile() {
             const workspace = document.getElementById('workspaceSection');
             const sidebar = document.getElementById('sidebarSection');
@@ -375,7 +374,7 @@
             
             toastText.innerText = text;
             if (toastDot) toastDot.style.backgroundColor = isError ? '#ff4757' : '#2ed573';
-            banner.classList.remove('hidden');
+            banner.classList.add('hidden');
             banner.style.display = 'flex';
             setTimeout(() => {
                 banner.classList.add('hidden');
@@ -445,7 +444,7 @@
                 if (installContainer) installContainer.classList.remove('hidden');
                 if (step1) step1.classList.add('hidden');
                 if (step2) step2.classList.add('hidden');
-                loadCountryCodesIntoSelect();
+                loadCountryCodesInputIntoSelect();
                 if (typeof checkInitialVerification === 'function') {
                     checkInitialVerification();
                 }
