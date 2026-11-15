@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=15.0">
+    <link rel="stylesheet" href="/discover.css?v=17.0">
     <style>
         :root {
             --bg-main: #030305;
@@ -56,11 +56,7 @@
             filter: none !important;
             border: none !important;
         }
-        #vCountrySelect {
-            width: 155px;
-            min-width: 140px;
-            font-weight: 700;
-        }
+        #vCountrySelect { width: 155px; min-width: 140px; font-weight: 700; }
         .chat-bubble-me { background: linear-gradient(135deg, #0f2e1a 0%, #081a10 100%); border: 1px solid rgba(46, 213, 115, 0.3); }
         .chat-bubble-them { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(245, 208, 97, 0.2); }
         .pink-btn { background: linear-gradient(135deg, #EC4899 0%, #be185d 100%); color: #ffffff; }
@@ -159,6 +155,7 @@
     <div class="flex flex-1 overflow-hidden relative min-h-0 w-full">
         <div id="sidebarSection" class="w-full md:w-[360px] theme-surface flex flex-col justify-between shrink-0 z-20 h-full min-h-0 pb-16">
             <div class="flex flex-col flex-1 overflow-hidden min-h-0">
+                <!-- Search Bar (সেটিংস বা প্রোফাইল পেজে স্বয়ংক্রিয়ভাবে লুকানো থাকবে) -->
                 <div id="searchBarContainer" class="p-3 shrink-0" style="background-color: var(--bg-main);">
                     <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
                         <input type="text" id="searchInput" placeholder="Search name or dial number..." class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="filterContent()">
@@ -248,14 +245,14 @@
     </div>
 
     <!-- Modular JavaScript Files Connection -->
-    <script src="/discover.js?v=15.0"></script>
-    <script src="/verify.js?v=15.0"></script>
-    <script src="/call.js?v=15.0"></script>
-    <script src="/message.js?v=15.0"></script>
-    <script src="/transfer.js?v=15.0"></script>
+    <script src="/discover.js?v=17.0"></script>
+    <script src="/verify.js?v=17.0"></script>
+    <script src="/call.js?v=17.0"></script>
+    <script src="/message.js?v=17.0"></script>
+    <script src="/transfer.js?v=17.0"></script>
     
     <script>
-        // সুনির্দিষ্ট ট্যাব সুইচিং এবং সংশ্লিষ্ট মডিউল রেন্ডারিং ফাংশন কলিং
+        // সুনির্দিষ্ট ট্যাব সুইচিং এবং মডিউল রেন্ডারিং লজিক
         function switchTab(tabName) {
             const tabs = ['Profile', 'Discover', 'Contact', 'Chat', 'Calls'];
             tabs.forEach(t => {
@@ -286,19 +283,32 @@
                 activeLabel.classList.add('pink-gradient-text', 'font-bold');
             }
 
-            // ওয়ার্কস্পেস বা চ্যাট ভিউ রিসেট করা
+            // সার্চ বার হ্যান্ডলিং (প্রোফাইল/সেটিংস ট্যাবে লুকানো থাকবে, বাকি ট্যাবে দৃশ্যমান হবে)
+            const searchBarContainer = document.getElementById('searchBarContainer');
+            const searchInput = document.getElementById('searchInput');
+            if (searchBarContainer) {
+                if (tabName === 'profile') {
+                    searchBarContainer.style.display = 'none';
+                } else {
+                    searchBarContainer.style.display = 'block';
+                    if (searchInput) searchInput.value = '';
+                }
+            }
+
+            // মোবাইল ভিউতে ওয়ার্কস্পেস রিসেট করা
             const workspace = document.getElementById('workspaceSection');
-            const chatHeader = document.getElementById('activeChatHeader');
-            const chatInput = document.getElementById('chatInputBar');
-            
             if (tabName !== 'chat' && workspace && window.innerWidth < 768) {
                 workspace.classList.add('hidden');
             }
 
-            // প্রতিটি মডিউলের নিজস্ব রেন্ডারিং ফাংশন ট্রিগার করা
+            // সাইডবার লিস্ট ফ্রেশ করে সংশ্লিষ্ট মডিউলের রেন্ডারিং ফাংশন কল করা
+            const sidebarList = document.getElementById('sidebarContentList');
+            if (sidebarList) sidebarList.innerHTML = '';
+
             if (tabName === 'profile') {
-                if (typeof renderProfileView === 'function') renderProfileView();
+                if (typeof renderProfileView === 'function') renderProfileView(false);
             } else if (tabName === 'discover') {
+                if (typeof selectedDiscoverCountry !== 'undefined') selectedDiscoverCountry = null;
                 if (typeof renderDiscoverDirectory === 'function') renderDiscoverDirectory();
             } else if (tabName === 'contact') {
                 if (typeof renderContactsView === 'function') renderContactsView();
@@ -311,18 +321,10 @@
 
         function shareProfileLink() {
             const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : { username: 'mrmasudar' };
-            const profileUrl = `https://chat.rorraxy.com/${profile.username || 'user'}`;
+            const profileUrl = `chat.rorraxy.com/${profile.username || 'user'}`;
             
-            if (navigator.share) {
-                navigator.share({
-                    title: 'MESSAGE by rorraxy.com',
-                    text: 'Connect with me on rorraxy MESSAGE',
-                    url: profileUrl
-                }).catch(() => {});
-            } else {
-                navigator.clipboard.writeText(profileUrl);
-                if (typeof showToast === 'function') showToast("Profile link copied!");
-            }
+            navigator.clipboard.writeText(profileUrl);
+            if (typeof showToast === 'function') showToast(`Copied: ${profileUrl}`);
         }
 
         function showToast(text, isError = false) {
