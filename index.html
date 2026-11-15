@@ -12,74 +12,77 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#04120b">
+    <meta name="theme-color" content="#030305">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=1.9">
+    <link rel="stylesheet" href="/verify.css?v=6.5">
+    <link rel="stylesheet" href="/discover.css?v=6.5">
     <style>
-        :root {
-            --bg-main: #04120b;
-            --surface: #0a2316;
-            --card: #0e311e;
+        .logo-no-shadow {
+            box-shadow: none !important;
+            filter: none !important;
+            border-radius: 50%;
+            object-fit: cover;
+            background: transparent !important;
         }
-        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-main); color: #ffffff; }
-        .brand-title-font { font-family: 'Cinzel', serif; }
-        .gold-gradient-text { background: linear-gradient(135deg, #F5D061 0%, #AA771C 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .pink-gradient-text { background: linear-gradient(135deg, #EC4899 0%, #be185d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .gold-btn { background: linear-gradient(135deg, #F5D061 0%, #AA771C 100%); color: #000; font-weight: 700; transition: transform 0.2s; }
-        .gold-btn:hover { transform: scale(1.02); }
-        .pink-btn { background: linear-gradient(135deg, #EC4899 0%, #be185d 100%); color: #fff; }
-        .theme-surface { background-color: var(--surface); }
-        .theme-card { background-color: var(--card); }
-        .theme-input { background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(245, 208, 97, 0.2); }
-        .chat-bubble-me { background: linear-gradient(135deg, #0e311e 0%, #164e2d 100%); border: 1px solid rgba(245, 208, 97, 0.3); }
-        .chat-bubble-them { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
 </head>
 <body class="h-[100dvh] w-full flex flex-col overflow-hidden fixed inset-0">
 
-    <!-- Auto-Verify & Install Overlay -->
-    <div id="verifyOverlay" style="display: none;" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center p-4">
-        <div class="verify-card space-y-5 text-center shadow-2xl w-full max-w-sm theme-surface p-6 rounded-3xl border border-amber-400/30">
-            <div class="space-y-3">
-                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="mx-auto" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover;">
-                <h1 class="brand-title-font text-3xl font-extrabold gold-gradient-text">MESSAGE</h1>
-                <p class="text-[11px] text-white/75 tracking-widest font-semibold uppercase">Private Global Messenger</p>
-                <div id="pwaInstallContainer" class="pt-3">
-                    <button onclick="installPWAApp()" class="gold-btn w-full py-3.5 rounded-xl text-xs font-bold shadow-lg inline-flex items-center justify-center space-x-2 cursor-pointer">
-                        <i class="fa-solid fa-download"></i><span>INSTALL & CONNECT</span>
+    <!-- Auto-Verify & Install Overlay (Soft Black & Golden Theme, No Logo Shadow) -->
+    <div id="verifyOverlay" style="display: none;">
+        <div class="verify-card space-y-6 text-center">
+            
+            <!-- Page 1: App Install View -->
+            <div id="verifyStepInstall" class="space-y-5">
+                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="logo-no-shadow mx-auto" style="width: 100px; height: 100px;">
+                <div class="space-y-1.5">
+                    <h1 class="brand-title-font text-3xl sm:text-4xl font-extrabold gold-gradient-text tracking-wider">MESSAGE</h1>
+                    <p class="text-[11px] text-white tracking-[0.25em] font-semibold uppercase">Private Global Messenger</p>
+                </div>
+                <div class="pt-3">
+                    <button onclick="installPWAApp()" class="gold-btn w-full py-4 rounded-2xl text-xs font-extrabold tracking-wider inline-flex items-center justify-center space-x-2.5 cursor-pointer uppercase">
+                        <i class="fa-solid fa-download text-sm"></i><span>INSTALL APP</span>
                     </button>
                 </div>
             </div>
 
+            <!-- Page 2: Create Profile (Full Name & Mobile Number with Flag/Code) -->
             <div id="verifyStep1" class="space-y-4 text-left hidden">
-                <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text">FULL NAME <span class="text-red-500">*</span></label>
-                    <input type="text" id="vFullName" placeholder="Enter your full name" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none">
+                <div class="text-center pb-2">
+                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="logo-no-shadow mx-auto mb-2" style="width: 72px; height: 72px;">
+                    <h2 class="brand-title-font text-2xl font-bold gold-gradient-text">Create Profile</h2>
+                    <p class="text-[11px] text-white/80 tracking-wider mt-0.5">Enter your details to connect</p>
                 </div>
                 <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text">MOBILE NUMBER <span class="text-red-500">*</span></label>
+                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">FULL NAME <span class="text-pink-500">*</span></label>
+                    <input type="text" id="vFullName" placeholder="Enter your full name" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none border border-amber-400/20">
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-pink-500">*</span></label>
                     <div class="flex space-x-2 w-full">
-                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none cursor-pointer shrink-0">
-                            <!-- দেশসমূহ ডায়নামিক্যালি লোড হবে -->
+                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-amber-400/20 cursor-pointer shrink-0">
+                            <!-- discover.js ও verify.js থেকে পতাকা ও কোডসহ দেশসমূহ লোড হবে -->
                         </select>
-                        <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none">
+                        <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none border border-amber-400/20">
                     </div>
                 </div>
-                <button onclick="submitVerifyStep1()" class="w-full py-3.5 gold-btn text-xs rounded-xl cursor-pointer mt-2 font-bold flex items-center justify-center space-x-2 shadow-lg">
-                    <span>CONTINUE</span> <i class="fa-solid fa-circle-check" style="color: #EC4899;"></i>
+                <button onclick="submitVerifyStep1()" class="w-full py-4 gold-btn text-xs rounded-xl cursor-pointer mt-3 font-extrabold flex items-center justify-center space-x-2 uppercase tracking-wider">
+                    <span>CONTINUE</span> <i class="fa-solid fa-circle-check text-pink-600 text-sm"></i>
                 </button>
             </div>
 
-            <div id="verifyStep2" class="space-y-4 text-left hidden">
+            <!-- Page 3: OTP / Auto-Verify Code -->
+            <div id="verifyStep2" class="space-y-5 text-left hidden">
                 <div class="space-y-2 text-center pt-2">
-                    <label class="text-[11px] font-bold tracking-wider gold-gradient-text block uppercase">AUTO-FILLED CODE <span class="text-emerald-400">✓</span></label>
-                    <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-xl font-extrabold tracking-[10px] px-4 py-4 rounded-xl text-white focus:outline-none border border-amber-400/40 shadow-inner">
+                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="logo-no-shadow mx-auto mb-2" style="width: 72px; height: 72px;">
+                    <h2 class="brand-title-font text-2xl font-bold gold-gradient-text">Verify Code</h2>
+                    <label class="text-[11px] font-bold tracking-wider text-white block uppercase">AUTO-FILLED CODE <span class="text-emerald-400">✓</span></label>
+                    <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-2xl font-extrabold tracking-[12px] px-4 py-4 rounded-xl text-white focus:outline-none border border-amber-400/40">
                 </div>
-                <button onclick="submitVerifyStep2()" class="w-full py-3.5 gold-btn text-xs rounded-xl cursor-pointer mt-3 font-bold flex items-center justify-center space-x-2 shadow-lg">
-                    <span>VERIFY & START</span> <i class="fa-solid fa-circle-check" style="color: #EC4899;"></i>
+                <button onclick="submitVerifyStep2()" class="w-full py-4 gold-btn text-xs rounded-xl cursor-pointer mt-3 font-extrabold flex items-center justify-center space-x-2 uppercase tracking-wider">
+                    <span>VERIFY & START</span> <i class="fa-solid fa-circle-check text-pink-600 text-sm"></i>
                 </button>
             </div>
         </div>
@@ -88,13 +91,13 @@
     <!-- Header Bar -->
     <header class="theme-surface px-4 py-3 flex justify-between items-center shrink-0 z-30 border-b border-white/5">
         <div class="flex items-center space-x-3">
-            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="object-cover" style="width: 42px; height: 42px; border-radius: 50%;">
+            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="logo-no-shadow" style="width: 42px; height: 42px;">
             <div>
                 <div class="flex items-center space-x-1.5">
                     <h1 class="brand-title-font font-extrabold text-lg sm:text-xl gold-gradient-text leading-none">MESSAGE</h1>
                     <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.8 4.2L18.3 4.3L19.5 7.6L22 10L20.8 13.3L21.5 16.8L18.3 18.4L16.7 21.5L13.3 20.8L10 22L7.6 19.5L4.3 18.3L4.2 14.8L2 12L4.2 9.2L4.3 5.7L7.6 4.5L10 2L12 2Z" fill="#F5D061"/><path d="M8.5 12.2L10.8 14.5L15.6 9.5" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
-                <a href="https://rorraxy.com" target="_blank" class="text-[11px] text-white/70 hover:text-amber-300 transition block tracking-wider mt-0.5">rorraxy.com</a>
+                <a href="https://rorraxy.com" target="_blank" class="text-[11px] text-white/80 hover:text-amber-300 transition block tracking-wider mt-0.5">rorraxy.com</a>
             </div>
         </div>
         <div class="flex items-center space-x-2">
@@ -110,8 +113,8 @@
         <div class="flex justify-between items-center border-b border-white/10 pb-2">
             <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Notifications</h3>
             <div class="flex space-x-2">
-                <button onclick="deleteAllNotifications()" class="text-[10px] text-red-400 hover:underline font-semibold">Delete All</button>
-                <button onclick="toggleNotificationPanel()" class="text-[10px] text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="deleteAllNotifications()" class="text-[10px] text-red-400 hover:underline font-semibold cursor-pointer">Delete All</button>
+                <button onclick="toggleNotificationPanel()" class="text-[10px] text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
         </div>
         <div id="notificationListContainer" class="space-y-2 max-h-60 overflow-y-auto text-xs text-gray-300">
@@ -134,7 +137,7 @@
             </div>
         </div>
 
-        <!-- Workspace Section (Chat, Discover, Profile & Call) -->
+        <!-- Workspace Section -->
         <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full min-h-0 z-10 relative" style="background-color: var(--bg-main);">
             <div id="activeChatHeader" class="theme-surface px-4 py-3 hidden items-center justify-between shrink-0 border-b border-white/5">
                 <div class="flex items-center space-x-3">
@@ -142,7 +145,7 @@
                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                     </button>
                     <div class="flex items-center space-x-3">
-                        <div class="relative"><img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" class="w-9 h-9 rounded-full object-cover bg-black"></div>
+                        <div class="relative"><img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" class="w-9 h-9 logo-no-shadow"></div>
                         <div>
                             <div class="flex items-center space-x-1.5">
                                 <span id="activeChatTitle" class="font-semibold text-white text-xs tracking-wide">Select a contact</span>
@@ -157,13 +160,12 @@
                 </div>
             </div>
 
-            <!-- Main Chat Messages / Dynamic View Container -->
             <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 flex flex-col justify-start">
                 <div class="flex flex-col items-center justify-center space-y-3 max-w-xs text-center m-auto">
                     <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center">
                         <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                     </div>
-                    <p class="text-sm font-bold gold-gradient-text">Welcome to rorraxy Message</p>
+                    <p class="text-sm font-bold gold-gradient-text">Welcome to rorraxy MESSAGE</p>
                     <p class="text-[11px] text-gray-400">Select a contact or country to start messaging or calling.</p>
                 </div>
             </div>
@@ -209,39 +211,43 @@
         </div>
     </nav>
 
-    <!-- Modals & Toasts -->
-    <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 theme-card text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden items-center space-x-2">
+    <!-- Toasts & Image Zoom Lightbox Modal -->
+    <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 theme-card text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden items-center space-x-2 border border-amber-400/30">
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- Image Fullscreen Modal View -->
     <div id="imageLightboxModal" class="fixed inset-0 z-50 bg-black/95 flex items-center justify-center hidden p-4" onclick="this.classList.add('hidden')">
-        <img id="lightboxImage" src="" class="max-w-full max-h-full rounded-2xl object-contain border border-white/20 shadow-2xl">
+        <img id="lightboxImage" src="" class="max-w-full max-h-full rounded-2xl object-contain border border-white/20">
     </div>
 
-    <!-- Modular JavaScript & CSS Connections -->
-    <script src="/discover.js?v=1.9"></script>
-    <script src="/verify.js?v=5.9"></script>
-    <script src="/call.js?v=5.9"></script>
-    <script src="/message.js?v=5.9"></script>
-    <script src="/transfer.js?v=5.9"></script>
+    <!-- Modular JavaScript Connections -->
+    <script src="/verify.js?v=6.5"></script>
+    <script src="/discover.js?v=6.5"></script>
+    <script src="/call.js?v=6.5"></script>
+    <script src="/message.js?v=6.5"></script>
+    <script src="/transfer.js?v=6.5"></script>
 
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('verifyOverlay');
-            if (localStorage.getItem('salaam_verified_v18') === 'true') {
+            const isVerified = localStorage.getItem('salaam_verified_v18') === 'true';
+
+            if (isVerified) {
                 if (overlay) overlay.style.display = 'none';
                 if (typeof initAppAfterVerification === 'function') {
                     initAppAfterVerification();
                 }
             } else {
+                if (overlay) overlay.style.display = 'flex';
                 if (typeof checkInitialVerification === 'function') {
                     checkInitialVerification();
+                } else {
+                    const installStep = document.getElementById('verifyStepInstall');
+                    if (installStep) installStep.classList.remove('hidden');
                 }
             }
         });
 
-        // Image Lightbox View Helper
         function openImageLightbox(url) {
             const modal = document.getElementById('imageLightboxModal');
             const img = document.getElementById('lightboxImage');
@@ -251,7 +257,6 @@
             }
         }
 
-        // Profile Share functionality pointing to chat.rorraxy.com
         function shareProfileLink() {
             const shareUrl = 'https://chat.rorraxy.com';
             if (navigator.share) {
