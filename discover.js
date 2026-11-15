@@ -138,7 +138,37 @@ const GLOBAL_CONTINENTS_DATA = [
 
 let selectedDiscoverCountry = null;
 
-// Discover Directory View (with internal search for countries)
+// Robust openChat function to ensure clicking contact opens chat seamlessly
+function openChat(phone, name, avatar = '') {
+    const recipient = { phone, name, avatar };
+    window.currentActiveRecipient = recipient;
+
+    const workspace = document.getElementById('workspaceSection');
+    if (workspace) workspace.classList.remove('hidden');
+
+    const chatHeader = document.getElementById('activeChatHeader');
+    if (chatHeader) chatHeader.style.display = 'flex';
+
+    const chatInput = document.getElementById('chatInputBar');
+    if (chatInput) chatInput.style.display = 'flex';
+
+    const titleEl = document.getElementById('activeChatTitle');
+    if (titleEl) titleEl.innerText = name;
+
+    const avatarEl = document.getElementById('activeChatAvatar');
+    if (avatarEl && avatar) avatarEl.src = avatar;
+
+    if (typeof loadMessages === 'function') loadMessages();
+    if (typeof fetchMessagesFromCloud === 'function') fetchMessagesFromCloud();
+    if (typeof startChatPolling === 'function') startChatPolling();
+
+    if (window.innerWidth < 768) {
+        const sidebar = document.getElementById('sidebarSection');
+        if (sidebar) sidebar.classList.add('hidden');
+    }
+}
+
+// Discover Directory View
 function renderDiscoverDirectory(searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
@@ -211,7 +241,7 @@ function backToDiscoverContinents() {
     renderDiscoverDirectory();
 }
 
-// Country specific view with internal search bar for members (Phone numbers hidden, 3 golden action icons added)
+// Country specific view with clean bottom-nav style SVG icons (Chat, Audio Call, Video Call) & Secret Phone
 function renderCountryContactsView(countryObj, searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
@@ -238,9 +268,10 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
     } else {
         usersHtml = matchedUsers.map(c => {
             const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
+            const safeName = c.name.replace(/'/g, "\\'");
             return `
-            <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card border border-white/5">
-                <div onclick="openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}')" class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0">
+            <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card border border-white/5 cursor-pointer" onclick="openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')">
+                <div class="flex items-center space-x-3 flex-1 min-w-0">
                     <div class="relative shrink-0">
                         ${avatarImg}
                         <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline ? 'bg-[#2ed573]' : 'bg-amber-400'}"></span>
@@ -250,16 +281,16 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
                         <p class="text-[10px] text-gray-400">${countryObj.flag} ${countryObj.name}</p>
                     </div>
                 </div>
-                <!-- 3 Golden Action Icons: Chat, Audio Call, Video Call -->
-                <div class="flex items-center space-x-1 shrink-0 pl-2">
-                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat">
-                        <i class="fa-solid fa-comment text-sm" style="color: #F5D061;"></i>
+                <!-- 3 Clean SVG Action Icons matching bottom navigation bar style -->
+                <div class="flex items-center space-x-2 shrink-0 pl-2">
+                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/20" title="Chat">
+                        <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                     </button>
-                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call">
-                        <i class="fa-solid fa-phone text-sm" style="color: #F5D061;"></i>
+                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('audio')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/20" title="Audio Call">
+                        <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                     </button>
-                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call">
-                        <i class="fa-solid fa-video text-sm" style="color: #F5D061;"></i>
+                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('video')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/20" title="Video Call">
+                        <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg>
                     </button>
                 </div>
             </div>`;
@@ -291,7 +322,7 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
     `;
 }
 
-// Contacts Tab View (Phone numbers hidden, 3 golden action icons added)
+// Contacts Tab View (Phone numbers secret, 3 SVG action icons, simplified Add New)
 function renderContactsView(searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
@@ -316,10 +347,11 @@ function renderContactsView(searchQuery = '') {
         contactsHtml = filteredContacts.map(c => {
             const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐', name: 'Global' };
             const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
+            const safeName = c.name.replace(/'/g, "\\'");
             
             return `
-            <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card border border-white/5 cursor-pointer" onclick="openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}')">
-                <div class="flex items-center space-x-3 min-w-0">
+            <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card border border-white/5 cursor-pointer" onclick="openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')">
+                <div class="flex items-center space-x-3 flex-1 min-w-0">
                     <div class="relative shrink-0">
                         ${avatarImg}
                         <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${c.isOnline ? 'bg-[#2ed573]' : 'bg-amber-400'}"></span>
@@ -329,16 +361,16 @@ function renderContactsView(searchQuery = '') {
                         <p class="text-[10px] text-gray-400">${countryInfo.flag} ${countryInfo.name}</p>
                     </div>
                 </div>
-                <!-- 3 Golden Action Icons: Chat, Audio Call, Video Call -->
-                <div class="flex items-center space-x-1 shrink-0">
-                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Chat">
-                        <i class="fa-solid fa-comment text-sm" style="color: #F5D061;"></i>
+                <!-- 3 Clean SVG Action Icons matching bottom navigation bar style -->
+                <div class="flex items-center space-x-2 shrink-0">
+                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/20" title="Chat">
+                        <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                     </button>
-                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Audio Call">
-                        <i class="fa-solid fa-phone text-sm" style="color: #F5D061;"></i>
+                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('audio')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/20" title="Audio Call">
+                        <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                     </button>
-                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${c.name.replace(/'/g, "\\'")}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:scale-110 transition cursor-pointer" title="Video Call">
-                        <i class="fa-solid fa-video text-sm" style="color: #F5D061;"></i>
+                    <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('video')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/20" title="Video Call">
+                        <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg>
                     </button>
                 </div>
             </div>`;
@@ -363,23 +395,66 @@ function renderContactsView(searchQuery = '') {
     `;
 }
 
-// Add New Manual Contact Prompt / Modal Function
+// Single-step smooth Add New Contact Modal/Prompt
 function openAddContactModal() {
-    const name = prompt("Enter contact name:");
-    if (!name) return;
-    const phone = prompt("Enter mobile/phone number with country code (e.g. +88017...):");
-    if (!phone) return;
+    let existingModal = document.getElementById('addContactModalOverlay');
+    if (existingModal) existingModal.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'addContactModalOverlay';
+    overlay.className = 'fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4';
+    
+    overlay.innerHTML = `
+        <div class="theme-card border border-amber-400/40 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                <h3 class="text-sm font-bold gold-gradient-text uppercase tracking-wider">Add New Contact</h3>
+                <button onclick="document.getElementById('addContactModalOverlay').remove()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+            <div class="space-y-3">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-amber-300 uppercase">Contact Name</label>
+                    <input type="text" id="newContactNameInput" placeholder="Enter full name" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white placeholder-gray-500 focus:outline-none">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-amber-300 uppercase">Phone Number (with Country Code)</label>
+                    <input type="tel" id="newContactPhoneInput" placeholder="+8801700000000" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white placeholder-gray-500 focus:outline-none">
+                </div>
+                <button onclick="saveNewContactFromModal()" class="w-full py-3.5 gold-btn text-xs rounded-xl font-extrabold cursor-pointer shadow-lg mt-2 uppercase tracking-wider">
+                    SAVE CONTACT
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function saveNewContactFromModal() {
+    const nameInput = document.getElementById('newContactNameInput');
+    const phoneInput = document.getElementById('newContactPhoneInput');
+    if (!nameInput || !phoneInput) return;
+
+    const name = nameInput.value.trim();
+    const phone = phoneInput.value.trim();
+
+    if (!name) {
+        if (typeof showToast === 'function') showToast("Please enter contact name", true);
+        return;
+    }
+    if (!phone) {
+        if (typeof showToast === 'function') showToast("Please enter phone number", true);
+        return;
+    }
 
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
-    
+
     if (localContacts.find(c => c.phone === cleanPhone)) {
         if (typeof showToast === 'function') showToast("Contact already exists!", true);
         return;
     }
 
     localContacts.push({
-        name: name.trim(),
+        name: name,
         phone: cleanPhone,
         avatar: "",
         isOnline: true,
@@ -387,6 +462,7 @@ function openAddContactModal() {
     });
 
     localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
+    document.getElementById('addContactModalOverlay')?.remove();
     if (typeof showToast === 'function') showToast("Contact added successfully!");
     renderContactsView();
 }
