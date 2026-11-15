@@ -494,4 +494,3 @@ function saveNewContactFromModal() {
     if (typeof showToast === 'function') showToast("Contact added successfully!");
     renderContactsView();
 }
-```[cite: 13]
