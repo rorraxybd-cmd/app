@@ -31,7 +31,7 @@ async function installPWAApp() {
     document.getElementById('verifyStep1').style.display = 'block';
     
     requestMediaPermissionsEarly();
-    updatePhoneValidation();
+    populateVerifyCountryDropdown();
 }
 
 async function populateVerifyCountryDropdown() {
@@ -63,12 +63,13 @@ async function populateVerifyCountryDropdown() {
         GLOBAL_CONTINENTS_DATA.forEach(continent => {
             continent.countries.forEach(c => {
                 const isSelected = (c.code === detectedCountryCode) ? 'selected' : '';
-                html += `<option value="+${c.code}|10" ${isSelected}>${c.flag} ${c.name} (+${c.code})</option>`;
+                // কান্ট্রি কোড ও পতাকা প্রথমে রাখা হয়েছে যাতে কেটে না যায়
+                html += `<option value="+${c.code}|10" ${isSelected}>${c.flag} +${c.code} (${c.name})</option>`;
             });
         });
         select.innerHTML = html;
     } else {
-        select.innerHTML = `<option value="+880|10" selected>🇧🇩 Bangladesh (+880)</option>`;
+        select.innerHTML = `<option value="+880|10" selected>🇧🇩 +880 (Bangladesh)</option>`;
     }
     updatePhoneValidation();
 }
@@ -242,8 +243,8 @@ function renderProfileView() {
                     </label>
                 </div>
                 <div>
-                    <h3 class="text-base font-bold gold-gradient-text">Mr. ${profile.name}</h3>
-                    <p class="text-[11px] text-gray-400 mt-0.5"><i class="fa-solid fa-phone text-amber-300 mr-1"></i> <span class="tracking-wider">${maskedPhone}</span> <span class="text-[9px] bg-amber-400/10 text-amber-300 px-1.5 py-0.5 rounded ml-1">Secret</span></p>
+                    <h3 class="text-base font-bold gold-gradient-text">${profile.name}</h3>
+                    <p class="text-[11px] text-gray-400 mt-0.5"><i class="fa-solid fa-phone text-amber-300 mr-1"></i> <span class="tracking-wider">${maskedPhone}</span> <span class="text-[9px] bg-amber-400/10 text-amber-300 px-1.5 py-0.5 rounded ml-1">Verified</span></p>
                 </div>
             </div>
 
@@ -259,7 +260,7 @@ function renderProfileView() {
                 <div class="space-y-1">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text">THEME STYLE</label>
                     <select id="editThemeColor" onchange="previewThemeStyle(this.value)" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer">
-                        <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>emerald Dark (Default)</option>
+                        <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>Emerald Dark (Default)</option>
                         <option value="luxury" ${profile.themeColor==='luxury'?'selected':''}>Luxury Blue</option>
                         <option value="black" ${profile.themeColor==='black'?'selected':''}>Classic Black</option>
                     </select>
