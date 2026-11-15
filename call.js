@@ -15,7 +15,6 @@ let chatClearTimestamps = JSON.parse(localStorage.getItem('salaam_clear_ts_v18')
 let deviceContacts = JSON.parse(localStorage.getItem('salaam_contacts_v18') || 'null') || [
     {
         name: "rorraxy",
-        phone: "+8801332008886",
         appUser: true,
         isOnline: true,
         isOfficialSupport: true,
