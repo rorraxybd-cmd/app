@@ -17,53 +17,53 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=1.4">
+    <link rel="stylesheet" href="/discover.css?v=1.5">
 </head>
 <body class="h-[100dvh] w-full flex flex-col overflow-hidden fixed inset-0">
 
-    <!-- Auto-Verify & Install Overlay -->
+    <!-- Auto-Verify & Install Overlay (বড় লোগো ও প্রিমিয়াম কার্ড) -->
     <div id="verifyOverlay" style="display: none;">
-        <div class="verify-card space-y-4 text-center shadow-2xl">
-            <div class="space-y-2">
-                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg" alt="Logo" class="header-logo-clean mx-auto" style="width: 50px; height: 50px; object-fit: contain; border-radius: 50%;">
-                <h1 class="brand-title-font text-2xl font-extrabold gold-gradient-text">SALAAM</h1>
-                <p class="text-[10px] text-white/75 tracking-widest font-semibold uppercase">Private Global Messenger</p>
-                <div id="pwaInstallContainer" class="pt-2">
-                    <button onclick="installPWAApp()" class="gold-btn w-full py-3 rounded-xl text-xs font-bold shadow-lg inline-flex items-center justify-center space-x-2 cursor-pointer">
+        <div class="verify-card space-y-5 text-center shadow-2xl">
+            <div class="space-y-3">
+                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg" alt="Logo" class="header-logo-clean mx-auto">
+                <h1 class="brand-title-font text-3xl font-extrabold gold-gradient-text">SALAAM</h1>
+                <p class="text-[11px] text-white/75 tracking-widest font-semibold uppercase">Private Global Messenger</p>
+                <div id="pwaInstallContainer" class="pt-3">
+                    <button onclick="installPWAApp()" class="gold-btn w-full py-3.5 rounded-xl text-xs font-bold shadow-lg inline-flex items-center justify-center space-x-2 cursor-pointer">
                         <i class="fa-solid fa-download"></i><span>INSTALL & CONNECT</span>
                     </button>
                 </div>
             </div>
 
-            <div id="verifyStep1" class="space-y-3.5 text-left hidden">
-                <div class="space-y-1">
+            <div id="verifyStep1" class="space-y-4 text-left hidden">
+                <div class="space-y-1.5">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text">FULL NAME <span class="text-red-500">*</span></label>
-                    <input type="text" id="vFullName" placeholder="Enter your full name" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white focus:outline-none border border-white/10">
+                    <input type="text" id="vFullName" placeholder="Enter your full name" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-white/10">
                 </div>
-                <div class="space-y-1">
+                <div class="space-y-1.5">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text">MOBILE NUMBER <span class="text-red-500">*</span></label>
                     <div class="flex space-x-2 w-full">
-                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer shrink-0 max-w-[140px]">
-                            <!-- এখানে গ্লোবাল ২০০+ দেশ স্বয়ংক্রিয়ভাবে লোড হবে -->
+                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-white/10 cursor-pointer shrink-0 max-w-[150px]">
+                            <!-- অটো-ডিটেক্ট হয়ে সমস্ত দেশ পতাকা ও কোডসহ এখানে আসবে -->
                         </select>
-                        <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-3.5 py-3 rounded-xl text-white focus:outline-none border border-white/10">
+                        <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-white/10">
                     </div>
                 </div>
-                <button onclick="submitVerifyStep1()" class="w-full py-3 gold-btn text-xs rounded-xl cursor-pointer mt-1 font-bold flex items-center justify-center space-x-2 shadow-lg">
+                <button onclick="submitVerifyStep1()" class="w-full py-3.5 gold-btn text-xs rounded-xl cursor-pointer mt-2 font-bold flex items-center justify-center space-x-2 shadow-lg">
                     <span>CONTINUE</span> <i class="fa-solid fa-circle-check" style="color: #EC4899;"></i>
                 </button>
             </div>
 
-            <div id="verifyStep2" class="space-y-3.5 text-left hidden">
-                <div class="text-center bg-black/60 p-3.5 rounded-2xl border border-amber-400/30 space-y-1.5">
-                    <h2 id="vDisplayCode" class="text-2xl sm:text-3xl font-extrabold gold-gradient-text tracking-[6px]">------</h2>
+            <div id="verifyStep2" class="space-y-4 text-left hidden">
+                <div class="text-center bg-black/60 p-4 rounded-2xl border border-amber-400/30 space-y-2">
+                    <h2 id="vDisplayCode" class="text-3xl font-extrabold gold-gradient-text tracking-[8px]">------</h2>
                     <button onclick="autoFillOtp()" class="text-[11px] pink-gradient-text font-bold underline cursor-pointer">Tap to Auto-Fill Code</button>
                 </div>
-                <div class="space-y-1 text-center">
+                <div class="space-y-1.5 text-center">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text block">ENTER 6-DIGIT CODE <span class="text-red-500">*</span></label>
-                    <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-base font-extrabold tracking-[6px] px-3.5 py-3 rounded-xl text-white focus:outline-none border border-white/10">
+                    <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-base font-extrabold tracking-[8px] px-4 py-3.5 rounded-xl text-white focus:outline-none border border-white/10">
                 </div>
-                <button onclick="submitVerifyStep2()" class="w-full py-3 gold-btn text-xs rounded-xl cursor-pointer mt-1 font-bold flex items-center justify-center space-x-2 shadow-lg">
+                <button onclick="submitVerifyStep2()" class="w-full py-3.5 gold-btn text-xs rounded-xl cursor-pointer mt-2 font-bold flex items-center justify-center space-x-2 shadow-lg">
                     <span>VERIFY & START</span> <i class="fa-solid fa-circle-check" style="color: #EC4899;"></i>
                 </button>
             </div>
@@ -73,7 +73,7 @@
     <!-- Header Bar -->
     <header class="theme-surface px-4 py-3 flex justify-between items-center shrink-0 z-30 border-b border-white/5">
         <div class="flex items-center space-x-3">
-            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg" alt="Logo" class="header-logo-clean" style="width: 38px; height: 38px; object-fit: contain; border-radius: 50%;">
+            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/logo.jpg" alt="Logo" class="header-logo-clean" style="width: 42px; height: 42px;">
             <div>
                 <div class="flex items-center space-x-1.5">
                     <h1 class="brand-title-font font-extrabold text-lg sm:text-xl gold-gradient-text leading-none">SALAAM</h1>
@@ -198,11 +198,11 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- Modular JavaScript Files Connection (discover.js কে verify.js এর আগে রাখা হয়েছে) -->
-    <script src="/discover.js?v=1.4"></script>
-    <script src="/verify.js?v=5.4"></script>
-    <script src="/call.js?v=5.4"></script>
-    <script src="/p2p_file_transfer.js?v=5.4"></script>
+    <!-- Modular JavaScript Files Connection -->
+    <script src="/discover.js?v=1.5"></script>
+    <script src="/verify.js?v=5.5"></script>
+    <script src="/call.js?v=5.5"></script>
+    <script src="/p2p_file_transfer.js?v=5.5"></script>
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('verifyOverlay');
