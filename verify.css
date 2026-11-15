@@ -110,11 +110,9 @@ body {
     backdrop-filter: blur(12px);
 }
 
-/* কান্ট্রি ড্রপডাউন লেখা ফিট করার জন্য ফিক্সড উইথ ও প্যাডিং */
+/* কান্ট্রি কোড যেন কখনোই কেটে না যায়, তার জন্য পারফেক্ট উইথ */
 #vCountrySelect {
-    width: 155px;
-    min-width: 135px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
+    width: 145px;
+    min-width: 130px;
+    font-weight: 700;
 }
