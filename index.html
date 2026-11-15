@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=9.0">
+    <link rel="stylesheet" href="/discover.css?v=11.0">
     <style>
         :root {
             --bg-main: #030305;
@@ -46,7 +46,7 @@
         .theme-card { background-color: var(--card); }
         .theme-input { background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(245, 208, 97, 0.25); color: #fff; }
         
-        /* লোগোর সমস্ত শ্যাডো বা গ্লো সম্পূর্ণ রিমুভড (Clean) */
+        /* লোগো থেকে সমস্ত বর্ডার ও শ্যাডো সম্পূর্ণ রিমুভ করে ক্লিন গোল রাখা হলো */
         .header-logo-clean {
             width: 96px;
             height: 96px;
@@ -55,11 +55,11 @@
             border-radius: 50%;
             box-shadow: none !important;
             filter: none !important;
-            border: 1.5px solid rgba(245, 208, 97, 0.4);
+            border: none !important;
         }
         #vCountrySelect {
-            width: 145px;
-            min-width: 130px;
+            width: 155px;
+            min-width: 140px;
             font-weight: 700;
         }
     </style>
@@ -75,9 +75,12 @@
                 <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto">
                 <h1 class="brand-title-font text-3xl font-extrabold gold-gradient-text">MESSAGE</h1>
                 <p class="text-[11px] text-white/80 tracking-[0.25em] font-semibold uppercase">Private Global Messenger</p>
-                <div class="pt-3">
+                <div class="pt-3 space-y-2">
                     <button onclick="handleCustomInstall()" class="gold-btn w-full py-4 rounded-xl text-xs font-extrabold tracking-wider shadow-lg inline-flex items-center justify-center space-x-2 cursor-pointer uppercase">
                         <i class="fa-solid fa-download"></i><span>INSTALL APP</span>
+                    </button>
+                    <button onclick="skipToProfileStep()" class="w-full py-2.5 text-xs text-amber-300/80 hover:text-amber-300 transition font-semibold cursor-pointer tracking-wider uppercase">
+                        Already Installed? Continue →
                     </button>
                 </div>
             </div>
@@ -97,7 +100,7 @@
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-pink-500">*</span></label>
                     <div class="flex space-x-2 w-full">
                         <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none cursor-pointer shrink-0">
-                            <!-- discover.js থেকে দেশসমূহ ও পতাকা কোড সহ এখানে লোড হবে -->
+                            <!-- discover.js থেকে সমস্ত দেশের পতাকা ও কোড এখানে লোড হবে -->
                         </select>
                         <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
                     </div>
@@ -223,7 +226,7 @@
     <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40 border-t border-white/5">
         <div class="flex items-center justify-around w-full px-3">
             <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none">
-                <svg id="iconProfile" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <svg id="iconProfile" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 <span id="labelProfile" class="nav-label text-[9px] gold-gradient-text font-semibold">Settings</span>
             </button>
             <button onclick="switchTab('discover')" id="tabDiscover" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none">
@@ -251,14 +254,14 @@
     </div>
 
     <!-- Modular JavaScript Files Connection -->
-    <script src="/discover.js?v=9.0"></script>
-    <script src="/verify.js?v=9.0"></script>
-    <script src="/call.js?v=9.0"></script>
-    <script src="/message.js?v=9.0"></script>
-    <script src="/transfer.js?v=9.0"></script>
+    <script src="/discover.js?v=11.0"></script>
+    <script src="/verify.js?v=11.0"></script>
+    <script src="/call.js?v=11.0"></script>
+    <script src="/message.js?v=11.0"></script>
+    <script src="/transfer.js?v=11.0"></script>
     
     <script>
-        // discover.js থেকে কান্ট্রি ও ডায়াল কোডগুলো ড্রপডাউনে লোড করার ফাংশন
+        // discover.js থেকে সমস্ত মহাদেশের দেশসমূহ এবং ডায়াল কোড ড্রপডাউনে লোড করার ফাংশন
         function loadCountryCodesIntoSelect() {
             const selectEl = document.getElementById('vCountrySelect');
             if (!selectEl) return;
@@ -280,12 +283,15 @@
             }
         }
 
-        // PWA Install & Step-by-Step Transition Handler
+        // PWA Install Handler & Direct Skip Handler
         function handleCustomInstall() {
             if (typeof installPWAApp === 'function') {
                 installPWAApp();
             }
-            
+            skipToProfileStep();
+        }
+
+        function skipToProfileStep() {
             const installContainer = document.getElementById('pwaInstallContainer');
             const step1 = document.getElementById('verifyStep1');
             
