@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=12.0">
+    <link rel="stylesheet" href="/discover.css?v=13.0">
     <style>
         :root {
             --bg-main: #030305;
@@ -46,7 +46,6 @@
         .theme-card { background-color: var(--card); }
         .theme-input { background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(245, 208, 97, 0.25); color: #fff; }
         
-        /* লোগো থেকে সমস্ত বর্ডার ও শ্যাডো সম্পূর্ণ রিমুভ করে ক্লিন গোল রাখা হলো */
         .header-logo-clean {
             width: 96px;
             height: 96px;
@@ -69,8 +68,6 @@
     <!-- Auto-Verify & Install Overlay -->
     <div id="verifyOverlay" style="display: flex;">
         <div class="verify-card space-y-5 text-center shadow-2xl">
-            
-            <!-- Step 0: Install Container (Page 1) -->
             <div id="pwaInstallContainer" class="space-y-4">
                 <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto">
                 <h1 class="brand-title-font text-3xl font-extrabold gold-gradient-text">MESSAGE</h1>
@@ -85,7 +82,6 @@
                 </div>
             </div>
 
-            <!-- Step 1: Name & Phone Number Form (Page 2) -->
             <div id="verifyStep1" class="space-y-4 text-left hidden">
                 <div class="text-center pb-1">
                     <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto mb-2" style="width: 64px; height: 64px;">
@@ -100,7 +96,6 @@
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-pink-500">*</span></label>
                     <div class="flex space-x-2 w-full">
                         <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none cursor-pointer shrink-0">
-                            <!-- discover.js থেকে সমস্ত দেশের পতাকা ও কোড এখানে লোড হবে -->
                         </select>
                         <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
                     </div>
@@ -110,7 +105,6 @@
                 </button>
             </div>
 
-            <!-- Step 2: OTP / Verification Code (Page 3) -->
             <div id="verifyStep2" class="space-y-4 text-left hidden">
                 <div class="space-y-2 text-center pt-2">
                     <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto mb-2" style="width: 64px; height: 64px;">
@@ -161,7 +155,6 @@
 
     <!-- Main Workspace -->
     <div class="flex flex-1 overflow-hidden relative min-h-0 w-full">
-        <!-- Sidebar Section -->
         <div id="sidebarSection" class="w-full md:w-[360px] theme-surface flex flex-col justify-between shrink-0 z-20 h-full min-h-0 pb-16">
             <div class="flex flex-col flex-1 overflow-hidden min-h-0">
                 <div id="searchBarContainer" class="p-3 shrink-0" style="background-color: var(--bg-main);">
@@ -174,7 +167,6 @@
             </div>
         </div>
 
-        <!-- Workspace Section (Chat & Call) -->
         <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full min-h-0 z-10 relative" style="background-color: var(--bg-main);">
             <div id="activeChatHeader" class="theme-surface px-4 py-3 hidden items-center justify-between shrink-0 border-b border-white/5">
                 <div class="flex items-center space-x-3">
@@ -222,27 +214,27 @@
         </div>
     </div>
 
-    <!-- Bottom Navigation Bar (5 Active Menus) -->
+    <!-- Bottom Navigation Bar (5 Active Menus with Dynamic Pink/Gold Active Styling) -->
     <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40 border-t border-white/5">
         <div class="flex items-center justify-around w-full px-3">
-            <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none">
-                <svg id="iconProfile" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <button onclick="switchTab('profile')" id="tabProfile" class="nav-btn flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
+                <svg id="iconProfile" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 <span id="labelProfile" class="nav-label text-[9px] gold-gradient-text font-semibold">Settings</span>
             </button>
-            <button onclick="switchTab('discover')" id="tabDiscover" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none">
-                <svg id="iconDiscover" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <button onclick="switchTab('discover')" id="tabDiscover" class="nav-btn flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
+                <svg id="iconDiscover" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                 <span id="labelDiscover" class="nav-label text-[9px] gold-gradient-text font-semibold">Discover</span>
             </button>
-            <button onclick="switchTab('contact')" id="tabContact" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none">
-                <svg id="iconContact" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#EC4899" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                <span id="labelContact" class="nav-label text-[9px] pink-gradient-text font-bold">Contacts</span>
+            <button onclick="switchTab('contact')" id="tabContact" class="nav-btn flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
+                <svg id="iconContact" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                <span id="labelContact" class="nav-label text-[9px] gold-gradient-text font-semibold">Contacts</span>
             </button>
-            <button onclick="switchTab('chat')" id="tabChat" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none">
-                <svg id="iconChat" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            <button onclick="switchTab('chat')" id="tabChat" class="nav-btn flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
+                <svg id="iconChat" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                 <span id="labelChat" class="nav-label text-[9px] gold-gradient-text font-semibold">Chats</span>
             </button>
-            <button onclick="switchTab('calls')" id="tabCalls" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none">
-                <svg id="iconCalls" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            <button onclick="switchTab('calls')" id="tabCalls" class="nav-btn flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
+                <svg id="iconCalls" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                 <span id="labelCalls" class="nav-label text-[9px] gold-gradient-text font-semibold">Calls</span>
             </button>
         </div>
@@ -254,23 +246,43 @@
     </div>
 
     <!-- Modular JavaScript Files Connection -->
-    <script src="/discover.js?v=12.0"></script>
-    <script src="/verify.js?v=12.0"></script>
-    <script src="/call.js?v=12.0"></script>
-    <script src="/message.js?v=12.0"></script>
-    <script src="/transfer.js?v=12.0"></script>
+    <script src="/discover.js?v=13.0"></script>
+    <script src="/verify.js?v=13.0"></script>
+    <script src="/call.js?v=13.0"></script>
+    <script src="/message.js?v=13.0"></script>
+    <script src="/transfer.js?v=13.0"></script>
     
     <script>
-        // সমস্ত মেনু এবং ট্যাব সুইচিং লজিক (Settings, Discover, Contacts, Chats, Calls)
+        // ডাইনামিক ট্যাব সুইচিং এবং পিঙ্ক/গোল্ড হাইলাইটিং লজিক
         function switchTab(tabName) {
             const tabs = ['Profile', 'Discover', 'Contact', 'Chat', 'Calls'];
             tabs.forEach(t => {
-                const btn = document.getElementById('tab' + t);
-                if (btn) btn.classList.remove('scale-105');
+                const icon = document.getElementById('icon' + t);
+                const label = document.getElementById('label' + t);
+                if (icon) {
+                    icon.classList.remove('text-[#EC4899]');
+                    icon.classList.add('text-amber-300');
+                    icon.style.stroke = '#F5D061';
+                }
+                if (label) {
+                    label.classList.remove('pink-gradient-text', 'font-bold');
+                    label.classList.add('gold-gradient-text', 'font-semibold');
+                }
             });
 
-            const activeBtn = document.getElementById('tab' + (tabName.charAt(0).toUpperCase() + tabName.slice(1)));
-            if (activeBtn) activeBtn.classList.add('scale-105');
+            const activeKey = tabName.charAt(0).toUpperCase() + tabName.slice(1);
+            const activeIcon = document.getElementById('icon' + activeKey);
+            const activeLabel = document.getElementById('label' + activeKey);
+
+            if (activeIcon) {
+                activeIcon.classList.remove('text-amber-300');
+                activeIcon.classList.add('text-[#EC4899]');
+                activeIcon.style.stroke = '#EC4899';
+            }
+            if (activeLabel) {
+                activeLabel.classList.remove('gold-gradient-text', 'font-semibold');
+                activeLabel.classList.add('pink-gradient-text', 'font-bold');
+            }
 
             if (tabName === 'profile') {
                 if (typeof renderProfileView === 'function') renderProfileView();
@@ -285,7 +297,6 @@
             }
         }
 
-        // প্রোফাইল লিঙ্ক শেয়ার করার ফাংশন (chat.rorraxy.com/username)
         function shareProfileLink() {
             const profile = typeof getActiveProfile === 'function' ? getActiveProfile() : { username: 'mrmasudar' };
             const profileUrl = `https://chat.rorraxy.com/${profile.username || 'user'}`;
@@ -302,7 +313,6 @@
             }
         }
 
-        // পপআপ টোস্ট নোটিফিকেশন ফাংশন
         function showToast(text, isError = false) {
             const banner = document.getElementById('toastBanner');
             const toastText = document.getElementById('toastText');
@@ -331,9 +341,7 @@
         function loadCountryCodesIntoSelect() {
             const selectEl = document.getElementById('vCountrySelect');
             if (!selectEl) return;
-            
             selectEl.innerHTML = '';
-            
             if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined') {
                 GLOBAL_CONTINENTS_DATA.forEach(continent => {
                     continent.countries.forEach(country => {
@@ -359,7 +367,6 @@
         function skipToProfileStep() {
             const installContainer = document.getElementById('pwaInstallContainer');
             const step1 = document.getElementById('verifyStep1');
-            
             if (installContainer) installContainer.classList.add('hidden');
             if (step1) {
                 step1.classList.remove('hidden');
@@ -377,13 +384,10 @@
                 const installContainer = document.getElementById('pwaInstallContainer');
                 const step1 = document.getElementById('verifyStep1');
                 const step2 = document.getElementById('verifyStep2');
-                
                 if (installContainer) installContainer.classList.remove('hidden');
                 if (step1) step1.classList.add('hidden');
                 if (step2) step2.classList.add('hidden');
-
                 loadCountryCodesIntoSelect();
-
                 if (typeof checkInitialVerification === 'function') {
                     checkInitialVerification();
                 }
