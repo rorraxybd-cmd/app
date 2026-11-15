@@ -138,7 +138,7 @@ const GLOBAL_CONTINENTS_DATA = [
 
 let selectedDiscoverCountry = null;
 
-// Robust openChat function with automatic Chat Tab highlight & workspace switch
+// Robust openChat function with automatic Chat Tab highlight & workspace switch & fixed bottom input bar
 function openChat(phone, name, avatar = '') {
     const recipient = { phone, name, avatar };
     window.currentActiveRecipient = recipient;
@@ -172,7 +172,10 @@ function openChat(phone, name, avatar = '') {
     }
 
     const workspace = document.getElementById('workspaceSection');
-    if (workspace) workspace.classList.remove('hidden');
+    if (workspace) {
+        workspace.classList.remove('hidden');
+        workspace.style.display = 'flex'; // Ensures flex display so input bar stays at bottom properly on mobile & desktop
+    }
 
     const chatHeader = document.getElementById('activeChatHeader');
     if (chatHeader) chatHeader.style.display = 'flex';
@@ -494,3 +497,4 @@ function saveNewContactFromModal() {
     if (typeof showToast === 'function') showToast("Contact added successfully!");
     renderContactsView();
 }
+```[cite: 11]
