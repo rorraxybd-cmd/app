@@ -1,4 +1,4 @@
-// discover.js - Global Directory & Contacts Sync Module (100% English, 200+ Countries & Clean UI)
+// discover.js - Global Directory & Contacts Sync Module (Auto Cloud Sync & Unified Header)
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -140,7 +140,6 @@ let selectedDiscoverCountry = null;
 
 function normPhone(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
 
-// নামের প্রথম অক্ষর দিয়ে গোল্ডেন প্রোফাইল লোগো তৈরির ফাংশন
 function renderAvatarBadge(name, avatarUrl, sizeClass = "w-10 h-10 text-sm") {
     const initial = (name || 'U').trim().charAt(0).toUpperCase();
     if (avatarUrl && avatarUrl.trim() !== '') {
@@ -150,7 +149,8 @@ function renderAvatarBadge(name, avatarUrl, sizeClass = "w-10 h-10 text-sm") {
 }
 
 function openChat(phone, name, avatar = '') {
-    const recipient = { phone, name, avatar };
+    const cleanTargetPhone = normPhone(phone);
+    const recipient = { phone: cleanTargetPhone, name, avatar };
     window.currentActiveRecipient = recipient;
 
     const workspace = document.getElementById('workspaceSection');
@@ -165,22 +165,25 @@ function openChat(phone, name, avatar = '') {
     }
 
     const chatHeader = document.getElementById('activeChatHeader');
-    if (chatHeader) { 
-        chatHeader.classList.remove('hidden'); 
-        chatHeader.style.display = 'flex'; 
-        
+    if (chatHeader) {
+        chatHeader.classList.remove('hidden');
+        chatHeader.style.display = 'flex';
+
         const existingActions = document.getElementById('headerWhatsAppCallActions');
         if (existingActions) existingActions.remove();
 
         const callActions = document.createElement('div');
         callActions.id = 'headerWhatsAppCallActions';
-        callActions.className = 'flex items-center space-x-3 ml-auto';
+        callActions.className = 'flex items-center space-x-2 ml-auto shrink-0';
         callActions.innerHTML = `
             <button onclick="startWhatsAppCall('audio')" class="text-amber-300 hover:text-white p-2 cursor-pointer transition" title="Audio Call">
                 <i class="fa-solid fa-phone text-sm"></i>
             </button>
             <button onclick="startWhatsAppCall('video')" class="text-amber-300 hover:text-white p-2 cursor-pointer transition" title="Video Call">
                 <i class="fa-solid fa-video text-sm"></i>
+            </button>
+            <button onclick="deleteAllChatMessages()" class="text-red-400 hover:text-white p-2 cursor-pointer transition" title="Delete All Messages">
+                <i class="fa-solid fa-trash-can text-sm"></i>
             </button>
         `;
         chatHeader.appendChild(callActions);
@@ -194,12 +197,8 @@ function openChat(phone, name, avatar = '') {
 
     const avatarEl = document.getElementById('activeChatAvatar');
     if (avatarEl) {
-        if (avatar && avatar.trim() !== '') {
-            avatarEl.src = avatar;
-            avatarEl.style.display = 'block';
-        } else {
-            avatarEl.src = 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg';
-        }
+        avatarEl.src = (avatar && avatar.trim() !== '') ? avatar : 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg';
+        avatarEl.style.display = 'block';
     }
 
     if (typeof loadMessages === 'function') loadMessages();
@@ -223,7 +222,7 @@ function renderDiscoverDirectory(searchQuery = '') {
 
     const q = searchQuery.toLowerCase().trim();
     let deviceContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
-    const allUsers = deviceContacts.filter(c => !c.isOfficialSupport && c.phone !== '8801538187301');
+    const allUsers = deviceContacts.filter(c => !c.isOfficialSupport);
 
     let html = `
         <div class="p-3 space-y-3">
@@ -250,7 +249,7 @@ function renderDiscoverDirectory(searchQuery = '') {
         filteredCountries.forEach(country => {
             const countryUsers = allUsers.filter(u => {
                 const info = typeof getCountryInfo === 'function' ? getCountryInfo(u.phone) : { name: '' };
-                return (info.name && info.name.toLowerCase() === country.name.toLowerCase()) || String(u.phone || '').replace(/[\s\-\(\)]/g, '').startsWith(country.code);
+                return (info.name && info.name.toLowerCase() === country.name.toLowerCase()) || normPhone(u.phone).startsWith(country.code);
             });
 
             const count = countryUsers.length;
@@ -287,11 +286,11 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
     if (!listContainer) return;
 
     let deviceContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
-    const allUsers = deviceContacts.filter(c => !c.isOfficialSupport && c.phone !== '8801538187301');
-    
+    const allUsers = deviceContacts.filter(c => !c.isOfficialSupport);
+
     const matchedUsers = allUsers.filter(u => {
         const info = typeof getCountryInfo === 'function' ? getCountryInfo(u.phone) : { name: '' };
-        const isMatchCountry = (info.name && info.name.toLowerCase() === countryObj.name.toLowerCase()) || String(u.phone || '').replace(/[\s\-\(\)]/g, '').startsWith(countryObj.code);
+        const isMatchCountry = (info.name && info.name.toLowerCase() === countryObj.name.toLowerCase()) || normPhone(u.phone).startsWith(countryObj.code);
         const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase()) || String(u.username || '').toLowerCase().includes(searchQuery.toLowerCase());
         return isMatchCountry && matchesSearch;
     });
@@ -354,10 +353,11 @@ function renderContactsView(searchQuery = '') {
 
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const q = searchQuery.toLowerCase().trim();
-    
-    const filteredContacts = localContacts.filter(c => 
-        c.name.toLowerCase().includes(q) || 
-        String(c.username || '').toLowerCase().includes(q)
+
+    const filteredContacts = localContacts.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        String(c.username || '').toLowerCase().includes(q) ||
+        normPhone(c.phone).includes(q)
     );
 
     let contactsHtml = filteredContacts.length === 0 ? `
@@ -371,7 +371,7 @@ function renderContactsView(searchQuery = '') {
         const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐' };
         const avatarHtml = renderAvatarBadge(c.name, c.avatar, "w-10 h-10 text-sm");
         const safeName = c.name.replace(/'/g, "\\'");
-        
+
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card cursor-pointer" onclick="openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')">
             <div class="flex items-center space-x-3 flex-1 min-w-0">
@@ -397,10 +397,10 @@ function renderContactsView(searchQuery = '') {
     listContainer.innerHTML = `
         <div class="pb-20 p-3 space-y-3">
             <div class="flex items-center justify-between px-1">
-                <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Contacts Directory</h3>
+                <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Contacts Directory (${filteredContacts.length})</h3>
             </div>
             <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
-                <input type="text" id="contactSearchInput" placeholder="Search by name or username..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderContactsView(this.value)">
+                <input type="text" id="contactSearchInput" placeholder="Search by name, username or phone..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderContactsView(this.value)">
                 <i class="fa-solid fa-magnifying-glass text-amber-300 text-xs"></i>
             </div>
             ${contactsHtml}
@@ -408,7 +408,6 @@ function renderContactsView(searchQuery = '') {
     `;
 }
 
-// প্রোফাইল ছবি ফাইল থেকে আপলোড করার ফাংশন
 function handleProfileLogoUpload(input) {
     const file = input.files && input.files[0];
     if (!file) return;
@@ -424,7 +423,6 @@ function handleProfileLogoUpload(input) {
         localStorage.setItem('message_profiles_v18', JSON.stringify(profiles));
         if (typeof savedProfiles !== 'undefined') savedProfiles[0].avatar = base64Img;
 
-        // কন্টাক্ট লিস্টে নিজের প্রোফাইল আপডেট করা
         let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
         const myPhone = normPhone(profiles[0].phone);
         const idx = localContacts.findIndex(c => normPhone(c.phone) === myPhone);
@@ -440,7 +438,7 @@ function handleProfileLogoUpload(input) {
             await fetch('/api/chat?action=register_or_update_user', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(profiles[0])
+                body: JSON.stringify({ ...profiles[0], is_edit: true })
             });
         } catch (err) {}
     };
@@ -477,6 +475,7 @@ function renderProfileView(isEditing = false) {
                     <div>
                         <h2 class="text-base font-bold gold-gradient-text">${displayName}</h2>
                         <p class="text-xs text-gray-400 mt-0.5">@${username}</p>
+                        <p class="text-[10px] text-amber-300/70 mt-1">+${normPhone(profile.phone)}</p>
                     </div>
                     <button onclick="shareMyProfile('${username}')" class="w-full py-3.5 rounded-2xl gold-btn text-xs font-extrabold cursor-pointer flex items-center justify-center space-x-2 mt-2 shadow-lg">
                         <i class="fa-solid fa-share-nodes text-xs"></i> <span>Share Profile</span>
@@ -550,7 +549,7 @@ async function saveProfileChanges() {
         await fetch('/api/chat?action=register_or_update_user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(profiles[0])
+            body: JSON.stringify({ ...profiles[0], is_edit: true })
         });
     } catch (e) {}
 }
