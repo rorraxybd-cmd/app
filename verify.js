@@ -221,7 +221,6 @@ function checkInitialVerification() {
 
 function shareProfileLink() {
     const profile = getActiveProfile();
-    // সঠিক ও একক ইউআরএল নিশ্চিত করার জন্য শুরুতে https:// যুক্ত করা হলো
     const profileUrl = `https://chat.rorraxy.com/${profile.username || 'user'}`;
     
     if (navigator.share) {
