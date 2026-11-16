@@ -1,4 +1,4 @@
-// message.js - Professional Chat & Messaging Module
+// message.js - Professional Chat & Messaging Module (Complete & Optimized)
 let chatPollInterval = null;
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
 let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
@@ -35,14 +35,18 @@ function toggleSendButton() {
     const sendBtn = document.getElementById('sendBtn');
     if (!inp || !sendBtn) return;
     
-    if (inp.value.trim().length > 0) {
-        sendBtn.classList.remove('hidden');
-        sendBtn.classList.add('flex');
-    } else {
-        sendBtn.classList.add('hidden');
-        sendBtn.classList.remove('flex');
-    }
+    // সেন্ড বাটন সবসময় দৃশ্যমান ও সক্রিয় রাখার জন্য flex ক্লাস নিশ্চিত করা হলো
+    sendBtn.classList.remove('hidden');
+    sendBtn.classList.add('flex');
 }
+
+// ইনপুটে কিছু লেখার সাথে সাথেই টগল চালু করা
+document.addEventListener('DOMContentLoaded', () => {
+    const inp = document.getElementById('messageInput');
+    if (inp) {
+        inp.addEventListener('input', toggleSendButton);
+    }
+});
 
 async function sendTextMessage() {
     if (!currentActiveRecipient) {
@@ -127,7 +131,7 @@ async function fetchMessagesFromCloud() {
 
 function startChatPolling() {
     if (chatPollInterval) clearInterval(chatPollInterval);
-    chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 3000);
+    chatPollInterval = setInterval(() => { if (currentActiveRecipient) fetchMessagesFromCloud(); }, 2000);
 }
 
 function deleteSingleMessage(key, index) {
@@ -147,7 +151,7 @@ function deleteSingleMessage(key, index) {
         localMessageStore[key].splice(index, 1);
         persistMessages();
         loadMessages();
-        if (typeof showToast === 'function') showToast("Deleted successfully");
+        if (typeof showToast === 'function') showToast("ডিলিট সফল হয়েছে");
     }
 }
 
@@ -169,7 +173,7 @@ function confirmClearChatHistory() {
     delete localMessageStore[key];
     persistMessages();
     loadMessages();
-    if (typeof showToast === 'function') showToast("Chat cleared successfully");
+    if (typeof showToast === 'function') showToast("চ্যাট হিস্ট্রি ক্লিয়ার করা হয়েছে");
 }
 
 function loadMessages() {
@@ -189,8 +193,8 @@ function loadMessages() {
                 <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center border border-amber-400/20 shadow-lg">
                     <svg class="w-7 h-7 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                 </div>
-                <p class="text-sm font-bold gold-gradient-text">No messages yet</p>
-                <p class="text-[11px] text-gray-400">Send a message or start a call with ${escapeHtml(currentActiveRecipient.name)}.</p>
+                <p class="text-sm font-bold gold-gradient-text">কোনো মেসেজ নেই</p>
+                <p class="text-[11px] text-gray-400">${escapeHtml(currentActiveRecipient.name)} এর সাথে মেসেজ বা কল শুরু করুন।</p>
             </div>`;
         return;
     }
@@ -246,3 +250,4 @@ function loadMessages() {
     }).join('');
     container.scrollTop = container.scrollHeight;
 }
+```[cite: 10]
