@@ -1,4 +1,4 @@
-// discover.js - Global Directory & Contacts Sync Module (Fully Optimized & Fixed)
+// discover.js - Global Directory & Contacts Sync Module (Fully Optimized & Clean UI)
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -173,7 +173,6 @@ function openChat(phone, name, avatar = '') {
     if (workspace) {
         workspace.classList.remove('hidden');
         if (window.innerWidth < 768) {
-            // মোবাইলের জন্য ফুল-স্ক্রিন ওভারলে ও ফ্লেক্স কলাম নিশ্চিত করা হলো যাতে ইনপুট বার নিচে থাকে
             workspace.className = "absolute inset-0 z-30 flex flex-col bg-[#030305]";
         } else {
             workspace.style.display = 'flex';
@@ -311,9 +310,10 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
         usersHtml = matchedUsers.map(c => {
             const isOnline = c.isOnline === true || c.isOnline === 1 || c.isOnline === "1";
             const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
+            // রিডানড্যান্ট "Online" টেক্সট বাদ দিয়ে শুধুমাত্র ক্লিন ডট বা স্ট্যাটাস ইন্ডিকেটর
             const statusIndicator = isOnline 
-                ? `<span class="inline-flex items-center space-x-1 text-[10px] text-[#2ed573] font-semibold"><span class="w-2 h-2 rounded-full bg-[#2ed573] inline-block"></span><span>Online</span></span>` 
-                : `<span class="text-[10px] text-gray-500">Offline</span>`;
+                ? `<span class="w-2.5 h-2.5 rounded-full bg-[#2ed573] inline-block shadow-[0_0_8px_#2ed573]" title="Online"></span>` 
+                : `<span class="w-2.5 h-2.5 rounded-full bg-gray-500 inline-block" title="Offline"></span>`;
 
             const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20 shrink-0">${c.name.charAt(0)}</div>`;
             const safeName = c.name.replace(/'/g, "\\'");
@@ -322,12 +322,17 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
                 <div class="flex items-center space-x-3 flex-1 min-w-0">
                     <div class="relative shrink-0">
                         ${avatarImg}
-                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${statusColor}"></span>
+                        <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${statusColor}"></span>
                     </div>
                     <div class="min-w-0 flex-1 pr-2">
-                        <p class="text-xs font-semibold gold-gradient-text truncate">${countryObj.flag} ${c.name}</p>
-                        <div class="mt-0.5">
+                        <!-- নাম এবং তার পাশেই দেশের পতাকা (ডাবল লাইন বা নিচে নাম ছাড়াই) -->
+                        <p class="text-xs font-semibold gold-gradient-text truncate flex items-center space-x-1.5">
+                            <span>${c.name}</span>
+                            <span class="text-sm">${countryObj.flag}</span>
+                        </p>
+                        <div class="mt-1 flex items-center space-x-1.5 text-[10px] text-gray-400">
                             ${statusIndicator}
+                            <span>${isOnline ? 'Online' : 'Offline'}</span>
                         </div>
                     </div>
                 </div>
@@ -395,8 +400,8 @@ function renderContactsView(searchQuery = '') {
             const isOnline = c.isOnline === true || c.isOnline === 1 || c.isOnline === "1";
             const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
             const statusIndicator = isOnline 
-                ? `<span class="inline-flex items-center space-x-1 text-[10px] text-[#2ed573] font-semibold"><span class="w-2 h-2 rounded-full bg-[#2ed573] inline-block"></span><span>Online</span></span>` 
-                : `<span class="text-[10px] text-gray-500">Offline</span>`;
+                ? `<span class="w-2.5 h-2.5 rounded-full bg-[#2ed573] inline-block shadow-[0_0_8px_#2ed573]"></span>` 
+                : `<span class="w-2.5 h-2.5 rounded-full bg-gray-500 inline-block"></span>`;
 
             const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐', name: 'Global' };
             const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20 shrink-0">${c.name.charAt(0)}</div>`;
@@ -407,12 +412,16 @@ function renderContactsView(searchQuery = '') {
                 <div class="flex items-center space-x-3 flex-1 min-w-0">
                     <div class="relative shrink-0">
                         ${avatarImg}
-                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${statusColor}"></span>
+                        <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${statusColor}"></span>
                     </div>
                     <div class="min-w-0 flex-1 pr-2">
-                        <p class="text-xs font-semibold gold-gradient-text truncate">${countryInfo.flag} ${c.name}</p>
-                        <div class="mt-0.5">
+                        <p class="text-xs font-semibold gold-gradient-text truncate flex items-center space-x-1.5">
+                            <span>${c.name}</span>
+                            <span class="text-sm">${countryInfo.flag}</span>
+                        </p>
+                        <div class="mt-1 flex items-center space-x-1.5 text-[10px] text-gray-400">
                             ${statusIndicator}
+                            <span>${isOnline ? 'Online' : 'Offline'}</span>
                         </div>
                     </div>
                 </div>
@@ -500,9 +509,10 @@ function saveNewContactFromModal() {
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const cleanPhone = phone.replace(/[\s\-\(\)\+]/g, '');
 
+    // একটি নম্বর দিয়ে একবারই ভেরিফিকেশন ও ডুপ্লিকেট রোধের কঠোর লজিক
     const exists = localContacts.find(c => String(c.phone || '').replace(/[\s\-\(\)\+]/g, '') === cleanPhone);
     if (exists) {
-        if (typeof showToast === 'function') showToast("This phone number already exists in your contacts!", true);
+        if (typeof showToast === 'function') showToast("এই ফোন নম্বরটি দিয়ে ইতিমধ্যে অ্যাকাউন্ট রেজিস্টার্ড রয়েছে! ক্লাউড ভেরিফিকেশনের কারণে দ্বিতীয়বার এই নম্বর দিয়ে অ্যাকাউন্ট তৈরি করা যাবে না।", true);
         return;
     }
 
