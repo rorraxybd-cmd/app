@@ -247,9 +247,9 @@ function renderProfileView(isEditing = false) {
 
     sidebarList.innerHTML = `
         <div class="p-4 space-y-4 max-w-md mx-auto pb-24">
-            <div class="text-center space-y-3 theme-card p-6 rounded-3xl border border-amber-400/20 shadow-2xl">
+            <div class="text-center space-y-3 theme-card p-6 rounded-3xl border border-amber-400/20">
                 <div class="relative w-24 h-24 mx-auto">
-                    <img id="profileAvatarPreview" src="${profile.avatar}" class="w-24 h-24 rounded-full object-cover bg-black shadow-lg border-2 border-amber-400/50">
+                    <img id="profileAvatarPreview" src="${profile.avatar}" class="w-24 h-24 rounded-full object-cover bg-black border-2 border-amber-400/50">
                     <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-pink-600 hover:bg-pink-500 text-white flex items-center justify-center cursor-pointer shadow-md hover:scale-110 transition" title="Change Photo">
                         <i class="fa-solid fa-camera text-xs"></i>
                         <input type="file" accept="image/*" class="hidden" onchange="handleProfileAvatarChange(this)">
@@ -265,13 +265,13 @@ function renderProfileView(isEditing = false) {
                 </div>
 
                 <div class="pt-2">
-                    <button onclick="shareProfileLink()" class="w-full py-3.5 px-4 rounded-2xl theme-input hover:border-pink-500/50 transition cursor-pointer shadow-inner flex items-center justify-center">
+                    <button onclick="shareProfileLink()" class="w-full py-3.5 px-4 rounded-2xl theme-input hover:border-pink-500/50 transition cursor-pointer flex items-center justify-center">
                         <span class="text-xs font-extrabold pink-gradient-text tracking-wider uppercase">Share Profile</span>
                     </button>
                 </div>
             </div>
 
-            <div class="space-y-4 theme-card p-6 rounded-3xl border border-amber-400/20 shadow-2xl">
+            <div class="space-y-4 theme-card p-6 rounded-3xl border border-amber-400/20">
                 <div class="flex items-center justify-between border-b border-white/10 pb-2">
                     <h4 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Profile Information</h4>
                     <button onclick="renderProfileView(${!isEditing})" class="text-[11px] text-amber-300 hover:underline font-semibold flex items-center space-x-1 cursor-pointer">
@@ -316,7 +316,7 @@ function renderProfileView(isEditing = false) {
                             </select>
                         </div>
 
-                        <button onclick="saveProfileSettings()" class="w-full py-3.5 gold-btn text-xs rounded-xl font-extrabold cursor-pointer shadow-lg mt-2 transition hover:brightness-110 uppercase tracking-wider">
+                        <button onclick="saveProfileSettings()" class="w-full py-3.5 gold-btn text-xs rounded-xl font-extrabold cursor-pointer mt-2 transition hover:brightness-110 uppercase tracking-wider">
                             SAVE CHANGES
                         </button>
                     </div>
@@ -459,3 +459,4 @@ function deleteAllNotifications() {
     renderNotificationsDropdown();
     if (typeof showToast === 'function') showToast("Cleared unpinned notifications");
 }
+```[cite: 8]
