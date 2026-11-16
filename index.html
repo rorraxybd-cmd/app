@@ -65,7 +65,7 @@
 <body class="h-[100dvh] w-full flex flex-col overflow-hidden fixed inset-0">
 
     <!-- Auto-Verify & Install Overlay -->
-    <div id="verifyOverlay" style="display: flex;">
+    <div id="verifyOverlay" style="display: flex;" class="z-50">
         <div class="verify-card space-y-5 text-center shadow-2xl">
             <div id="pwaInstallContainer" class="space-y-4">
                 <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto">
@@ -153,14 +153,18 @@
 
     <!-- Main Workspace -->
     <div class="flex flex-1 overflow-hidden relative min-h-0 w-full">
+        <!-- Sidebar Section -->
         <div id="sidebarSection" class="w-full md:w-[360px] theme-surface flex flex-col justify-between shrink-0 z-20 h-full min-h-0 pb-16">
             <div class="flex flex-col flex-1 overflow-hidden min-h-0">
                 <div id="sidebarContentList" class="flex-1 overflow-y-auto space-y-1.5 p-3 pb-20"></div>
             </div>
         </div>
 
+        <!-- Workspace Section (Chat Area) -->
         <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full min-h-0 z-10 relative" style="background-color: var(--bg-main);">
-            <div id="activeChatHeader" class="theme-surface px-4 py-3 hidden items-center justify-between shrink-0 border-b border-white/5">
+            
+            <!-- Active Chat Header -->
+            <div id="activeChatHeader" class="theme-surface px-4 py-3 hidden items-center justify-between shrink-0 border-b border-white/5 z-20">
                 <div class="flex items-center space-x-3">
                     <button onclick="backToSidebarMobile()" class="md:hidden p-1.5 rounded-xl theme-card cursor-pointer">
                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
@@ -174,7 +178,7 @@
                         </div>
                     </div>
                 </div>
-                <!-- Chat Header Audio & Video Call Action Buttons -->
+                <!-- Chat Header Action Buttons -->
                 <div class="flex items-center space-x-2">
                     <button onclick="startWhatsAppCall('audio')" class="p-2.5 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/20" title="Audio Call">
                         <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
@@ -188,6 +192,7 @@
                 </div>
             </div>
 
+            <!-- Messages List Container -->
             <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 flex flex-col justify-start">
                 <div class="flex flex-col items-center justify-center space-y-3 max-w-xs text-center m-auto">
                     <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center border border-amber-400/20">
@@ -198,14 +203,16 @@
                 </div>
             </div>
 
-            <div id="chatInputBar" class="theme-surface px-3 py-2.5 hidden items-center shrink-0 z-25">
+            <!-- Chat Input Bar (Always Fixed at Bottom) -->
+            <div id="chatInputBar" class="theme-surface px-3 py-2.5 hidden items-center shrink-0 z-20 border-t border-white/5">
                 <div class="flex-1 flex items-center theme-input rounded-2xl px-3.5 py-2 space-x-2.5">
                     <label class="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center shrink-0" title="Attach File">
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
                         <input type="file" id="universalFileInput" accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.zip,.txt" multiple class="hidden" onchange="handleUniversalFileUpload(this)">
                     </label>
-                    <input type="text" id="messageInput" placeholder="Write a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1 min-w-0" oninput="toggleSendButton()" onkeypress="if(event.key === 'Enter') sendTextMessage()">
-                    <button id="sendBtn" onclick="sendTextMessage()" class="hidden cursor-pointer hover:scale-110 transition-transform p-1 shrink-0 items-center justify-center" title="Send">
+                    <input type="text" id="messageInput" placeholder="Write a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1 min-w-0" onkeypress="if(event.key === 'Enter') sendTextMessage()">
+                    <!-- Send Button explicitly set to flex so it is always visible and working -->
+                    <button id="sendBtn" onclick="sendTextMessage()" class="flex cursor-pointer hover:scale-110 transition-transform p-1 shrink-0 items-center justify-center text-amber-300" title="Send">
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
                 </div>
@@ -244,7 +251,7 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- Modular JavaScript Files Connection (Updated to v21.0) -->
+    <!-- Modular JavaScript Files Connection -->
     <script src="/discover.js?v=21.0"></script>
     <script src="/verify.js?v=21.0"></script>
     <script src="/call.js?v=21.0"></script>
@@ -284,14 +291,14 @@
             } catch (e) {}
         }
 
-        // Mobile back to sidebar helper function (Restores bottom nav bar and workspace layout)
+        // Mobile back to sidebar helper function
         function backToSidebarMobile() {
             const workspace = document.getElementById('workspaceSection');
             const sidebar = document.getElementById('sidebarSection');
             const bottomNav = document.getElementById('bottomNavBar');
             if (workspace) {
                 workspace.classList.add('hidden');
-                workspace.classList.remove('absolute', 'inset-0', 'z-30', 'flex');
+                workspace.classList.remove('absolute', 'inset-0', 'z-30', 'flex', 'fixed');
                 workspace.style.display = '';
             }
             if (sidebar) {
@@ -339,7 +346,7 @@
 
             if (tabName !== 'chat' && workspace && window.innerWidth < 768) {
                 workspace.classList.add('hidden');
-                workspace.classList.remove('absolute', 'inset-0', 'z-30', 'flex');
+                workspace.classList.remove('absolute', 'inset-0', 'z-30', 'flex', 'fixed');
                 workspace.style.display = '';
                 if (sidebar) sidebar.classList.remove('hidden');
                 if (bottomNav) {
