@@ -27,6 +27,13 @@
         .brand-title-font { font-family: 'Cinzel', serif; letter-spacing: 0.16em; }
         .gold-gradient-text { background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .pink-gradient-text { background: linear-gradient(135deg, #EC4899 0%, #ff2e7e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .emoji-flag {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif !important;
+            -webkit-text-fill-color: initial !important;
+            background: none !important;
+            font-style: normal;
+            line-height: 1;
+        }
         .verify-card { background: #030305; border-radius: 24px; padding: 32px 24px; max-width: 440px; width: 100%; }
         .gold-btn { background: var(--gold-gradient); color: #030305; font-weight: 700; transition: transform 0.2s; }
         .gold-btn:hover { transform: scale(1.02); }
@@ -125,7 +132,7 @@
     <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40">
         <div class="flex items-center justify-around w-full px-3">
             <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
-                <svg id="iconProfile" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1 z"></path></svg>
+                <svg id="iconProfile" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 <span id="labelProfile" class="nav-label text-[9px] gold-gradient-text font-semibold">Settings</span>
             </button>
             <button onclick="switchTab('discover')" id="tabDiscover" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
@@ -151,10 +158,10 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
     <!-- Scripts -->
-    <script src="/discover.js?v=29.0"></script>
-    <script src="/verify.js?v=29.0"></script>
-    <script src="/call.js?v=29.0"></script>
-    <script src="/message.js?v=29.0"></script>
+    <script src="/discover.js?v=30.0"></script>
+    <script src="/verify.js?v=30.0"></script>
+    <script src="/call.js?v=30.0"></script>
+    <script src="/message.js?v=30.0"></script>
     <script>
         function normPhoneNum(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
 
@@ -166,7 +173,6 @@
         }
 
         function setupChatInputUI() {
-            // এখানে হেডার কল বাটন রিমুভ করা হয়েছে যাতে discover.js থেকে ডাবল রেন্ডার না হয়
             const chatInputBar = document.getElementById('chatInputBar');
             if (chatInputBar && chatInputBar.innerHTML.trim() === '') {
                 chatInputBar.innerHTML = `
@@ -199,7 +205,7 @@
                             const existingIndex = localContacts.findIndex(c => normPhoneNum(c.phone) === phone);
                             if (existingIndex === -1) {
                                 localContacts.push({ 
-                                    name: u.display_name || phone, 
+                                    name: u.display_name || 'User', 
                                     phone: phone, 
                                     username: u.username || ('user_' + Math.floor(1000 + Math.random() * 9000)), 
                                     avatar: u.avatar_url || '', 
@@ -264,12 +270,25 @@
             setTimeout(() => { banner.classList.add('hidden'); banner.style.display = 'none'; }, 3000);
         }
 
+        function handleDirectUsernameRoute() {
+            const pathUser = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+            if (!pathUser || pathUser === 'index.html') return;
+            let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+            const target = localContacts.find(c => String(c.username || '').toLowerCase() === pathUser);
+            if (target && typeof openChat === 'function') {
+                openChat(target.phone, target.name, target.avatar || '');
+            }
+        }
+
         function initAppAfterVerification() {
             const overlay = document.getElementById('verifyOverlay');
             if (overlay) overlay.style.display = 'none';
             setupChatInputUI();
             if (typeof startIncomingCallPolling === 'function') startIncomingCallPolling();
-            fetchCloudContacts().then(() => { switchTab('contact'); });
+            fetchCloudContacts().then(() => { 
+                switchTab('contact'); 
+                handleDirectUsernameRoute();
+            });
         }
 
         window.addEventListener('DOMContentLoaded', () => {
