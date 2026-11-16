@@ -1,4 +1,4 @@
-// message.js - Professional Chat & Media Messaging Module
+// message.js - Professional Chat & Media Messaging Module (100% English UI)
 let chatPollInterval = null;
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
 let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
@@ -14,7 +14,7 @@ function escapeHtml(str) {
 }
 
 async function sendTextMessage() {
-    if (!currentActiveRecipient) { if (typeof showToast === 'function') showToast("কোনো চ্যাট সিলেক্ট করা নেই!", true); return; }
+    if (!currentActiveRecipient) { if (typeof showToast === 'function') showToast("No chat selected!", true); return; }
     const inp = document.getElementById('messageInput');
     const text = inp.value.trim();
     if (!text) return;
@@ -43,7 +43,7 @@ async function handleUniversalFileUpload(fileInputElem) {
     if (!files || files.length === 0 || !currentActiveRecipient) return;
 
     Array.from(files).forEach(file => {
-        if (file.size > 25 * 1024 * 1024) { if (typeof showToast === 'function') showToast("ফাইলের সাইজ ২৫ মেগাবাইটের কম হতে হবে", true); return; }
+        if (file.size > 25 * 1024 * 1024) { if (typeof showToast === 'function') showToast("File size must be under 25MB", true); return; }
         let fileType = file.type.startsWith('image/') ? 'image' : (file.type.startsWith('video/') ? 'video' : (file.type.startsWith('audio/') ? 'audio' : 'file'));
 
         const reader = new FileReader();
@@ -77,7 +77,7 @@ function renderChatHistoryList() {
     let chatsHtml = '';
 
     if (chatKeys.length === 0) {
-        chatsHtml = `<div class="p-8 text-center theme-card rounded-2xl border border-white/5 mt-4"><p class="text-xs font-bold gold-gradient-text">কোনো চ্যাট হিস্ট্রি নেই</p></div>`;
+        chatsHtml = `<div class="p-8 text-center theme-card rounded-2xl mt-4"><p class="text-xs font-bold gold-gradient-text">No chat history</p></div>`;
     } else {
         chatsHtml = chatKeys.map(key => {
             const msgs = localMessageStore[key] || [];
@@ -85,7 +85,7 @@ function renderChatHistoryList() {
             let contact = localContacts.find(c => normPhone(c.phone) === normPhone(key)) || { name: key, phone: key, avatar: '' };
             const safeName = (contact.name || key).replace(/'/g, "\\'");
             return `
-            <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card border border-white/5 cursor-pointer" onclick="openChat('${contact.phone}', '${safeName}', '${contact.avatar || ''}')">
+            <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card cursor-pointer" onclick="openChat('${contact.phone}', '${safeName}', '${contact.avatar || ''}')">
                 <div class="flex items-center space-x-3">
                     <img src="${contact.avatar || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg'}" class="w-10 h-10 rounded-full object-cover">
                     <div>
@@ -99,6 +99,7 @@ function renderChatHistoryList() {
 
     listContainer.innerHTML = `<div class="p-3 space-y-3 pb-20"><h3 class="text-xs font-bold gold-gradient-text uppercase">Recent Chats</h3>${chatsHtml}</div>`;
 }
+
 function loadMessages() {
     const container = document.getElementById('chatMessages');
     if (!container || !currentActiveRecipient) return;
@@ -106,7 +107,7 @@ function loadMessages() {
     let msgs = localMessageStore[key] || [];
 
     if (msgs.length === 0) {
-        container.innerHTML = `<div class="m-auto text-center"><p class="text-sm font-bold gold-gradient-text">কোনো মেসেজ নেই</p></div>`;
+        container.innerHTML = `<div class="m-auto text-center"><p class="text-sm font-bold gold-gradient-text">No messages yet</p></div>`;
         return;
     }
 
