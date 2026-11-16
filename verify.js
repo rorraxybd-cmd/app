@@ -185,12 +185,10 @@ async function populateVerifyCountryDropdown() {
     select.innerHTML = html;
     updatePhoneValidation();
 }
-
 // পেজ লোড হওয়ার সাথে সাথেই যেন ড্রপডাউন কল হয়
 window.addEventListener('DOMContentLoaded', () => {
     populateVerifyCountryDropdown();
 });
-
 function getCountryInfo(phone) {
     const p = String(phone || '').replace(/[\s\-\(\)]/g, '');
     for (const cont of GLOBAL_CONTINENTS_DATA) {
@@ -283,7 +281,6 @@ async function submitVerifyStep2() {
         });
         localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
     }
-
     savedProfiles[0] = {
         name: tempVerifyName,
         phone: cleanVerifyPhone,
@@ -292,9 +289,7 @@ async function submitVerifyStep2() {
         avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg"
     };
     saveProfiles();
-
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-    
     const overlay = document.getElementById('verifyOverlay');
     if (overlay) overlay.style.display = 'none';
     
