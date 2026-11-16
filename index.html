@@ -34,8 +34,6 @@
         .theme-card { background-color: var(--card); }
         .theme-input { background-color: rgba(255, 255, 255, 0.02); border: 1px solid rgba(245, 208, 97, 0.1); color: #fff; }
         .header-logo-clean { width: 42px; height: 42px; object-fit: cover; background: transparent !important; border-radius: 50%; }
-        #vCountrySelect { width: 100%; font-weight: 700; background-color: #08110c; color: #F5D061; }
-        #vCountrySelect option { background-color: #030305; color: #ffffff; padding: 8px; }
         .chat-bubble-me { background: linear-gradient(135deg, #0f2e1a 0%, #081a10 100%); border: 1px solid rgba(46, 213, 115, 0.2); }
         .chat-bubble-them { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(245, 208, 97, 0.1); }
         .pink-btn { background: linear-gradient(135deg, #EC4899 0%, #be185d 100%); color: #ffffff; }
@@ -59,7 +57,8 @@
                 <div class="space-y-1.5">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-pink-500">*</span></label>
                     <div class="flex flex-col space-y-2 w-full">
-                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-3 py-3 rounded-xl text-amber-300 font-bold focus:outline-none cursor-pointer w-full"></select>
+                        <!-- কাস্টম কান্ট্রি সিলেক্টর কন্টেইনার (verify.js থেকে সরাসরি পরিচালিত হবে) -->
+                        <div id="vCountrySelectContainer" class="w-full relative"></div>
                         <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
                     </div>
                 </div>
@@ -283,7 +282,6 @@
                 if (overlay) overlay.style.display = 'flex';
                 document.getElementById('verifyStep1').style.display = 'block';
                 document.getElementById('verifyStep2').style.display = 'none';
-                if (typeof populateVerifyCountryDropdown === 'function') populateVerifyCountryDropdown();
             }
         });
     </script>
