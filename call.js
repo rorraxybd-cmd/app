@@ -1,10 +1,12 @@
-// call.js - Full-Duplex WebRTC Audio & Video Call with Incoming Ringing, Fullscreen Swap & Clean UI
+// call.js - Full-Duplex WebRTC Audio & Video Call (Zero-Drop ICE Queue, Camera Flip & Tap-to-Swap PiP)
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
 let callRingInterval = null, activeAudioCtx = null, callPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
 let peerConnection = null, localStream = null, remoteStream = null;
-let isMicMuted = false, isSpeakerOn = true, lastHandledSignalId = '';
+let isMicMuted = false, isSpeakerOn = true;
+let handledSignalIds = new Set();
 let isVideoSwapped = false;
+let currentFacingMode = 'user';
 let pendingIceCandidates = [];
 
 const DEFAULT_RTC_CONFIG = {
@@ -72,7 +74,7 @@ function stopCallDurationTimer() {
 // ক্লাউড থেকে ইনকামিং কল, আনসার ও ICE সিগন্যাল রিয়েল-টাইম পোলিং
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
-    callPollInterval = setInterval(checkIncomingCallSignals, 1800);
+    callPollInterval = setInterval(checkIncomingCallSignals, 1500);
 }
 
 async function checkIncomingCallSignals() {
@@ -87,19 +89,20 @@ async function checkIncomingCallSignals() {
         if (!Array.isArray(signals) || signals.length === 0) return;
 
         for (const sig of signals) {
-            const sigId = String(sig.id || `${sig.caller_phone}_${sig.status}_${sig.created_at || sig.timestamp}`);
-            if (sigId === lastHandledSignalId) continue;
+            const sigId = String(sig.id || `${sig.caller_phone}_${sig.status}_${sig.timestamp}`);
+            if (handledSignalIds.has(sigId)) continue;
 
             const callerPhone = normPhone(sig.caller_phone);
             if (!callerPhone || callerPhone === myPhone) continue;
 
-            // সিগন্যাল ১০ সেকেন্ডের বেশি পুরনো হলে ইনকামিং রিং ইগনোর করা
             const sigTime = sig.timestamp ? Number(sig.timestamp) : (sig.created_at ? new Date(sig.created_at).getTime() : Date.now());
-            if (sig.status === 'ringing' && Date.now() - sigTime > 25000) continue;
-
-            lastHandledSignalId = sigId;
+            if (Date.now() - sigTime > 25000) {
+                handledSignalIds.add(sigId);
+                continue;
+            }
 
             if (sig.status === 'ringing' && !isCallActive) {
+                handledSignalIds.add(sigId);
                 let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
                 const found = localContacts.find(c => normPhone(c.phone) === callerPhone);
                 activeCallPeer = {
@@ -123,6 +126,7 @@ async function checkIncomingCallSignals() {
                     });
                 }
             } else if (sig.status === 'answered' && isCallActive && peerConnection) {
+                handledSignalIds.add(sigId);
                 stopContinuousRinging();
                 startCallDurationTimer();
                 const ans = typeof sig.rtc_data === 'string' ? JSON.parse(sig.rtc_data) : sig.rtc_data;
@@ -133,7 +137,9 @@ async function checkIncomingCallSignals() {
                     }
                     pendingIceCandidates = [];
                 }
-            } else if (sig.status === 'ice' && isCallActive) {
+            } else if (sig.status === 'ice') {
+                // কল রিসিভ করার আগে আসা ICE ক্যান্ডিডেটগুলো নিরাপদে জমা রাখা
+                handledSignalIds.add(sigId);
                 const cand = typeof sig.rtc_data === 'string' ? JSON.parse(sig.rtc_data) : sig.rtc_data;
                 if (cand) {
                     if (peerConnection && peerConnection.remoteDescription) {
@@ -143,6 +149,7 @@ async function checkIncomingCallSignals() {
                     }
                 }
             } else if (sig.status === 'ended' && isCallActive) {
+                handledSignalIds.add(sigId);
                 cleanupCallLocalState("Call Ended");
             }
         }
@@ -154,7 +161,7 @@ async function setupLocalMedia(mode) {
         if (localStream) localStream.getTracks().forEach(t => t.stop());
         localStream = await navigator.mediaDevices.getUserMedia({
             audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-            video: mode === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false
+            video: mode === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: currentFacingMode } : false
         });
         applyVideoStreamsToDom();
         return localStream;
@@ -189,6 +196,21 @@ function applyVideoStreamsToDom() {
 function toggleSwapVideoScreens() {
     isVideoSwapped = !isVideoSwapped;
     applyVideoStreamsToDom();
+}
+
+// সামনের ও পেছনের ক্যামেরা পরিবর্তন (Flip Camera)
+async function flipVideoCamera() {
+    if (currentCallType !== 'video') {
+        await switchCallMode();
+        return;
+    }
+    currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+    const newStream = await setupLocalMedia('video');
+    if (newStream && peerConnection) {
+        const videoTrack = newStream.getVideoTracks()[0];
+        const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+        if (sender && videoTrack) sender.replaceTrack(videoTrack);
+    }
 }
 
 async function createPeerConnection(peerPhone) {
@@ -324,6 +346,7 @@ function cleanupCallLocalState(toastMsg) {
     isCallActive = false;
     window.pendingIncomingOffer = null;
     remoteStream = null;
+    pendingIceCandidates = [];
     if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
     if (peerConnection) { peerConnection.close(); peerConnection = null; }
     document.getElementById('whatsAppCallModal')?.remove();
@@ -358,7 +381,7 @@ function toggleMicMute() {
     isMicMuted = !isMicMuted;
     localStream.getAudioTracks().forEach(t => t.enabled = !isMicMuted);
     const btn = document.getElementById('muteMicBtn');
-    if (btn) btn.className = `w-13 h-13 w-[52px] h-[52px] rounded-full flex items-center justify-center cursor-pointer transition ${isMicMuted ? 'bg-red-500/30 text-red-400' : 'bg-white/15 text-white'}`;
+    if (btn) btn.className = `w-[52px] h-[52px] rounded-full flex items-center justify-center cursor-pointer transition ${isMicMuted ? 'bg-red-500/30 text-red-400' : 'bg-white/15 text-white'}`;
 }
 
 function toggleSpeaker() {
@@ -372,7 +395,15 @@ function toggleSpeaker() {
 
 async function switchCallMode() {
     currentCallType = currentCallType === 'audio' ? 'video' : 'audio';
-    await setupLocalMedia(currentCallType);
+    const newStream = await setupLocalMedia(currentCallType);
+    if (newStream && peerConnection) {
+        const videoTrack = newStream.getVideoTracks()[0];
+        if (videoTrack) {
+            const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+            if (sender) sender.replaceTrack(videoTrack);
+            else peerConnection.addTrack(videoTrack, newStream);
+        }
+    }
     const videoStreamsBox = document.getElementById('videoStreamsBox');
     const callerInfoBox = document.getElementById('callerInfoBox');
 
@@ -385,7 +416,7 @@ async function switchCallMode() {
     }
 }
 
-// আপনার নির্দেশ অনুযায়ী পরিচ্ছন্ন কল ইন্টারফেস (উপরে শুধু Calling স্ট্যাটাস, মাঝে লোগো ও নাম, ফুলস্ক্রিন ভিডিও ও সমান সাইজের বাটন)
+// পরিচ্ছন্ন কল ইন্টারফেস (উপরে শুধু Calling স্ট্যাটাস, মাঝে লোগো ও নাম, ফুলস্ক্রিন ভিডিও ও সমান সাইজের বাটন)
 function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     document.getElementById('whatsAppCallModal')?.remove();
     const initial = (peerName || 'U').trim().charAt(0).toUpperCase();
@@ -398,7 +429,7 @@ function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     modal.className = 'fixed inset-0 z-50 bg-[#030305] flex flex-col justify-between overflow-hidden select-none';
 
     modal.innerHTML = `
-        <!-- Top Status Only (No redundant badge or duplicate name) -->
+        <!-- Top Status Only -->
         <div class="w-full flex justify-center items-center z-30 pt-6 px-4 pointer-events-none">
             <span id="callStatusLabel" class="px-4 py-1.5 rounded-full bg-black/50 backdrop-blur-md text-xs font-semibold gold-gradient-text tracking-wider">${statusText}</span>
         </div>
@@ -423,14 +454,14 @@ function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
 
         <!-- Bottom Uniform Control Dock (All buttons exact same 52px size) -->
         <div class="w-full flex justify-center items-center z-30 pb-8 px-4 pointer-events-auto">
-            <div id="callControlButtons" class="flex items-center justify-center space-x-5 bg-black/60 backdrop-blur-md px-6 py-3.5 rounded-full border border-white/10 shadow-2xl">
+            <div id="callControlButtons" class="flex items-center justify-center space-x-4 bg-black/60 backdrop-blur-md px-5 py-3.5 rounded-full border border-white/10 shadow-2xl">
                 ${isIncoming ? `
                     <button type="button" onclick="endWhatsAppCall()" class="w-[52px] h-[52px] rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center cursor-pointer shadow-lg transition"><i class="fa-solid fa-phone-slash text-lg"></i></button>
                     <button type="button" onclick="acceptWhatsAppCall()" class="w-[52px] h-[52px] rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center cursor-pointer shadow-lg animate-bounce transition"><i class="fa-solid fa-phone text-lg"></i></button>
                 ` : `
                     <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-[52px] h-[52px] rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer transition"><i class="fa-solid fa-microphone text-lg"></i></button>
                     <button type="button" id="speakerBtn" onclick="toggleSpeaker()" class="w-[52px] h-[52px] rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer transition"><i class="fa-solid fa-volume-high text-lg"></i></button>
-                    <button type="button" onclick="switchCallMode()" class="w-[52px] h-[52px] rounded-full bg-white/15 hover:bg-white/25 text-amber-300 flex items-center justify-center cursor-pointer transition" title="Switch Audio/Video"><i class="fa-solid fa-video text-lg"></i></button>
+                    <button type="button" onclick="flipVideoCamera()" class="w-[52px] h-[52px] rounded-full bg-white/15 hover:bg-white/25 text-amber-300 flex items-center justify-center cursor-pointer transition" title="Flip Camera / Video"><i class="fa-solid fa-camera-rotate text-lg"></i></button>
                     <button type="button" onclick="endWhatsAppCall()" class="w-[52px] h-[52px] rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center cursor-pointer shadow-lg transition"><i class="fa-solid fa-phone-slash text-lg"></i></button>
                 `}
             </div>
@@ -448,7 +479,7 @@ function updateInCallButtons() {
     box.innerHTML = `
         <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-[52px] h-[52px] rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer transition"><i class="fa-solid fa-microphone text-lg"></i></button>
         <button type="button" id="speakerBtn" onclick="toggleSpeaker()" class="w-[52px] h-[52px] rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer transition"><i class="fa-solid fa-volume-high text-lg"></i></button>
-        <button type="button" onclick="switchCallMode()" class="w-[52px] h-[52px] rounded-full bg-white/15 hover:bg-white/25 text-amber-300 flex items-center justify-center cursor-pointer transition" title="Switch Audio/Video"><i class="fa-solid fa-video text-lg"></i></button>
+        <button type="button" onclick="flipVideoCamera()" class="w-[52px] h-[52px] rounded-full bg-white/15 hover:bg-white/25 text-amber-300 flex items-center justify-center cursor-pointer transition" title="Flip Camera / Video"><i class="fa-solid fa-camera-rotate text-lg"></i></button>
         <button type="button" onclick="endWhatsAppCall()" class="w-[52px] h-[52px] rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center cursor-pointer shadow-lg transition"><i class="fa-solid fa-phone-slash text-lg"></i></button>
     `;
 }
