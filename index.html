@@ -112,7 +112,7 @@
         </div>
 
         <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full min-h-0 z-10 relative w-full" style="background-color: var(--bg-main);">
-            <!-- Active Chat Header (Action buttons handled cleanly by discover.js without duplication) -->
+            <!-- Active Chat Header -->
             <div id="activeChatHeader" class="theme-surface px-3 py-2.5 hidden items-center justify-between shrink-0 z-20 border-b border-white/5 w-full">
                 <div class="flex items-center space-x-2.5 min-w-0 flex-1">
                     <button onclick="backToSidebarMobile()" class="md:hidden w-8 h-8 rounded-full theme-card flex items-center justify-center shrink-0 cursor-pointer">
@@ -129,7 +129,7 @@
             <!-- Messages Scroll Area -->
             <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto p-3 space-y-2.5 flex flex-col justify-start w-full"></div>
 
-            <!-- Mobile-Fitted Unified Input Bar (Attach + Text + Voice Mic + Send all inside cleanly) -->
+            <!-- Mobile-Fitted Unified Input Bar -->
             <div id="chatInputBar" class="theme-surface px-2.5 py-2 pb-safe hidden items-center shrink-0 z-20 border-t border-white/5 w-full"></div>
         </div>
     </div>
@@ -165,12 +165,15 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- Scripts -->
-    <script src="/discover.js?v=33.0"></script>
-    <script src="/verify.js?v=33.0"></script>
-    <script src="/call.js?v=33.0"></script>
-    <script src="/message.js?v=33.0"></script>
+    <!-- Scripts (Updated to v=34.0 to clear old cache) -->
+    <script src="/discover.js?v=34.0"></script>
+    <script src="/verify.js?v=34.0"></script>
+    <script src="/call.js?v=34.0"></script>
+    <script src="/message.js?v=34.0"></script>
     <script>
+        let activeTabName = 'contact';
+        let contactSyncTimer = null;
+
         function normPhoneNum(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
 
         function backToSidebarMobile() {
@@ -202,6 +205,7 @@
             }
         }
 
+        // ক্লাউড ডাটাবেজ থেকে সব ভেরিফাইড ইউজারকে কন্টাক্ট লিস্টে অটো সিঙ্ক করা
         async function fetchCloudContacts() {
             try {
                 const res = await fetch('/api/chat?action=get_global_users');
@@ -209,9 +213,22 @@
                     const data = await res.json();
                     if (data.success && Array.isArray(data.users)) {
                         let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+                        const myProfiles = JSON.parse(localStorage.getItem('message_profiles_v18') || '[{}]');
+                        const myPhone = normPhoneNum(myProfiles[0]?.phone);
+
                         data.users.forEach(u => {
                             const phone = normPhoneNum(u.phone_number);
                             if (!phone) return;
+
+                            // নিজের প্রোফাইলও ক্লাউডের লেটেস্ট তথ্যের সাথে সিঙ্ক রাখা
+                            if (phone === myPhone && myProfiles[0]) {
+                                myProfiles[0].name = u.display_name || myProfiles[0].name;
+                                myProfiles[0].username = u.username || myProfiles[0].username;
+                                if (u.avatar_url) myProfiles[0].avatar = u.avatar_url;
+                                localStorage.setItem('message_profiles_v18', JSON.stringify(myProfiles));
+                                if (typeof savedProfiles !== 'undefined') savedProfiles[0] = myProfiles[0];
+                            }
+
                             const existingIndex = localContacts.findIndex(c => normPhoneNum(c.phone) === phone);
                             if (existingIndex === -1) {
                                 localContacts.push({
@@ -225,18 +242,24 @@
                             } else {
                                 localContacts[existingIndex].name = u.display_name || localContacts[existingIndex].name;
                                 localContacts[existingIndex].username = u.username || localContacts[existingIndex].username;
-                                localContacts[existingIndex].avatar = u.avatar_url || localContacts[existingIndex].avatar;
+                                if (u.avatar_url) localContacts[existingIndex].avatar = u.avatar_url;
                                 localContacts[existingIndex].isOnline = u.is_online === 1;
                                 localContacts[existingIndex].appUser = true;
                             }
                         });
                         localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
+
+                        // ইউজার যদি বর্তমানে কন্টাক্ট বা ডিসকভার ট্যাবে থাকে এবং সার্চ বক্সে টাইপ না করে, তবে UI রিফ্রেশ করা
+                        if (activeTabName === 'contact' && !document.getElementById('contactSearchInput')?.value) {
+                            if (typeof renderContactsView === 'function') renderContactsView();
+                        }
                     }
                 }
             } catch (e) {}
         }
 
         function switchTab(tabName) {
+            activeTabName = tabName;
             const tabs = ['Profile', 'Discover', 'Contact', 'Chat', 'Calls'];
             tabs.forEach(t => {
                 const icon = document.getElementById('icon' + t);
@@ -258,9 +281,10 @@
             } else if (tabName === 'discover') {
                 if (typeof selectedDiscoverCountry !== 'undefined') selectedDiscoverCountry = null;
                 if (typeof renderDiscoverDirectory === 'function') renderDiscoverDirectory();
+                fetchCloudContacts();
             } else if (tabName === 'contact') {
                 if (typeof renderContactsView === 'function') renderContactsView();
-                fetchCloudContacts().then(() => { if (typeof renderContactsView === 'function') renderContactsView(); });
+                fetchCloudContacts();
             } else if (tabName === 'chat') {
                 if (typeof renderChatHistoryList === 'function') renderChatHistoryList();
             } else if (tabName === 'calls') {
@@ -296,21 +320,33 @@
             }
         }
 
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            }
+        }
+
         function initAppAfterVerification() {
             const overlay = document.getElementById('verifyOverlay');
             if (overlay) overlay.style.display = 'none';
             setupChatInputUI();
+            registerServiceWorker();
             requestPushNotificationPermission();
             if (typeof startIncomingCallPolling === 'function') startIncomingCallPolling();
             if (typeof startGlobalMessageSync === 'function') startGlobalMessageSync();
+
             fetchCloudContacts().then(() => {
                 switchTab('contact');
                 handleDirectUsernameRoute();
             });
+
+            if (contactSyncTimer) clearInterval(contactSyncTimer);
+            contactSyncTimer = setInterval(fetchCloudContacts, 10000);
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             setupChatInputUI();
+            registerServiceWorker();
             const overlay = document.getElementById('verifyOverlay');
             const savedTheme = JSON.parse(localStorage.getItem('message_profiles_v18') || '[{}]')[0]?.themeColor || 'emerald';
             document.documentElement.setAttribute('data-theme', savedTheme);
