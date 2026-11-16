@@ -27,15 +27,15 @@
         .brand-title-font { font-family: 'Cinzel', serif; letter-spacing: 0.16em; }
         .gold-gradient-text { background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .pink-gradient-text { background: linear-gradient(135deg, #EC4899 0%, #ff2e7e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .verify-card { background: #030305; border-radius: 24px; padding: 32px 24px; max-width: 440px; width: 100%; border: 1px solid rgba(245, 208, 97, 0.1); }
+        .verify-card { background: #030305; border-radius: 24px; padding: 32px 24px; max-width: 440px; width: 100%; }
         .gold-btn { background: var(--gold-gradient); color: #030305; font-weight: 700; transition: transform 0.2s; }
         .gold-btn:hover { transform: scale(1.02); }
         .theme-surface { background-color: var(--surface); }
         .theme-card { background-color: var(--card); }
-        .theme-input { background-color: rgba(255, 255, 255, 0.02); border: 1px solid rgba(245, 208, 97, 0.1); color: #fff; }
+        .theme-input { background-color: rgba(255, 255, 255, 0.03); color: #fff; }
         .header-logo-clean { width: 42px; height: 42px; object-fit: cover; background: transparent !important; border-radius: 50%; }
-        .chat-bubble-me { background: linear-gradient(135deg, #0f2e1a 0%, #081a10 100%); border: 1px solid rgba(46, 213, 115, 0.2); }
-        .chat-bubble-them { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(245, 208, 97, 0.1); }
+        .chat-bubble-me { background: linear-gradient(135deg, #0f2e1a 0%, #081a10 100%); }
+        .chat-bubble-them { background: rgba(255, 255, 255, 0.04); }
         .pink-btn { background: linear-gradient(135deg, #EC4899 0%, #be185d 100%); color: #ffffff; }
     </style>
 </head>
@@ -52,17 +52,17 @@
                 </div>
                 <div class="space-y-1.5 pt-2">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">FULL NAME <span class="text-pink-500">*</span></label>
-                    <input type="text" id="vFullName" placeholder="Enter your full name" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
+                    <input type="text" id="vFullName" placeholder="Enter your full name" class="w-full theme-input text-xs px-4 py-3.5 rounded-2xl text-white placeholder-gray-500 focus:outline-none">
                 </div>
                 <div class="space-y-1.5">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-pink-500">*</span></label>
                     <div class="flex flex-col space-y-2 w-full">
-                        <!-- কাস্টম কান্ট্রি সিলেক্টর কন্টেইনার (verify.js থেকে সরাসরি পরিচালিত হবে) -->
+                        <!-- Custom Country Selector Container -->
                         <div id="vCountrySelectContainer" class="w-full relative"></div>
-                        <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
+                        <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-xs px-4 py-3.5 rounded-2xl text-white placeholder-gray-500 focus:outline-none">
                     </div>
                 </div>
-                <button onclick="submitVerifyStep1()" class="w-full py-4 gold-btn text-xs rounded-xl cursor-pointer mt-2 font-extrabold flex items-center justify-center space-x-2 uppercase tracking-wider shadow-lg">
+                <button onclick="submitVerifyStep1()" class="w-full py-4 gold-btn text-xs rounded-2xl cursor-pointer mt-2 font-extrabold flex items-center justify-center space-x-2 uppercase tracking-wider shadow-lg">
                     <span>CONTINUE</span> <i class="fa-solid fa-circle-check text-pink-600 text-sm"></i>
                 </button>
             </div>
@@ -72,9 +72,9 @@
                     <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="mx-auto mb-2 rounded-full" style="width: 64px; height: 64px; object-fit: cover;">
                     <h2 class="brand-title-font text-2xl font-bold gold-gradient-text">Verify Code</h2>
                     <label class="text-[11px] font-bold tracking-wider text-white block uppercase">AUTO-FILLED CODE <span class="text-emerald-400">✓</span></label>
-                    <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-2xl font-extrabold tracking-[12px] px-4 py-4 rounded-xl text-white focus:outline-none border border-amber-400/20">
+                    <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-2xl font-extrabold tracking-[12px] px-4 py-4 rounded-2xl text-white focus:outline-none">
                 </div>
-                <button onclick="submitVerifyStep2()" class="w-full py-4 gold-btn text-xs rounded-xl cursor-pointer mt-3 font-extrabold flex items-center justify-center space-x-2 uppercase tracking-wider shadow-lg">
+                <button onclick="submitVerifyStep2()" class="w-full py-4 gold-btn text-xs rounded-2xl cursor-pointer mt-3 font-extrabold flex items-center justify-center space-x-2 uppercase tracking-wider shadow-lg">
                     <span>VERIFY & START</span> <i class="fa-solid fa-circle-check text-pink-600 text-sm"></i>
                 </button>
             </div>
@@ -82,7 +82,7 @@
     </div>
 
     <!-- Header Bar -->
-    <header class="theme-surface px-4 py-3 flex justify-between items-center shrink-0 z-30 border-b border-white/5">
+    <header class="theme-surface px-4 py-3 flex justify-between items-center shrink-0 z-30">
         <div class="flex items-center space-x-3">
             <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean">
             <div>
@@ -104,9 +104,9 @@
         </div>
 
         <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full min-h-0 z-10 relative" style="background-color: var(--bg-main);">
-            <div id="activeChatHeader" class="theme-surface px-4 py-3 hidden items-center justify-between shrink-0 border-b border-white/5 z-20">
+            <div id="activeChatHeader" class="theme-surface px-4 py-3 hidden items-center justify-between shrink-0 z-20">
                 <div class="flex items-center space-x-3">
-                    <button onclick="backToSidebarMobile()" class="md:hidden p-1.5 rounded-xl theme-card cursor-pointer">
+                    <button onclick="backToSidebarMobile()" class="md:hidden p-1.5 rounded-2xl theme-card cursor-pointer">
                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                     </button>
                     <div class="flex items-center space-x-3">
@@ -118,12 +118,12 @@
                 </div>
             </div>
             <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 flex flex-col justify-start"></div>
-            <div id="chatInputBar" class="theme-surface px-3 py-2.5 hidden items-center shrink-0 z-20 border-t border-white/5"></div>
+            <div id="chatInputBar" class="theme-surface px-3 py-2.5 hidden items-center shrink-0 z-20"></div>
         </div>
     </div>
 
     <!-- Bottom Navigation Bar (5 Tabs) -->
-    <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40 border-t border-white/5">
+    <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40">
         <div class="flex items-center justify-around w-full px-3">
             <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
                 <svg id="iconProfile" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
@@ -148,7 +148,7 @@
         </div>
     </nav>
     <!-- Toast Banner -->
-    <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 theme-card text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden items-center space-x-2 border border-amber-400/20">
+    <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 theme-card text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden items-center space-x-2">
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
     <!-- Scripts -->
@@ -168,11 +168,10 @@
             if (chatHeader && !document.getElementById('headerCallActions')) {
                 const callBtns = document.createElement('div');
                 callBtns.id = 'headerCallActions';
-                callBtns.className = 'flex items-center space-x-2';
+                callBtns.className = 'flex items-center space-x-3';
                 callBtns.innerHTML = `
-                    <button onclick="startWhatsAppCall('audio')" class="p-2 theme-card rounded-xl border border-amber-400/20 text-amber-300 cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
-                    <button onclick="startWhatsAppCall('video')" class="p-2 theme-card rounded-xl border border-amber-400/20 text-amber-300 cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
-                    <button onclick="confirmClearChatHistory()" class="p-2 theme-card rounded-xl border border-red-400/20 text-red-400 cursor-pointer" title="Clear Chat"><i class="fa-solid fa-trash text-xs"></i></button>
+                    <button onclick="startWhatsAppCall('audio')" class="text-amber-300 hover:text-white p-2 cursor-pointer transition" title="Audio Call"><i class="fa-solid fa-phone text-sm"></i></button>
+                    <button onclick="startWhatsAppCall('video')" class="text-amber-300 hover:text-white p-2 cursor-pointer transition" title="Video Call"><i class="fa-solid fa-video text-sm"></i></button>
                 `;
                 chatHeader.appendChild(callBtns);
             }
@@ -180,13 +179,13 @@
             const chatInputBar = document.getElementById('chatInputBar');
             if (chatInputBar && chatInputBar.innerHTML.trim() === '') {
                 chatInputBar.innerHTML = `
-                    <div class="flex items-center space-x-2 w-full">
-                        <label class="p-2.5 theme-card rounded-xl border border-amber-400/20 text-amber-300 cursor-pointer shrink-0">
-                            <i class="fa-solid fa-paperclip text-sm"></i>
+                    <div class="flex items-center space-x-2 w-full px-2 py-1">
+                        <label class="text-amber-300 hover:text-white p-2.5 cursor-pointer shrink-0">
+                            <i class="fa-solid fa-paperclip text-base"></i>
                             <input type="file" multiple class="hidden" onchange="handleUniversalFileUpload(this)">
                         </label>
-                        <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendTextMessage()" class="flex-1 theme-input text-xs px-4 py-3 rounded-xl text-white focus:outline-none border border-amber-400/20">
-                        <button id="sendBtn" onclick="sendTextMessage()" class="p-3 gold-btn rounded-xl flex items-center justify-center cursor-pointer shrink-0">
+                        <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendTextMessage()" class="flex-1 theme-input text-xs px-4 py-3 rounded-2xl text-white focus:outline-none">
+                        <button id="sendBtn" onclick="sendTextMessage()" class="p-3 gold-btn rounded-2xl flex items-center justify-center cursor-pointer shrink-0 shadow-md">
                             <i class="fa-solid fa-paper-plane text-xs"></i>
                         </button>
                     </div>
@@ -205,7 +204,7 @@
                             if (!phone) return;
                             const exists = localContacts.find(c => String(c.phone || '').replace(/[\s\-\(\)]/g, '') === phone);
                             if (!exists) {
-                                localContacts.push({ name: u.display_name || phone, phone: phone, avatar: u.avatar_url || '', isOnline: u.is_online === 1, appUser: true });
+                                localContacts.push({ name: u.display_name || phone, phone: phone, username: u.username || ('user_' + Math.floor(1000 + Math.random() * 9000)), avatar: u.avatar_url || '', isOnline: u.is_online === 1, appUser: true });
                             } else {
                                 exists.name = u.display_name || exists.name;
                                 exists.avatar = u.avatar_url || exists.avatar;
