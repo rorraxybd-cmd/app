@@ -153,7 +153,6 @@ export async function onRequest(context) {
                 const { call_type, status, rtc_data, timestamp } = body;
 
                 const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
-                // ICE candidate গুলো আলাদা ID তে সেভ হবে যাতে ওভাররাইট না হয়
                 const sigId = status === 'ice'
                     ? `call_ice_${receiver_phone}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
                     : `call_${receiver_phone}_${status}`;
@@ -278,6 +277,7 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true, messages }, corsHeaders);
             }
 
+            // ৯. সিঙ্গেল মেসেজ ডিলিট করা
             case 'delete_message': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
@@ -289,6 +289,50 @@ export async function onRequest(context) {
                 ).bind(message_id).run();
 
                 return jsonResponse({ success: true }, corsHeaders);
+            }
+
+            // ----------------------------------------------------
+            // ১০. অ্যাডমিন প্যানেল এন্ডপয়েন্টস (Admin Endpoints)
+            // ----------------------------------------------------
+            
+            // অ্যাডমিন: সব রেজিস্টার্ড ইউজারের তালিকা দেখা
+            case 'admin_get_all_users': {
+                if (request.method !== 'GET') break;
+                const { results } = await env.chat.prepare(
+                    "SELECT id, phone_number, display_name, username, avatar_url, is_verified, is_online, updated_at FROM chat_master_system WHERE record_type = 'user' ORDER BY updated_at DESC"
+                ).all();
+                return jsonResponse({ success: true, users: results || [] }, corsHeaders);
+            }
+
+            // অ্যাডমিন: নির্দিষ্ট ইউজার বা ফেক অ্যাকাউন্ট ডিলিট করা
+            case 'admin_delete_user': {
+                if (request.method !== 'POST') break;
+                const body = await request.json();
+                const phone = cleanPhone(body.phone || body.phone_number);
+                if (!phone) return jsonResponse({ success: false, error: 'Phone required' }, corsHeaders, 400);
+
+                await env.chat.prepare(
+                    "DELETE FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ?)"
+                ).bind(phone, '+' + phone).run();
+
+                return jsonResponse({ success: true, message: 'User deleted successfully' }, corsHeaders);
+            }
+
+            // অ্যাডমিন: এক ক্লিকে ডাটাবেজের সমস্ত ডুপ্লিকেট ইউজার চিরতরে মুছে ফেলা
+            case 'admin_clean_duplicate_users': {
+                if (request.method !== 'POST') break;
+                await env.chat.prepare(
+                    `DELETE FROM chat_master_system 
+                     WHERE record_type = 'user' 
+                     AND rowid NOT IN (
+                         SELECT MAX(rowid) 
+                         FROM chat_master_system 
+                         WHERE record_type = 'user' 
+                         GROUP BY phone_number
+                     )`
+                ).run();
+
+                return jsonResponse({ success: true, message: 'All duplicate users cleaned successfully' }, corsHeaders);
             }
 
             default:
