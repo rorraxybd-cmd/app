@@ -151,23 +151,30 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
     <!-- Scripts -->
-    <script src="/discover.js?v=27.0"></script>
-    <script src="/verify.js?v=27.0"></script>
-    <script src="/call.js?v=27.0"></script>
-    <script src="/message.js?v=27.0"></script>
+    <script src="/discover.js?v=28.0"></script>
+    <script src="/verify.js?v=28.0"></script>
+    <script src="/call.js?v=28.0"></script>
+    <script src="/message.js?v=28.0"></script>
     <script>
+        function normPhoneNum(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
+
         function backToSidebarMobile() {
             const workspace = document.getElementById('workspaceSection');
             if (workspace) { workspace.classList.add('hidden'); workspace.style.display = ''; }
             document.getElementById('sidebarSection')?.classList.remove('hidden');
             document.getElementById('bottomNavBar')?.classList.remove('hidden');
         }
+
         function setupChatInputUI() {
             const chatHeader = document.getElementById('activeChatHeader');
-            if (chatHeader && !document.getElementById('headerCallActions')) {
+            if (chatHeader) {
+                // ডুপ্লিকেট রোধ করতে পুরনো কল অ্যাকশন থাকলে রিমুভ করে দেওয়া হলো
+                const existingCallActions = document.getElementById('headerCallActions');
+                if (existingCallActions) existingCallActions.remove();
+
                 const callBtns = document.createElement('div');
                 callBtns.id = 'headerCallActions';
-                callBtns.className = 'flex items-center space-x-3';
+                callBtns.className = 'flex items-center space-x-3 ml-auto';
                 callBtns.innerHTML = `
                     <button onclick="startWhatsAppCall('audio')" class="text-amber-300 hover:text-white p-2 cursor-pointer transition" title="Audio Call"><i class="fa-solid fa-phone text-sm"></i></button>
                     <button onclick="startWhatsAppCall('video')" class="text-amber-300 hover:text-white p-2 cursor-pointer transition" title="Video Call"><i class="fa-solid fa-video text-sm"></i></button>
@@ -191,6 +198,7 @@
                 `;
             }
         }
+
         async function fetchCloudContacts() {
             try {
                 const res = await fetch('/api/chat?action=get_global_users');
@@ -200,11 +208,11 @@
                         let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
                         
                         data.users.forEach(u => {
-                            const phone = String(u.phone_number || '').replace(/[\s\-\(\)]/g, '');
+                            const phone = normPhoneNum(u.phone_number);
                             if (!phone) return;
                             
-                            // Check existing index by normalized phone number to avoid duplicates
-                            const existingIndex = localContacts.findIndex(c => String(c.phone || '').replace(/[\s\-\(\)]/g, '') === phone);
+                            // নিখুঁতভাবে ফোন নম্বর মিলিয়ে ডুপ্লিকেট এন্ট্রি চিরতরে বন্ধ করা হলো
+                            const existingIndex = localContacts.findIndex(c => normPhoneNum(c.phone) === phone);
                             if (existingIndex === -1) {
                                 localContacts.push({ 
                                     name: u.display_name || phone, 
@@ -259,6 +267,7 @@
                 if (typeof renderCallsHistoryView === 'function') renderCallsHistoryView();
             }
         }
+
         function showToast(text, isError = false) {
             const banner = document.getElementById('toastBanner');
             const toastText = document.getElementById('toastText');
@@ -278,6 +287,7 @@
             if (typeof startIncomingCallPolling === 'function') startIncomingCallPolling();
             fetchCloudContacts().then(() => { switchTab('contact'); });
         }
+
         window.addEventListener('DOMContentLoaded', () => {
             setupChatInputUI();
             const overlay = document.getElementById('verifyOverlay');
