@@ -112,7 +112,7 @@
         </div>
 
         <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full min-h-0 z-10 relative w-full" style="background-color: var(--bg-main);">
-            <!-- Active Chat Header (Clean, Single Set of Action Buttons + All Delete) -->
+            <!-- Active Chat Header (Action buttons handled cleanly by discover.js without duplication) -->
             <div id="activeChatHeader" class="theme-surface px-3 py-2.5 hidden items-center justify-between shrink-0 z-20 border-b border-white/5 w-full">
                 <div class="flex items-center space-x-2.5 min-w-0 flex-1">
                     <button onclick="backToSidebarMobile()" class="md:hidden w-8 h-8 rounded-full theme-card flex items-center justify-center shrink-0 cursor-pointer">
@@ -123,17 +123,6 @@
                         <span id="activeChatTitle" class="font-semibold text-white text-xs tracking-wide block truncate">Select a contact</span>
                         <span id="activeChatStatus" class="text-[10px] text-emerald-400 block truncate">Online</span>
                     </div>
-                </div>
-                <div id="chatHeaderControls" class="flex items-center space-x-1 shrink-0">
-                    <button onclick="startWhatsAppCall('audio')" class="w-9 h-9 rounded-full hover:bg-white/10 text-amber-300 flex items-center justify-center cursor-pointer transition" title="Audio Call">
-                        <i class="fa-solid fa-phone text-sm"></i>
-                    </button>
-                    <button onclick="startWhatsAppCall('video')" class="w-9 h-9 rounded-full hover:bg-white/10 text-amber-300 flex items-center justify-center cursor-pointer transition" title="Video Call">
-                        <i class="fa-solid fa-video text-sm"></i>
-                    </button>
-                    <button onclick="deleteAllChatMessages()" class="w-9 h-9 rounded-full hover:bg-red-500/20 text-red-400 flex items-center justify-center cursor-pointer transition" title="Delete All Messages">
-                        <i class="fa-solid fa-trash-can text-sm"></i>
-                    </button>
                 </div>
             </div>
 
@@ -177,10 +166,10 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/discover.js?v=32.0"></script>
-    <script src="/verify.js?v=32.0"></script>
-    <script src="/call.js?v=32.0"></script>
-    <script src="/message.js?v=32.0"></script>
+    <script src="/discover.js?v=33.0"></script>
+    <script src="/verify.js?v=33.0"></script>
+    <script src="/call.js?v=33.0"></script>
+    <script src="/message.js?v=33.0"></script>
     <script>
         function normPhoneNum(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
 
