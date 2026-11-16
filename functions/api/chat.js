@@ -14,71 +14,221 @@ export async function onRequest(context) {
         return new Response(null, { headers: corsHeaders });
     }
 
+    const cleanPhone = (p) => String(p || '').replace(/[\s\-\(\)\+]/g, '');
+
     try {
         switch (action) {
+            // ১. সব ইউজার কন্টাক্ট লিস্টে অটো-সিঙ্ক করার জন্য (ডুপ্লিকেট মুক্ত)
             case 'get_global_users': {
                 if (request.method !== 'GET') break;
-                // is_verified ফিল্টারটি উঠিয়ে দেওয়া হয়েছে যাতে সব রেজিস্টার্ড ইউজার কন্টাক্ট লিস্টে শো করে
                 const { results } = await env.chat.prepare(
-                    "SELECT phone_number, display_name, username, avatar_url, is_online, is_live FROM chat_master_system WHERE record_type = 'user' ORDER BY updated_at DESC LIMIT 500"
+                    "SELECT phone_number, display_name, username, avatar_url, is_online, is_live FROM chat_master_system WHERE record_type = 'user' ORDER BY updated_at DESC LIMIT 1000"
                 ).all();
-                return jsonResponse({ success: true, users: results || [] }, corsHeaders);
+
+                // একই নাম্বারে পুরনো ডুপ্লিকেট থাকলে শুধু লেটেস্টটি ফিল্টার করে পাঠানো
+                const uniqueMap = new Map();
+                (results || []).forEach(u => {
+                    const p = cleanPhone(u.phone_number);
+                    if (p && !uniqueMap.has(p)) {
+                        uniqueMap.set(p, { ...u, phone_number: p });
+                    }
+                });
+
+                return jsonResponse({ success: true, users: Array.from(uniqueMap.values()) }, corsHeaders);
             }
 
+            // ২. নির্দিষ্ট ফোন নাম্বারে আগে থেকে অ্যাকাউন্ট আছে কি না তা চেক করা (Strict 1 Account Per Number)
             case 'get_user_profile': {
                 if (request.method !== 'GET') break;
-                const phone = url.searchParams.get('phone');
+                const phone = cleanPhone(url.searchParams.get('phone'));
+                if (!phone) return jsonResponse({ success: false, user: null }, corsHeaders);
+
                 const user = await env.chat.prepare(
-                    "SELECT display_name, username, avatar_url, is_live FROM chat_master_system WHERE record_type = 'user' AND phone_number = ?"
-                ).bind(phone).first();
+                    "SELECT phone_number, display_name, username, avatar_url, is_live, is_verified FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ?)"
+                ).bind(phone, '+' + phone).first();
+
                 return jsonResponse({ success: true, user: user || null }, corsHeaders);
             }
 
+            // ৩. ওটিপি কোড পাঠানো ও ডাটাবেজে একক অ্যাকাউন্ট লক করা
+            case 'send_magic_link': {
+                if (request.method !== 'POST') break;
+                const body = await request.json();
+                const phone = cleanPhone(body.phone);
+                const display_name = (body.display_name || 'User').trim();
+                const magic_code = String(body.magic_code || '');
+                const clientIp = (body.ip && body.ip !== 'Unknown') ? body.ip : (request.headers.get('CF-Connecting-IP') || 'Unknown');
+
+                if (!phone) return jsonResponse({ success: false, error: 'Phone required' }, corsHeaders, 400);
+
+                // চেক করা এই নাম্বারে আগে থেকেই কোনো অ্যাকাউন্ট আছে কি না
+                const existing = await env.chat.prepare(
+                    "SELECT id, display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ?) LIMIT 1"
+                ).bind(phone, '+' + phone).first();
+
+                const userId = 'user_' + phone;
+                const finalUsername = existing?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
+                const finalName = existing?.display_name || display_name;
+                const finalAvatar = existing?.avatar_url || '';
+
+                await env.chat.prepare(
+                    `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, username, avatar_url, magic_code, ip_address, is_verified, is_online, updated_at) 
+                     VALUES (?, 'user', ?, ?, ?, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)
+                     ON CONFLICT(id) DO UPDATE SET 
+                        phone_number = excluded.phone_number,
+                        magic_code = excluded.magic_code,
+                        ip_address = excluded.ip_address,
+                        is_online = 1,
+                        updated_at = CURRENT_TIMESTAMP`
+                ).bind(userId, phone, finalName, finalUsername, finalAvatar, magic_code, clientIp).run();
+
+                return jsonResponse({
+                    success: true,
+                    already_exists: !!existing,
+                    user: {
+                        phone_number: phone,
+                        display_name: finalName,
+                        username: finalUsername,
+                        avatar_url: finalAvatar
+                    }
+                }, corsHeaders);
+            }
+
+            // ৪. ভেরিফাই বা প্রোফাইল আপডেট (এক নাম্বারে কখনোই দ্বিতীয় অ্যাকাউন্ট হবে না)
+            case 'register_or_update_user':
+            case 'update_profile': {
+                if (request.method !== 'POST') break;
+                const body = await request.json();
+                const phone = cleanPhone(body.phone || body.phone_number);
+                if (!phone) return jsonResponse({ success: false, error: 'Phone required' }, corsHeaders, 400);
+
+                const userId = 'user_' + phone;
+                const existing = await env.chat.prepare(
+                    "SELECT display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (id = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
+                ).bind(userId, phone, '+' + phone).first();
+
+                const isProfileEdit = body.is_edit === true;
+                const finalName = isProfileEdit
+                    ? (body.name || body.display_name || existing?.display_name || 'User')
+                    : (existing?.display_name || body.name || body.display_name || 'User');
+
+                const finalUsername = isProfileEdit
+                    ? (body.username || existing?.username || ('user_' + Math.floor(1000 + Math.random() * 9000)))
+                    : (existing?.username || body.username || ('user_' + Math.floor(1000 + Math.random() * 9000)));
+
+                const finalAvatar = (body.avatar !== undefined && body.avatar !== '')
+                    ? body.avatar
+                    : (body.avatar_url || existing?.avatar_url || '');
+
+                await env.chat.prepare(
+                    `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, username, avatar_url, is_verified, is_online, updated_at) 
+                     VALUES (?, 'user', ?, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)
+                     ON CONFLICT(id) DO UPDATE SET 
+                        phone_number = excluded.phone_number,
+                        display_name = excluded.display_name,
+                        username = excluded.username,
+                        avatar_url = excluded.avatar_url,
+                        is_verified = 1,
+                        is_online = 1,
+                        updated_at = CURRENT_TIMESTAMP`
+                ).bind(userId, phone, finalName, finalUsername, finalAvatar).run();
+
+                return jsonResponse({
+                    success: true,
+                    user: {
+                        phone_number: phone,
+                        display_name: finalName,
+                        username: finalUsername,
+                        avatar_url: finalAvatar
+                    }
+                }, corsHeaders);
+            }
+
+            // ৫. রিয়েল-টাইম কল সিগন্যাল পাঠানো (WebRTC Offer, Answer, ICE, Ended সহ)
             case 'send_call_signal': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
-                const { caller_phone, receiver_phone, call_type, status } = body;
-                const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-                const callId = 'call_' + receiver_phone;
-                
+                const caller_phone = cleanPhone(body.caller_phone);
+                const receiver_phone = cleanPhone(body.receiver_phone);
+                const { call_type, status, rtc_data, timestamp } = body;
+
+                const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+                // ICE candidate গুলো আলাদা ID তে সেভ হবে যাতে ওভাররাইট না হয়
+                const sigId = status === 'ice'
+                    ? `call_ice_${receiver_phone}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
+                    : `call_${receiver_phone}_${status}`;
+
+                const payloadJson = JSON.stringify({
+                    call_type: call_type || 'audio',
+                    status: status || 'ringing',
+                    rtc_data: rtc_data || null,
+                    timestamp: timestamp || Date.now()
+                });
+
                 await env.chat.prepare(
-                    `INSERT OR REPLACE INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, is_verified, is_online, expires_at, updated_at) 
-                     VALUES (?, 'call_signal', ?, ?, ?, ?, 1, 1, ?, CURRENT_TIMESTAMP)`
-                ).bind(callId, caller_phone, receiver_phone, caller_phone, `${call_type}:${status}`, expiresAt).run();
+                    `INSERT OR REPLACE INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, message_text, is_verified, is_online, expires_at, updated_at) 
+                     VALUES (?, 'call_signal', ?, ?, ?, ?, ?, 1, 1, ?, CURRENT_TIMESTAMP)`
+                ).bind(sigId, caller_phone, receiver_phone, caller_phone, `${call_type}:${status}`, payloadJson, expiresAt).run();
 
                 return jsonResponse({ success: true }, corsHeaders);
             }
 
+            // ৬. রিসিভারের জন্য ইনকামিং কল ও WebRTC সিগন্যাল চেক করা
+            case 'get_call_signals':
             case 'check_call_signal': {
                 if (request.method !== 'GET') break;
-                const phone = url.searchParams.get('phone');
-                const res = await env.chat.prepare(
-                    "SELECT display_name, magic_code FROM chat_master_system WHERE record_type = 'call_signal' AND recipient_phone = ?"
-                ).bind(phone).first();
+                const receiverPhone = cleanPhone(url.searchParams.get('receiver_phone') || url.searchParams.get('phone'));
+                if (!receiverPhone) return jsonResponse({ success: true, signals: [] }, corsHeaders);
 
-                return jsonResponse({ success: true, signal: res || null }, corsHeaders);
+                const { results } = await env.chat.prepare(
+                    `SELECT id, phone_number as caller_phone, recipient_phone, magic_code, message_text, created_at 
+                     FROM chat_master_system 
+                     WHERE record_type = 'call_signal' 
+                     AND recipient_phone = ? 
+                     AND datetime(expires_at) > datetime('now')
+                     ORDER BY updated_at ASC LIMIT 25`
+                ).bind(receiverPhone).all();
+
+                const signals = (results || []).map(row => {
+                    let parsed = {};
+                    try { parsed = JSON.parse(row.message_text || '{}'); } catch (e) {}
+                    const [cType, cStatus] = String(row.magic_code || 'audio:ringing').split(':');
+                    return {
+                        id: row.id,
+                        caller_phone: cleanPhone(row.caller_phone),
+                        receiver_phone: cleanPhone(row.recipient_phone),
+                        call_type: parsed.call_type || cType || 'audio',
+                        status: parsed.status || cStatus || 'ringing',
+                        rtc_data: parsed.rtc_data || null,
+                        timestamp: parsed.timestamp || (row.created_at ? new Date(row.created_at).getTime() : Date.now())
+                    };
+                });
+
+                return jsonResponse({ success: true, signals, signal: signals[signals.length - 1] || null }, corsHeaders);
             }
 
+            // ৭. চ্যাট মেসেজ পাঠানো (টেক্সট, অডিও, ভিডিও, PDF)
             case 'send_chat_message': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
-                const { sender_phone, receiver_phone, message_text, media_url, message_type, file_size } = body;
-                
+                const sender_phone = cleanPhone(body.sender_phone);
+                const receiver_phone = cleanPhone(body.receiver_phone);
+                const { id, message_text, media_url, message_type, file_size, timestamp } = body;
+
                 const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-                const payload = `${message_type || 'text'}:${message_text || ''}:${media_url || ''}`;
-                const msgId = 'msg_' + Date.now() + Math.random();
+                const msgId = id || ('msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6));
 
                 await env.chat.prepare(
-                    `INSERT INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, message_text, media_url, message_status, file_size, expires_at, is_verified, is_online, updated_at) 
+                    `INSERT OR REPLACE INTO chat_master_system (id, record_type, phone_number, recipient_phone, display_name, magic_code, message_text, media_url, message_status, file_size, expires_at, is_verified, is_online, updated_at) 
                      VALUES (?, 'chat_msg', ?, ?, ?, ?, ?, ?, 'sent', ?, ?, 1, 1, CURRENT_TIMESTAMP)`
                 ).bind(
-                    msgId, 
-                    sender_phone, 
-                    receiver_phone, 
-                    sender_phone, 
-                    payload, 
-                    message_text || '', 
-                    media_url || '', 
+                    msgId,
+                    sender_phone,
+                    receiver_phone,
+                    String(timestamp || Date.now()),
+                    message_type || 'text',
+                    message_text || '',
+                    media_url || '',
                     file_size || 0,
                     expiresAt
                 ).run();
@@ -86,117 +236,58 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true, message_id: msgId }, corsHeaders);
             }
 
+            // ৮. রিয়েল-টাইম মেসেজ রিসিভ করা (উভয় প্রান্তের জন্য)
             case 'get_chat_messages': {
                 if (request.method !== 'GET') break;
-                const phone = url.searchParams.get('phone');
-                const myPhone = url.searchParams.get('my_phone');
-                
-                const { results } = await env.chat.prepare(
-                    `SELECT id, phone_number as sender_phone, magic_code as payload, media_url, message_text, created_at 
-                     FROM chat_master_system 
-                     WHERE record_type = 'chat_msg' 
-                     AND datetime(expires_at) > datetime('now') 
-                     AND ((phone_number = ? AND recipient_phone = ?) OR (phone_number = ? AND recipient_phone = ?)) 
-                     ORDER BY updated_at ASC`
-                ).bind(phone, myPhone, myPhone, phone).all();
+                const userPhone = cleanPhone(url.searchParams.get('user_phone') || url.searchParams.get('my_phone'));
+                const peerPhone = cleanPhone(url.searchParams.get('peer_phone') || url.searchParams.get('phone'));
 
-                return jsonResponse({ success: true, messages: results || [] }, corsHeaders);
+                if (!userPhone) return jsonResponse({ success: true, messages: [] }, corsHeaders);
+
+                let queryRes;
+                if (peerPhone) {
+                    queryRes = await env.chat.prepare(
+                        `SELECT id, phone_number as sender_phone, recipient_phone as receiver_phone, display_name as ts, magic_code as message_type, media_url, message_text, created_at 
+                         FROM chat_master_system 
+                         WHERE record_type = 'chat_msg' 
+                         AND datetime(expires_at) > datetime('now') 
+                         AND ((phone_number = ? AND recipient_phone = ?) OR (phone_number = ? AND recipient_phone = ?)) 
+                         ORDER BY updated_at ASC LIMIT 200`
+                    ).bind(userPhone, peerPhone, peerPhone, userPhone).all();
+                } else {
+                    queryRes = await env.chat.prepare(
+                        `SELECT id, phone_number as sender_phone, recipient_phone as receiver_phone, display_name as ts, magic_code as message_type, media_url, message_text, created_at 
+                         FROM chat_master_system 
+                         WHERE record_type = 'chat_msg' 
+                         AND datetime(expires_at) > datetime('now') 
+                         AND (phone_number = ? OR recipient_phone = ?) 
+                         ORDER BY updated_at ASC LIMIT 300`
+                    ).bind(userPhone, userPhone).all();
+                }
+
+                const messages = (queryRes.results || []).map(m => ({
+                    id: m.id,
+                    sender_phone: cleanPhone(m.sender_phone),
+                    receiver_phone: cleanPhone(m.receiver_phone),
+                    message_type: m.message_type || 'text',
+                    message_text: m.message_text || '',
+                    media_url: m.media_url || '',
+                    timestamp: Number(m.ts) || (m.created_at ? new Date(m.created_at).getTime() : Date.now())
+                }));
+
+                return jsonResponse({ success: true, messages }, corsHeaders);
             }
 
             case 'delete_message': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
                 const { message_id } = body;
-
-                if (!message_id) {
-                    return jsonResponse({ success: false, error: 'Message ID is required' }, corsHeaders, 400);
-                }
+                if (!message_id) return jsonResponse({ success: false, error: 'Message ID is required' }, corsHeaders, 400);
 
                 await env.chat.prepare(
                     "DELETE FROM chat_master_system WHERE id = ? AND record_type = 'chat_msg'"
                 ).bind(message_id).run();
 
-                return jsonResponse({ success: true, message: 'Message deleted from server' }, corsHeaders);
-            }
-
-            case 'download_and_delete_media': {
-                if (request.method !== 'POST') break;
-                const body = await request.json();
-                const { message_id } = body;
-
-                if (!message_id) {
-                    return jsonResponse({ success: false, error: 'Message ID is required' }, corsHeaders, 400);
-                }
-
-                await env.chat.prepare(
-                    "DELETE FROM chat_master_system WHERE id = ? AND record_type = 'chat_msg'"
-                ).bind(message_id).run();
-
-                return jsonResponse({ success: true, message: 'Downloaded and removed from server successfully' }, corsHeaders);
-            }
-
-            case 'send_magic_link': {
-                if (request.method !== 'POST') break;
-                const body = await request.json();
-                const { display_name, phone, magic_code, ip } = body;
-                const clientIp = (ip && ip !== 'Detecting...' && ip !== 'Unknown') ? ip : (request.headers.get('CF-Connecting-IP') || 'Unknown');
-                const defaultUsername = 'user_' + Math.floor(1000 + Math.random() * 9000);
-                const userId = 'user_' + phone;
-
-                const existing = await env.chat.prepare(
-                    "SELECT username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND phone_number = ?"
-                ).bind(phone).first();
-
-                const finalUsername = existing && existing.username ? existing.username : defaultUsername;
-
-                await env.chat.prepare(
-                    `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, username, magic_code, ip_address, is_verified, is_online) 
-                     VALUES (?, 'user', ?, ?, ?, ?, ?, 0, 1)
-                     ON CONFLICT(id) DO UPDATE SET magic_code = ?, display_name = COALESCE(?, display_name), ip_address = ?`
-                ).bind(userId, phone, display_name || 'User', finalUsername, magic_code, clientIp, magic_code, display_name, clientIp).run();
-
-                return jsonResponse({ success: true }, corsHeaders);
-            }
-
-            case 'verify_magic_code': {
-                if (request.method !== 'POST') break;
-                const body = await request.json();
-                const { phone, magic_code, unique_id, ip, contacts_json } = body;
-                const clientIp = (ip && ip !== 'Detecting...' && ip !== 'Unknown') ? ip : (request.headers.get('CF-Connecting-IP') || 'Unknown');
-                const userId = 'user_' + phone;
-
-                await env.chat.prepare(
-                    `UPDATE chat_master_system 
-                     SET is_verified = 1, unique_id = ?, ip_address = ?, contacts_json = ?, is_online = 1, updated_at = CURRENT_TIMESTAMP 
-                     WHERE id = ? AND magic_code = ? AND record_type = 'user'`
-                ).bind(unique_id || 'usr_' + Date.now(), clientIp, contacts_json || '[]', userId, magic_code).run();
-
-                return jsonResponse({ success: true }, corsHeaders);
-            }
-
-            case 'update_profile': {
-                if (request.method !== 'POST') break;
-                const body = await request.json();
-                const { phone, display_name, username, avatar_url } = body;
-                if (phone) {
-                    const userId = 'user_' + phone;
-                    await env.chat.prepare(
-                        `UPDATE chat_master_system 
-                         SET display_name = COALESCE(?, display_name), username = COALESCE(?, username), avatar_url = COALESCE(?, avatar_url), updated_at = CURRENT_TIMESTAMP 
-                         WHERE id = ? AND record_type = 'user'`
-                    ).bind(display_name || null, username || null, avatar_url || null, userId).run();
-                }
-                return jsonResponse({ success: true }, corsHeaders);
-            }
-
-            case 'set_live_status': {
-                if (request.method !== 'POST') break;
-                const body = await request.json();
-                const { phone, is_live } = body;
-                const userId = 'user_' + phone;
-                await env.chat.prepare(
-                    "UPDATE chat_master_system SET is_live = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND record_type = 'user'"
-                ).bind(is_live ? 1 : 0, userId).run();
                 return jsonResponse({ success: true }, corsHeaders);
             }
 
@@ -204,8 +295,7 @@ export async function onRequest(context) {
                 return jsonResponse({ success: false, error: 'Invalid action' }, corsHeaders, 400);
         }
 
-        return jsonResponse({ success: false, error: 'Invalid request method for this action' }, corsHeaders, 405);
-
+        return jsonResponse({ success: false, error: 'Invalid request method' }, corsHeaders, 405);
     } catch (err) {
         return jsonResponse({ success: false, error: err.message }, corsHeaders, 500);
     }
