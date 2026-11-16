@@ -36,13 +36,13 @@
             padding: 32px 24px;
             max-width: 440px;
             width: 100%;
-            border: 1px solid rgba(245, 208, 97, 0.2);
+            border: 1px solid rgba(245, 208, 97, 0.1);
         }
         .gold-btn { background: var(--gold-gradient); color: #030305; font-weight: 700; transition: transform 0.2s; }
         .gold-btn:hover { transform: scale(1.02); }
         .theme-surface { background-color: var(--surface); }
         .theme-card { background-color: var(--card); }
-        .theme-input { background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(245, 208, 97, 0.2); color: #fff; }
+        .theme-input { background-color: rgba(255, 255, 255, 0.02); border: 1px solid rgba(245, 208, 97, 0.1); color: #fff; }
         
         .header-logo-clean {
             width: 96px;
@@ -52,9 +52,9 @@
             border-radius: 50%;
             border: none !important;
         }
-        #vCountrySelect { width: 155px; min-width: 140px; font-weight: 700; }
-        .chat-bubble-me { background: linear-gradient(135deg, #0f2e1a 0%, #081a10 100%); border: 1px solid rgba(46, 213, 115, 0.3); }
-        .chat-bubble-them { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(245, 208, 97, 0.15); }
+        #vCountrySelect { width: 110px; min-width: 100px; font-weight: 700; text-align: center; }
+        .chat-bubble-me { background: linear-gradient(135deg, #0f2e1a 0%, #081a10 100%); border: 1px solid rgba(46, 213, 115, 0.2); }
+        .chat-bubble-them { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(245, 208, 97, 0.1); }
         .pink-btn { background: linear-gradient(135deg, #EC4899 0%, #be185d 100%); color: #ffffff; }
     </style>
 </head>
@@ -93,7 +93,7 @@
                 <div class="space-y-1.5">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-pink-500">*</span> <span class="text-[9px] text-gray-400 lowercase">(kept secret)</span></label>
                     <div class="flex space-x-2 w-full">
-                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2.5 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none cursor-pointer shrink-0"></select>
+                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none cursor-pointer shrink-0"></select>
                         <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
                     </div>
                 </div>
@@ -108,7 +108,7 @@
                     <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto mb-2" style="width: 64px; height: 64px;">
                     <h2 class="brand-title-font text-2xl font-bold gold-gradient-text">Verify Code</h2>
                     <label class="text-[11px] font-bold tracking-wider text-white block uppercase">AUTO-FILLED CODE <span class="text-emerald-400">✓</span></label>
-                    <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-2xl font-extrabold tracking-[12px] px-4 py-4 rounded-xl text-white focus:outline-none border border-amber-400/40">
+                    <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-2xl font-extrabold tracking-[12px] px-4 py-4 rounded-xl text-white focus:outline-none border border-amber-400/20">
                 </div>
                 <button onclick="submitVerifyStep2()" class="w-full py-4 gold-btn text-xs rounded-xl cursor-pointer mt-3 font-extrabold flex items-center justify-center space-x-2 uppercase tracking-wider">
                     <span>VERIFY & START</span> <i class="fa-solid fa-circle-check text-pink-600 text-sm"></i>
@@ -130,7 +130,7 @@
             </div>
         </div>
         <div class="flex items-center space-x-2">
-            <button onclick="toggleNotificationPanel()" class="relative p-2.5 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/20">
+            <button onclick="toggleNotificationPanel()" class="relative p-2.5 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/10">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                 <span id="headerNotifBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full pink-btn text-[9px] flex items-center justify-center font-bold">0</span>
             </button>
@@ -138,7 +138,7 @@
     </header>
 
     <!-- Notification Dropdown Panel -->
-    <div id="notificationPanel" class="hidden absolute right-4 top-16 w-80 max-w-[90vw] theme-card border border-amber-400/30 rounded-2xl z-50 p-4 space-y-3">
+    <div id="notificationPanel" class="hidden absolute right-4 top-16 w-80 max-w-[90vw] theme-card border border-amber-400/20 rounded-2xl z-50 p-4 space-y-3 shadow-2xl">
         <div class="flex justify-between items-center border-b border-white/10 pb-2">
             <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Notifications</h3>
             <div class="flex space-x-2">
@@ -180,10 +180,10 @@
                 </div>
                 <!-- Chat Header Action Buttons -->
                 <div class="flex items-center space-x-2">
-                    <button onclick="startWhatsAppCall('audio')" class="p-2.5 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/20" title="Audio Call">
+                    <button onclick="startWhatsAppCall('audio')" class="p-2.5 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/10" title="Audio Call">
                         <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                     </button>
-                    <button onclick="startWhatsAppCall('video')" class="p-2.5 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/20" title="Video Call">
+                    <button onclick="startWhatsAppCall('video')" class="p-2.5 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/10" title="Video Call">
                         <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg>
                     </button>
                     <button onclick="confirmClearChatHistory()" class="p-2.5 theme-card rounded-xl hover:bg-pink-950/20 transition cursor-pointer border border-pink-500/20" title="Clear Chat">
@@ -195,7 +195,7 @@
             <!-- Messages List Container -->
             <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 flex flex-col justify-start">
                 <div class="flex flex-col items-center justify-center space-y-3 max-w-xs text-center m-auto">
-                    <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center border border-amber-400/20">
+                    <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center border border-amber-400/10">
                         <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                     </div>
                     <p class="text-sm font-bold gold-gradient-text">Welcome to rorraxy MESSAGE</p>
@@ -257,7 +257,7 @@
     </nav>
 
     <!-- Toast Banner -->
-    <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 theme-card text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden items-center space-x-2 border border-amber-400/30">
+    <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 theme-card text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden items-center space-x-2 border border-amber-400/20">
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
@@ -409,30 +409,53 @@
             }
         }
 
-        function loadCountryCodesIntoSelect() {
+        async function loadCountryCodesIntoSelect() {
             const selectEl = document.getElementById('vCountrySelect');
             if (!selectEl) return;
+            
+            let detectedCountryCode = '880';
+            try {
+                const ipRes = await fetch('https://ipapi.co/json/');
+                if (ipRes.ok) {
+                    const ipData = await ipRes.json();
+                    const countryName = ipData.country_name;
+                    if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined') {
+                        for (const cont of GLOBAL_CONTINENTS_DATA) {
+                            const found = cont.countries.find(c => c.name.toLowerCase() === countryName?.toLowerCase());
+                            if (found) {
+                                detectedCountryCode = found.code;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (e) {}
+
             selectEl.innerHTML = '';
             if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined') {
                 GLOBAL_CONTINENTS_DATA.forEach(continent => {
                     continent.countries.forEach(country => {
                         const option = document.createElement('option');
                         option.value = `+${country.code}|10`;
-                        option.textContent = `${country.flag} +${country.code} (${country.name})`;
-                        if (country.name === 'Bangladesh') {
+                        option.textContent = `${country.flag} +${country.code}`;
+                        if (country.code === detectedCountryCode || (detectedCountryCode === '880' && country.name === 'Bangladesh')) {
                             option.selected = true;
                         }
                         selectEl.appendChild(option);
                     });
                 });
+            } else {
+                selectEl.innerHTML = `<option value="+880|10" selected>🇧🇩 +880</option>`;
             }
+            updatePhoneValidation();
         }
 
         function handleCustomInstall() {
             if (typeof installPWAApp === 'function') {
                 installPWAApp();
+            } else {
+                skipToProfileStep();
             }
-            skipToProfileStep();
         }
 
         function skipToProfileStep() {
@@ -462,14 +485,8 @@
                 if (step1) step1.classList.add('hidden');
                 if (step2) step2.classList.add('hidden');
                 loadCountryCodesIntoSelect();
-                if (typeof checkInitialVerification === 'function') {
-                    checkInitialVerification();
-                }
             }
         });
     </script>
 </body>
 </html>
-```[cite: 11]
-
-এটি আপনার প্রজেক্টে বসিয়ে এখন লাইভ টেস্ট করে দেখতে পারেন, সব অংশ একদম নিখুঁতভাবে কাজ করবে!
