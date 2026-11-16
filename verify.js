@@ -1,4 +1,4 @@
-// verify.js - Professional Verification & Profile Module (Complete)
+// verify.js - Professional Verification & Profile Module (Complete with Discover Country Flag & Code Integration)
 let deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
@@ -33,6 +33,7 @@ async function installPWAApp() {
     populateVerifyCountryDropdown();
 }
 
+// discover.js এর গ্লোবাল কান্ট্রি ডাটা ব্যবহার করে পতাকাসহ কান্ট্রি কোড ড্রপডাউন পপুলেট করা
 async function populateVerifyCountryDropdown() {
     const select = document.getElementById('vCountrySelect');
     if (!select) return;
@@ -87,7 +88,7 @@ function getCountryInfo(phone) {
 
 function getActiveProfile() { return savedProfiles[0]; }
 function saveProfiles() { localStorage.setItem('message_profiles_v18', JSON.stringify(savedProfiles)); }
-function normPhone(p) { return String(p || '').replace(/[\s\-\(\)]/g, ''); }
+function normPhone(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
 
 function updatePhoneValidation() {
     const select = document.getElementById('vCountrySelect'), phoneInput = document.getElementById('vPhoneInput');
@@ -108,11 +109,11 @@ async function submitVerifyStep1() {
     const phone = phoneInput ? phoneInput.value.trim() : '';
 
     if (!name) { 
-        if (typeof showToast === 'function') showToast("Please enter your full name", true);
+        if (typeof showToast === 'function') showToast("দয়া করে আপনার পুরো নাম লিখুন", true);
         return; 
     }
     if (!phone || phone.length < 6) { 
-        if (typeof showToast === 'function') showToast("Enter valid phone number", true);
+        if (typeof showToast === 'function') showToast("সঠিক ফোন নম্বর দিন", true);
         return; 
     }
 
@@ -136,7 +137,7 @@ async function submitVerifyStep1() {
     const otpInput = document.getElementById('vOtpInput');
     if (otpInput) otpInput.value = generatedOtpCode;
 
-    if (typeof showToast === 'function') showToast("Verified & Auto-Filled");
+    if (typeof showToast === 'function') showToast("ভেরিফিকেশন কোড পাঠানো হয়েছে");
 }
 
 async function submitVerifyStep2() {
@@ -144,44 +145,56 @@ async function submitVerifyStep2() {
     const entered = otpEl ? otpEl.value.trim() : '';
     
     if (entered !== generatedOtpCode) { 
-        if (typeof showToast === 'function') showToast("Invalid code", true); 
+        if (typeof showToast === 'function') showToast("ভুল পাসওয়ার্ড বা কোড দেওয়া হয়েছে", true); 
         return; 
     }
 
+    const cleanVerifyPhone = normPhone(tempVerifyPhone);
+    let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+    const existingContact = localContacts.find(c => normPhone(c.phone) === cleanVerifyPhone);
+
     isVerifiedSession = true;
     localStorage.setItem('message_verified_v18', 'true');
+
+    if (!existingContact) {
+        localContacts.push({
+            name: tempVerifyName,
+            phone: cleanVerifyPhone,
+            avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg",
+            isOnline: true,
+            appUser: true
+        });
+        localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
+    }
+
+    savedProfiles[0] = {
+        name: tempVerifyName,
+        phone: cleanVerifyPhone,
+        username: 'user_' + Math.floor(1000 + Math.random() * 9000),
+        themeColor: "emerald",
+        avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg"
+    };
+    saveProfiles();
 
     try {
         const res = await fetch(`/api/chat?action=get_user_profile&phone=${encodeURIComponent(tempVerifyPhone)}`);
         if (res.ok) {
             const data = await res.json();
             if (data.success && data.user) {
-                savedProfiles[0] = {
-                    name: data.user.display_name || tempVerifyName,
-                    phone: tempVerifyPhone,
-                    username: data.user.username || ('user_' + Math.floor(1000 + Math.random() * 9000)),
-                    themeColor: data.user.themeColor || "emerald",
-                    avatar: data.user.avatar_url || "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg"
-                };
-                saveProfiles();
-            } else {
-                const p = getActiveProfile();
-                p.name = tempVerifyName; p.phone = tempVerifyPhone;
+                savedProfiles[0].username = data.user.username || savedProfiles[0].username;
+                savedProfiles[0].themeColor = data.user.themeColor || "emerald";
+                savedProfiles[0].avatar = data.user.avatar_url || savedProfiles[0].avatar;
                 saveProfiles();
             }
         }
-    } catch (e) {
-        const p = getActiveProfile();
-        p.name = tempVerifyName; p.phone = tempVerifyPhone;
-        saveProfiles();
-    }
+    } catch (e) {}
 
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
     
     const overlay = document.getElementById('verifyOverlay');
     if (overlay) overlay.style.display = 'none';
     
-    if (typeof showToast === 'function') showToast("Connected Successfully");
+    if (typeof showToast === 'function') showToast("সফলভাবে ভেরিফাই হয়ে মূল মেনুতে প্রবেশ করেছে!");
     
     if (typeof initAppAfterVerification === 'function') {
         initAppAfterVerification();
@@ -230,9 +243,9 @@ function shareProfileLink() {
         }).catch(() => {});
     } else {
         navigator.clipboard.writeText(profileUrl).then(() => {
-            if (typeof showToast === 'function') showToast(`Copied: ${profileUrl}`);
+            if (typeof showToast === 'function') showToast(`কপি হয়েছে: ${profileUrl}`);
         }).catch(() => {
-            if (typeof showToast === 'function') showToast("Failed to copy link", true);
+            if (typeof showToast === 'function') showToast("লিংক কপি করতে ব্যর্থ হয়েছে", true);
         });
     }
 }
@@ -276,7 +289,7 @@ function renderProfileView(isEditing = false) {
                     <h4 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Profile Information</h4>
                     <button onclick="renderProfileView(${!isEditing})" class="text-[11px] text-amber-300 hover:underline font-semibold flex items-center space-x-1 cursor-pointer">
                         <i class="fa-solid ${isEditing ? 'fa-xmark' : 'fa-pen-to-square'}"></i>
-                        <span>${isEditing ? 'Cancel' : 'Edit Profile'}</span>
+                        <span>${isEditing ? 'বাতিল' : 'এডিট প্রোফাইল'}</span>
                     </button>
                 </div>
 
@@ -331,7 +344,7 @@ function previewThemeStyle(theme) {
     const profile = getActiveProfile();
     profile.themeColor = theme;
     saveProfiles();
-    if (typeof showToast === 'function') showToast(`Theme applied: ${theme}`);
+    if (typeof showToast === 'function') showToast(`থিম সেট হয়েছে: ${theme}`);
 }
 
 function handleProfileAvatarChange(input) {
@@ -368,7 +381,7 @@ function handleProfileAvatarChange(input) {
             const avatarPreview = document.getElementById('profileAvatarPreview');
             if (avatarPreview) avatarPreview.src = compressedDataUrl;
 
-            if (typeof showToast === 'function') showToast("Profile photo optimized & saved");
+            if (typeof showToast === 'function') showToast("প্রোফাইল ছবি সেভ হয়েছে");
         };
         img.src = e.target.result;
     };
@@ -386,8 +399,8 @@ async function saveProfileSettings() {
     const newUsername = userSelectInput.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
     const newTheme = themeSelect ? themeSelect.value : 'emerald';
     
-    if (!newName) { if (typeof showToast === 'function') showToast("Display name cannot be empty", true); return; }
-    if (RESERVED_USERNAMES.includes(newUsername)) { if (typeof showToast === 'function') showToast("Username is reserved", true); return; }
+    if (!newName) { if (typeof showToast === 'function') showToast("নাম খালি রাখা যাবে না", true); return; }
+    if (RESERVED_USERNAMES.includes(newUsername)) { if (typeof showToast === 'function') showToast("এই ইউজারনেমটি সংরক্ষিত", true); return; }
 
     const profile = getActiveProfile();
     profile.name = newName;
@@ -396,7 +409,7 @@ async function saveProfileSettings() {
     saveProfiles();
     document.documentElement.setAttribute('data-theme', newTheme);
 
-    if (typeof showToast === 'function') showToast("Profile updated successfully!");
+    if (typeof showToast === 'function') showToast("প্রোফাইল আপডেট সফল হয়েছে!");
     renderProfileView(false);
 }
 
@@ -418,7 +431,7 @@ function renderNotificationsDropdown() {
     if (!container) return;
 
     if (notificationStore.length === 0) {
-        container.innerHTML = `<p class="text-center text-gray-500 py-4 text-[11px]">No new notifications</p>`;
+        container.innerHTML = `<p class="text-center text-gray-500 py-4 text-[11px]">কোনো নতুন নোটিফিকেশন নেই</p>`;
         document.getElementById('headerNotifBadge')?.classList.add('hidden');
         return;
     }
@@ -457,6 +470,6 @@ function deleteAllNotifications() {
     notificationStore = notificationStore.filter(n => n.keepPinned);
     localStorage.setItem('message_notifications_v1', JSON.stringify(notificationStore));
     renderNotificationsDropdown();
-    if (typeof showToast === 'function') showToast("Cleared unpinned notifications");
+    if (typeof showToast === 'function') showToast("নোটিফিকেশন ক্লিয়ার করা হয়েছে");
 }
 ```[cite: 8]
