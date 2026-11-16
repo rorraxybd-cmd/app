@@ -1,5 +1,4 @@
-// verify.js - Professional Verification & Profile Module (Complete)
-let deferredPrompt = null;
+// verify.js - Professional Verification & Profile Module
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
 
@@ -13,15 +12,61 @@ let savedProfiles = JSON.parse(localStorage.getItem('message_profiles_v18') || '
     avatar: "https://pub-e1469a425020465cb5f7971065e07a62.r2.dev/logo.jpg"
 }];
 
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    document.getElementById('pwaInstallContainer')?.classList.remove('hidden');
-});
+async function populateVerifyCountryDropdown() {
+    const select = document.getElementById('vCountrySelect');
+    if (!select) return;
+    let detectedCountryCode = '880'; 
+
+    try {
+        const ipRes = await fetch('https://ipapi.co/json/');
+        if (ipRes.ok) {
+            const ipData = await ipRes.json();
+            userDeviceIp = ipData.ip || 'Unknown';
+            const countryName = ipData.country_name;
+            if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined') {
+                for (const cont of GLOBAL_CONTINENTS_DATA) {
+                    const found = cont.countries.find(c => c.name.toLowerCase() === countryName?.toLowerCase());
+                    if (found) {
+                        detectedCountryCode = found.code;
+                        break;
+                    }
+                }
+            }
+        }
+    } catch (e) {}
+
+    if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined' && Array.isArray(GLOBAL_CONTINENTS_DATA)) {
+        let html = '';
+        GLOBAL_CONTINENTS_DATA.forEach(continent => {
+            continent.countries.forEach(c => {
+                const isSelected = (c.code === detectedCountryCode) ? 'selected' : '';
+                html += `<option value="+${c.code}|10" ${isSelected}>${c.flag} +${c.code}</option>`;
+            });
+        });
+        select.innerHTML = html;
+    } else {
+        select.innerHTML = `<option value="+880|10" selected>🇧🇩 +880</option>`;
+    }
+    updatePhoneValidation();
+}
+
+function getCountryInfo(phone) {
+    const p = String(phone || '').replace(/[\s\-\(\)]/g, '');
+    if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined') {
+        for (const cont of GLOBAL_CONTINENTS_DATA) {
+            for (const c of cont.countries) {
+                if (p.startsWith('+' + c.code) || p.startsWith(c.code)) {
+                    return { code: '+' + c.code, name: c.name, flag: c.flag };
+                }
+            }
+        }
+    }
+    return { code: 'OTHER', name: 'Global', flag: '🌐' };
+}
 
 function getActiveProfile() { return savedProfiles[0]; }
 function saveProfiles() { localStorage.setItem('message_profiles_v18', JSON.stringify(savedProfiles)); }
-function normPhone(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
+function normPhone(p) { return String(p || '').replace(/[\s\-\(\)]/g, ''); }
 
 function updatePhoneValidation() {
     const select = document.getElementById('vCountrySelect'), phoneInput = document.getElementById('vPhoneInput');
@@ -64,13 +109,13 @@ async function submitVerifyStep1() {
 
     const step1El = document.getElementById('verifyStep1');
     const step2El = document.getElementById('verifyStep2');
-    if (step1El) step1El.style.display = 'none';
-    if (step2El) step2El.style.display = 'block';
+    if (step1El) step1El.classList.add('hidden');
+    if (step2El) step2El.classList.remove('hidden');
     
     const otpInput = document.getElementById('vOtpInput');
     if (otpInput) otpInput.value = generatedOtpCode;
 
-    if (typeof showToast === 'function') showToast("ভেরিফিকেশন কোড পাঠানো হয়েছে");
+    if (typeof showToast === 'function') showToast("ভেরিফিকেশন কোড অটো-ফিল করা হয়েছে");
 }
 
 async function submitVerifyStep2() {
@@ -114,7 +159,7 @@ async function submitVerifyStep2() {
     const overlay = document.getElementById('verifyOverlay');
     if (overlay) overlay.style.display = 'none';
     
-    if (typeof showToast === 'function') showToast("সফলভাবে ভেরিফাই হয়ে গেছে!");
+    if (typeof showToast === 'function') showToast("সফলভাবে কানেক্ট হয়েছে!");
     
     if (typeof initAppAfterVerification === 'function') {
         initAppAfterVerification();
