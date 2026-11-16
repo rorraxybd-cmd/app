@@ -1,8 +1,8 @@
-// discover.js - Global Directory & Contacts Sync Module (100% English & Duplicate-Free)
+// discover.js - Global Directory & Contacts Sync Module (100% English, 200+ Countries & Clean UI)
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
-        title: "🌏 Asia (49 Countries)",
+        title: "🌏 Asia",
         countries: [
             { flag: "🇦🇫", name: "Afghanistan", code: "93" }, { flag: "🇦🇲", name: "Armenia", code: "374" },
             { flag: "🇦🇿", name: "Azerbaijan", code: "994" }, { flag: "🇧🇭", name: "Bahrain", code: "973" },
@@ -33,7 +33,7 @@ const GLOBAL_CONTINENTS_DATA = [
     },
     {
         id: "europe",
-        title: "🇪🇺 Europe (43 Countries)",
+        title: "🇪🇺 Europe",
         countries: [
             { flag: "🇦🇱", name: "Albania", code: "355" }, { flag: "🇦🇩", name: "Andorra", code: "376" },
             { flag: "🇦🇹", name: "Austria", code: "43" }, { flag: "🇧🇾", name: "Belarus", code: "375" },
@@ -57,6 +57,81 @@ const GLOBAL_CONTINENTS_DATA = [
             { flag: "🇸🇪", name: "Sweden", code: "46" }, { flag: "🇨🇭", name: "Switzerland", code: "41" },
             { flag: "🇺🇦", name: "Ukraine", code: "380" }, { flag: "🇬🇧", name: "United Kingdom", code: "44" },
             { flag: "🇻🇦", name: "Vatican City", code: "379" }
+        ]
+    },
+    {
+        id: "north-america",
+        title: "🌎 North America",
+        countries: [
+            { flag: "🇦🇬", name: "Antigua & Barbuda", code: "1268" }, { flag: "🇧🇸", name: "Bahamas", code: "1242" },
+            { flag: "🇧🇧", name: "Barbados", code: "1246" }, { flag: "🇧🇿", name: "Belize", code: "501" },
+            { flag: "🇨🇦", name: "Canada", code: "1" }, { flag: "🇨🇷", name: "Costa Rica", code: "506" },
+            { flag: "🇨🇺", name: "Cuba", code: "53" }, { flag: "🇩🇲", name: "Dominica", code: "1767" },
+            { flag: "🇩🇴", name: "Dominican Republic", code: "1809" }, { flag: "🇸🇻", name: "El Salvador", code: "503" },
+            { flag: "🇬🇩", name: "Grenada", code: "1473" }, { flag: "🇬🇹", name: "Guatemala", code: "502" },
+            { flag: "🇭🇹", name: "Haiti", code: "509" }, { flag: "🇭🇳", name: "Honduras", code: "504" },
+            { flag: "🇯🇲", name: "Jamaica", code: "1876" }, { flag: "🇲🇽", name: "Mexico", code: "52" },
+            { flag: "🇳🇮", name: "Nicaragua", code: "505" }, { flag: "🇵🇦", name: "Panama", code: "507" },
+            { flag: "🇰🇳", name: "Saint Kitts & Nevis", code: "1869" }, { flag: "🇱🇨", name: "Saint Lucia", code: "1758" },
+            { flag: "🇻🇨", name: "St. Vincent & Grenadines", code: "1784" }, { flag: "🇹🇹", name: "Trinidad & Tobago", code: "1868" },
+            { flag: "🇺🇸", name: "United States", code: "1" }
+        ]
+    },
+    {
+        id: "south-america",
+        title: "🌎 South America",
+        countries: [
+            { flag: "🇦🇷", name: "Argentina", code: "54" }, { flag: "🇧🇴", name: "Bolivia", code: "591" },
+            { flag: "🇧🇷", name: "Brazil", code: "55" }, { flag: "🇨🇱", name: "Chile", code: "56" },
+            { flag: "🇨🇴", name: "Colombia", code: "57" }, { flag: "🇪🇨", name: "Ecuador", code: "593" },
+            { flag: "🇬🇾", name: "Guyana", code: "592" }, { flag: "🇵🇾", name: "Paraguay", code: "595" },
+            { flag: "🇵🇪", name: "Peru", code: "51" }, { flag: "🇸🇷", name: "Suriname", code: "597" },
+            { flag: "🇺🇾", name: "Uruguay", code: "598" }, { flag: "🇻🇪", name: "Venezuela", code: "58" }
+        ]
+    },
+    {
+        id: "africa",
+        title: "🌍 Africa",
+        countries: [
+            { flag: "🇩🇿", name: "Algeria", code: "213" }, { flag: "🇦🇴", name: "Angola", code: "244" },
+            { flag: "🇧🇯", name: "Benin", code: "229" }, { flag: "🇧🇼", name: "Botswana", code: "267" },
+            { flag: "🇧🇫", name: "Burkina Faso", code: "226" }, { flag: "🇧🇮", name: "Burundi", code: "257" },
+            { flag: "🇨🇲", name: "Cameroon", code: "237" }, { flag: "🇨🇻", name: "Cape Verde", code: "238" },
+            { flag: "🇨🇫", name: "Central African Republic", code: "236" }, { flag: "🇹🇩", name: "Chad", code: "235" },
+            { flag: "🇰🇲", name: "Comoros", code: "269" }, { flag: "🇨🇬", name: "Congo", code: "242" },
+            { flag: "🇩🇯", name: "Djibouti", code: "253" }, { flag: "🇪🇬", name: "Egypt", code: "20" },
+            { flag: "🇬🇶", name: "Equatorial Guinea", code: "240" }, { flag: "🇪🇷", name: "Eritrea", code: "291" },
+            { flag: "🇸🇿", name: "Eswatini", code: "268" }, { flag: "🇪🇹", name: "Ethiopia", code: "251" },
+            { flag: "🇬🇦", name: "Gabon", code: "241" }, { flag: "🇬🇲", name: "Gambia", code: "220" },
+            { flag: "🇬🇭", name: "Ghana", code: "233" }, { flag: "🇬🇳", name: "Guinea", code: "224" },
+            { flag: "🇨🇮", name: "Ivory Coast", code: "225" }, { flag: "🇰🇪", name: "Kenya", code: "254" },
+            { flag: "🇱🇸", name: "Lesotho", code: "266" }, { flag: "🇱🇷", name: "Liberia", code: "231" },
+            { flag: "🇱🇾", name: "Libya", code: "218" }, { flag: "🇲🇬", name: "Madagascar", code: "261" },
+            { flag: "🇲🇼", name: "Malawi", code: "265" }, { flag: "🇲🇱", name: "Mali", code: "223" },
+            { flag: "🇲🇷", name: "Mauritania", code: "222" }, { flag: "🇲🇺", name: "Mauritius", code: "230" },
+            { flag: "🇲🇦", name: "Morocco", code: "212" }, { flag: "🇲🇿", name: "Mozambique", code: "258" },
+            { flag: "🇳🇦", name: "Namibia", code: "264" }, { flag: "🇳🇪", name: "Niger", code: "227" },
+            { flag: "🇳🇬", name: "Nigeria", code: "234" }, { flag: "🇷🇼", name: "Rwanda", code: "250" },
+            { flag: "🇸🇳", name: "Senegal", code: "221" }, { flag: "🇸🇨", name: "Seychelles", code: "248" },
+            { flag: "🇸🇱", name: "Sierra Leone", code: "232" }, { flag: "🇸🇴", name: "Somalia", code: "252" },
+            { flag: "🇿🇦", name: "South Africa", code: "27" }, { flag: "🇸🇸", name: "South Sudan", code: "211" },
+            { flag: "🇸🇩", name: "Sudan", code: "249" }, { flag: "🇹🇿", name: "Tanzania", code: "255" },
+            { flag: "🇹🇬", name: "Togo", code: "228" }, { flag: "🇹🇳", name: "Tunisia", code: "216" },
+            { flag: "🇺🇬", name: "Uganda", code: "256" }, { flag: "🇿🇲", name: "Zambia", code: "260" },
+            { flag: "🇿🇼", name: "Zimbabwe", code: "263" }
+        ]
+    },
+    {
+        id: "oceania",
+        title: "🌊 Oceania",
+        countries: [
+            { flag: "🇦🇺", name: "Australia", code: "61" }, { flag: "🇫🇯", name: "Fiji", code: "679" },
+            { flag: "🇰🇮", name: "Kiribati", code: "686" }, { flag: "🇲🇭", name: "Marshall Islands", code: "692" },
+            { flag: "🇫🇲", name: "Micronesia", code: "691" }, { flag: "🇳🇷", name: "Nauru", code: "674" },
+            { flag: "🇳🇿", name: "New Zealand", code: "64" }, { flag: "🇵🇼", name: "Palau", code: "680" },
+            { flag: "🇵🇬", name: "Papua New Guinea", code: "675" }, { flag: "🇼🇸", name: "Samoa", code: "685" },
+            { flag: "🇸🇧", name: "Solomon Islands", code: "677" }, { flag: "🇹🇴", name: "Tonga", code: "676" },
+            { flag: "🇹🇻", name: "Tuvalu", code: "688" }, { flag: "🇻🇺", name: "Vanuatu", code: "678" }
         ]
     }
 ];
@@ -85,21 +160,21 @@ function openChat(phone, name, avatar = '') {
         chatHeader.classList.remove('hidden'); 
         chatHeader.style.display = 'flex'; 
         
-        // Exact WhatsApp-style call icons on header (Audio & Video only)
-        if (!document.getElementById('headerWhatsAppCallActions')) {
-            const callActions = document.createElement('div');
-            callActions.id = 'headerWhatsAppCallActions';
-            callActions.className = 'flex items-center space-x-3';
-            callActions.innerHTML = `
-                <button onclick="startWhatsAppCall('audio')" class="text-amber-300 hover:text-white p-2 cursor-pointer transition" title="Audio Call">
-                    <i class="fa-solid fa-phone text-sm"></i>
-                </button>
-                <button onclick="startWhatsAppCall('video')" class="text-amber-300 hover:text-white p-2 cursor-pointer transition" title="Video Call">
-                    <i class="fa-solid fa-video text-sm"></i>
-                </button>
-            `;
-            chatHeader.appendChild(callActions);
-        }
+        const existingActions = document.getElementById('headerWhatsAppCallActions');
+        if (existingActions) existingActions.remove();
+
+        const callActions = document.createElement('div');
+        callActions.id = 'headerWhatsAppCallActions';
+        callActions.className = 'flex items-center space-x-3 ml-auto';
+        callActions.innerHTML = `
+            <button onclick="startWhatsAppCall('audio')" class="text-amber-300 hover:text-white p-2 cursor-pointer transition" title="Audio Call">
+                <i class="fa-solid fa-phone text-sm"></i>
+            </button>
+            <button onclick="startWhatsAppCall('video')" class="text-amber-300 hover:text-white p-2 cursor-pointer transition" title="Video Call">
+                <i class="fa-solid fa-video text-sm"></i>
+            </button>
+        `;
+        chatHeader.appendChild(callActions);
     }
 
     const chatInput = document.getElementById('chatInputBar');
@@ -231,9 +306,8 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
                 </div>
             </div>
             <div class="flex items-center space-x-2 shrink-0 pl-1">
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 text-amber-300 hover:text-white cursor-pointer"><i class="fa-solid fa-message text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:text-white cursor-pointer"><i class="fa-solid fa-phone text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:text-white cursor-pointer"><i class="fa-solid fa-video text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 text-amber-300 hover:text-white cursor-pointer" title="Message"><i class="fa-solid fa-message text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:text-white cursor-pointer" title="Call"><i class="fa-solid fa-phone text-xs"></i></button>
             </div>
         </div>`;
     }).join('');
@@ -282,6 +356,7 @@ function renderContactsView(searchQuery = '') {
         const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐' };
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text shrink-0">${c.name.charAt(0)}</div>`;
         const safeName = c.name.replace(/'/g, "\\'");
+        
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card cursor-pointer" onclick="openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')">
             <div class="flex items-center space-x-3 flex-1 min-w-0">
@@ -298,9 +373,8 @@ function renderContactsView(searchQuery = '') {
                 </div>
             </div>
             <div class="flex items-center space-x-2 shrink-0">
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 text-amber-300 hover:text-white cursor-pointer"><i class="fa-solid fa-message text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:text-white cursor-pointer"><i class="fa-solid fa-phone text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:text-white cursor-pointer"><i class="fa-solid fa-video text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 text-amber-300 hover:text-white cursor-pointer" title="Message"><i class="fa-solid fa-message text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:text-white cursor-pointer" title="Call"><i class="fa-solid fa-phone text-xs"></i></button>
             </div>
         </div>`;
     }).join('');
