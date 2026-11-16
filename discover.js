@@ -1,4 +1,4 @@
-// discover.js - Global Directory & Contacts Sync Module (Final & Duplicate-Proof)
+// discover.js - Global Directory & Contacts Sync Module (100% English & Modern Soft UI)
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -79,7 +79,26 @@ function openChat(phone, name, avatar = '') {
     }
 
     const chatHeader = document.getElementById('activeChatHeader');
-    if (chatHeader) { chatHeader.classList.remove('hidden'); chatHeader.style.display = 'flex'; }
+    if (chatHeader) { 
+        chatHeader.classList.remove('hidden'); 
+        chatHeader.style.display = 'flex'; 
+        
+        // Exact WhatsApp-style call icons on header (Audio & Video only)
+        if (!document.getElementById('headerWhatsAppCallActions')) {
+            const callActions = document.createElement('div');
+            callActions.id = 'headerWhatsAppCallActions';
+            callActions.className = 'flex items-center space-x-3';
+            callActions.innerHTML = `
+                <button onclick="startWhatsAppCall('audio')" class="text-amber-300 hover:text-white p-2 cursor-pointer transition" title="Audio Call">
+                    <i class="fa-solid fa-phone text-sm"></i>
+                </button>
+                <button onclick="startWhatsAppCall('video')" class="text-amber-300 hover:text-white p-2 cursor-pointer transition" title="Video Call">
+                    <i class="fa-solid fa-video text-sm"></i>
+                </button>
+            `;
+            chatHeader.appendChild(callActions);
+        }
+    }
 
     const chatInput = document.getElementById('chatInputBar');
     if (chatInput) { chatInput.classList.remove('hidden'); chatInput.style.display = 'flex'; }
@@ -114,14 +133,14 @@ function renderDiscoverDirectory(searchQuery = '') {
     const allUsers = deviceContacts.filter(c => !c.isOfficialSupport && c.phone !== '8801538187301');
 
     let html = `
-        <div class="discover-wrapper p-3 space-y-3">
-            <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-xl border border-amber-400/20">
-                <input type="text" id="discoverCountrySearch" placeholder="Search country name..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderDiscoverDirectory(this.value)">
+        <div class="p-3 space-y-3">
+            <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
+                <input type="text" id="discoverCountrySearch" placeholder="Search country..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderDiscoverDirectory(this.value)">
                 <i class="fa-solid fa-magnifying-glass text-amber-300 text-xs"></i>
             </div>
-            <div class="theme-card p-4 rounded-2xl border border-amber-400/20 text-center">
+            <div class="p-4 rounded-2xl text-center theme-card">
                 <h2 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Global Network Directory</h2>
-                <p class="text-[10px] text-gray-400 mt-1">Select any country to connect directly across borders</p>
+                <p class="text-[10px] text-gray-400 mt-1">Select any country to connect across borders</p>
             </div>
     `;
 
@@ -130,8 +149,8 @@ function renderDiscoverDirectory(searchQuery = '') {
         if (filteredCountries.length === 0) return;
 
         html += `
-            <div class="theme-card rounded-2xl p-3 border border-white/5 space-y-2">
-                <div class="text-xs font-bold gold-gradient-text border-b border-white/10 pb-1.5">${continent.title}</div>
+            <div class="rounded-2xl p-3 theme-card space-y-2">
+                <div class="text-xs font-bold gold-gradient-text pb-1.5">${continent.title}</div>
                 <div class="grid grid-cols-2 gap-2">
         `;
 
@@ -145,7 +164,7 @@ function renderDiscoverDirectory(searchQuery = '') {
             const badgeText = count > 0 ? `${count} Active` : `+${country.code}`;
 
             html += `
-                <div class="p-3 rounded-xl border border-amber-400/20 cursor-pointer flex flex-col items-center text-center bg-white/5 hover:bg-white/10 transition" onclick="openDiscoverCountry('${country.flag}', '${country.name.replace(/'/g, "\\'")}', '${country.code}')">
+                <div class="p-3 rounded-2xl cursor-pointer flex flex-col items-center text-center bg-white/5 hover:bg-white/10 transition" onclick="openDiscoverCountry('${country.flag}', '${country.name.replace(/'/g, "\\'")}', '${country.code}')">
                     <span class="text-2xl">${country.flag}</span>
                     <span class="text-xs font-bold text-white mt-1 truncate w-full">${country.name}</span>
                     <span class="text-[9px] px-2 py-0.5 rounded-full mt-1 bg-amber-400/10 text-amber-300 font-semibold">${badgeText}</span>
@@ -180,22 +199,22 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
     const matchedUsers = allUsers.filter(u => {
         const info = typeof getCountryInfo === 'function' ? getCountryInfo(u.phone) : { name: '' };
         const isMatchCountry = (info.name && info.name.toLowerCase() === countryObj.name.toLowerCase()) || String(u.phone || '').replace(/[\s\-\(\)]/g, '').startsWith(countryObj.code);
-        const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase()) || String(u.phone).includes(searchQuery);
         return isMatchCountry && matchesSearch;
     });
 
     let usersHtml = matchedUsers.length === 0 ? `
-        <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 theme-card rounded-2xl border border-white/5 mt-2">
+        <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 theme-card rounded-2xl mt-2">
             <span class="text-4xl">${countryObj.flag}</span>
-            <p class="text-xs font-bold gold-gradient-text">${countryObj.name} এ কোনো সদস্য পাওয়া যায়নি</p>
+            <p class="text-xs font-bold gold-gradient-text">No members found in ${countryObj.name}</p>
         </div>
     ` : matchedUsers.map(c => {
         const isOnline = c.isOnline === true || c.isOnline === 1;
         const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
-        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20 shrink-0">${c.name.charAt(0)}</div>`;
+        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text shrink-0">${c.name.charAt(0)}</div>`;
         const safeName = c.name.replace(/'/g, "\\'");
         return `
-        <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card border border-white/5 cursor-pointer" onclick="openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')">
+        <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card cursor-pointer" onclick="openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')">
             <div class="flex items-center space-x-3 flex-1 min-w-0">
                 <div class="relative shrink-0">
                     ${avatarImg}
@@ -209,53 +228,61 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
                     <p class="text-[10px] text-gray-400">${isOnline ? 'Online' : 'Offline'}</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-1.5 shrink-0 pl-1">
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 theme-card rounded-xl border border-amber-400/20"><i class="fa-solid fa-message text-amber-300 text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('audio')" class="p-2 theme-card rounded-xl border border-amber-400/20"><i class="fa-solid fa-phone text-amber-300 text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('video')" class="p-2 theme-card rounded-xl border border-amber-400/20"><i class="fa-solid fa-video text-amber-300 text-xs"></i></button>
+            <div class="flex items-center space-x-2 shrink-0 pl-1">
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 text-amber-300 hover:text-white cursor-pointer"><i class="fa-solid fa-message text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:text-white cursor-pointer"><i class="fa-solid fa-phone text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:text-white cursor-pointer"><i class="fa-solid fa-video text-xs"></i></button>
             </div>
         </div>`;
     }).join('');
 
     listContainer.innerHTML = `
         <div class="pb-16 p-3 space-y-3">
-            <button onclick="backToDiscoverContinents()" class="flex items-center space-x-2 text-xs font-bold text-amber-300 px-3 py-1.5 rounded-xl bg-amber-400/10 cursor-pointer border border-amber-400/20">
-                <i class="fa-solid fa-arrow-left"></i> <span>সকল দেশ</span>
+            <button onclick="backToDiscoverContinents()" class="flex items-center space-x-2 text-xs font-bold text-amber-300 px-3 py-1.5 rounded-2xl bg-amber-400/10 cursor-pointer">
+                <i class="fa-solid fa-arrow-left"></i> <span>All Countries</span>
             </button>
-            <div class="flex items-center justify-between px-3 py-2.5 rounded-2xl theme-card border border-amber-400/20">
+            <div class="flex items-center justify-between px-3 py-2.5 rounded-2xl theme-card">
                 <div class="flex items-center space-x-2.5">
                     <span class="text-2xl">${countryObj.flag}</span>
                     <div>
                         <h3 class="text-xs font-bold gold-gradient-text">${countryObj.name}</h3>
-                        <p class="text-[9px] text-gray-400">ডাইরেক্ট ক্রস-বর্ডার কানেکশন</p>
+                        <p class="text-[9px] text-gray-400">Direct cross-border connection</p>
                     </div>
                 </div>
-                <span class="text-[10px] font-bold text-amber-300 px-2.5 py-1 rounded-full bg-amber-400/10">${matchedUsers.length} কন্টাক্ট</span>
+                <span class="text-[10px] font-bold text-amber-300 px-2.5 py-1 rounded-full bg-amber-400/10">${matchedUsers.length} Contacts</span>
             </div>
             ${usersHtml}
         </div>
     `;
 }
+
 function renderContactsView(searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const q = searchQuery.toLowerCase().trim();
-    const filteredContacts = localContacts.filter(c => c.name.toLowerCase().includes(q));
+    
+    // Search by name, mobile number, or username
+    const filteredContacts = localContacts.filter(c => 
+        c.name.toLowerCase().includes(q) || 
+        String(c.phone || '').includes(q) || 
+        String(c.username || '').toLowerCase().includes(q)
+    );
+
     let contactsHtml = filteredContacts.length === 0 ? `
-        <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 theme-card rounded-2xl border border-white/5 mt-4">
+        <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 theme-card rounded-2xl mt-4">
             <i class="fa-solid fa-address-book text-3xl text-amber-300"></i>
-            <p class="text-xs font-bold gold-gradient-text">কোনো কন্টাক্ট পাওয়া যায়নি</p>
+            <p class="text-xs font-bold gold-gradient-text">No contacts found</p>
         </div>
     ` : filteredContacts.map(c => {
         const isOnline = c.isOnline === true || c.isOnline === 1;
         const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
         const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐' };
-        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20 shrink-0">${c.name.charAt(0)}</div>`;
+        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text shrink-0">${c.name.charAt(0)}</div>`;
         const safeName = c.name.replace(/'/g, "\\'");
         return `
-        <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card border border-white/5 cursor-pointer" onclick="openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')">
+        <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card cursor-pointer" onclick="openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')">
             <div class="flex items-center space-x-3 flex-1 min-w-0">
                 <div class="relative shrink-0">
                     ${avatarImg}
@@ -266,85 +293,130 @@ function renderContactsView(searchQuery = '') {
                         <span>${c.name}</span>
                         <span class="text-sm">${countryInfo.flag}</span>
                     </p>
-                    <p class="text-[10px] text-gray-400">${isOnline ? 'Online' : 'Offline'}</p>
+                    <p class="text-[10px] text-gray-400">@${c.username || 'user'} • ${c.phone}</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-1.5 shrink-0">
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 theme-card rounded-xl border border-amber-400/20"><i class="fa-solid fa-message text-amber-300 text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('audio')" class="p-2 theme-card rounded-xl border border-amber-400/20"><i class="fa-solid fa-phone text-amber-300 text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('video')" class="p-2 theme-card rounded-xl border border-amber-400/20"><i class="fa-solid fa-video text-amber-300 text-xs"></i></button>
+            <div class="flex items-center space-x-2 shrink-0">
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 text-amber-300 hover:text-white cursor-pointer"><i class="fa-solid fa-message text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:text-white cursor-pointer"><i class="fa-solid fa-phone text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:text-video cursor-pointer"><i class="fa-solid fa-video text-xs"></i></button>
             </div>
         </div>`;
     }).join('');
 
     listContainer.innerHTML = `
         <div class="pb-20 p-3 space-y-3">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between px-1">
                 <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Contacts Directory</h3>
-                <button onclick="openAddContactModal()" class="px-3 py-1.5 rounded-xl gold-btn text-[10px] font-extrabold flex items-center space-x-1.5 cursor-pointer shadow-md">
-                    <i class="fa-solid fa-user-plus text-xs"></i> <span>নতুন যোগ করুন</span>
-                </button>
             </div>
-            <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-xl border border-amber-400/20">
-                <input type="text" id="contactSearchInput" placeholder="নাম দিয়ে কন্টাক্ট খুঁজুন..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderContactsView(this.value)">
+            <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
+                <input type="text" id="contactSearchInput" placeholder="Search by name, mobile or username..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderContactsView(this.value)">
                 <i class="fa-solid fa-magnifying-glass text-amber-300 text-xs"></i>
             </div>
             ${contactsHtml}
         </div>
     `;
 }
-function openAddContactModal() {
-    let existingModal = document.getElementById('addContactModalOverlay');
-    if (existingModal) existingModal.remove();
 
-    const overlay = document.createElement('div');
-    overlay.id = 'addContactModalOverlay';
-    overlay.className = 'fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4';
-    overlay.innerHTML = `
-        <div class="theme-card border border-amber-400/40 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
-            <div class="flex justify-between items-center border-b border-white/10 pb-2">
-                <h3 class="text-sm font-bold gold-gradient-text uppercase tracking-wider">নতুন কন্টাক্ট যোগ করুন</h3>
-                <button onclick="document.getElementById('addContactModalOverlay').remove()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-sm"></i></button>
-            </div>
-            <div class="space-y-3">
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-amber-300 uppercase">কন্টাক্টের নাম</label>
-                    <input type="text" id="newContactNameInput" placeholder="পূর্ণ নাম লিখুন" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white placeholder-gray-500 focus:outline-none border border-amber-400/20">
+// Profile View with editable Avatar, Name, Username, Secret Mobile Number & Native/Web Share Button
+function renderProfileView(isEditing = false) {
+    const listContainer = document.getElementById('sidebarContentList');
+    if (!listContainer) return;
+
+    let profile = getActiveProfile();
+    const displayName = profile.name || 'User';
+    const username = profile.username || 'user_' + Math.floor(1000 + Math.random() * 9000);
+    const phone = profile.phone || '';
+    const avatarUrl = profile.avatar || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg';
+
+    if (!isEditing) {
+        listContainer.innerHTML = `
+            <div class="p-4 space-y-4 pb-20">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">My Profile</h3>
+                    <button onclick="renderProfileView(true)" class="px-3 py-1.5 rounded-xl gold-btn text-[10px] font-extrabold cursor-pointer">
+                        <i class="fa-solid fa-pen text-xs"></i> Edit Profile
+                    </button>
                 </div>
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-amber-300 uppercase">ফোন নম্বর</label>
-                    <input type="tel" id="newContactPhoneInput" placeholder="+8801700000000" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white placeholder-gray-500 focus:outline-none border border-amber-400/20">
+                <div class="theme-card p-5 rounded-3xl text-center space-y-3">
+                    <img src="${avatarUrl}" class="w-20 h-20 rounded-full object-cover mx-auto shadow-xl">
+                    <div>
+                        <h2 class="text-sm font-bold gold-gradient-text">${displayName}</h2>
+                        <p class="text-xs text-gray-400 mt-0.5">@${username}</p>
+                        <p class="text-[10px] text-amber-300/80 mt-1 font-mono">${phone}</p>
+                    </div>
+                    <button onclick="shareMyProfile('${displayName}', '${username}', '${phone}')" class="w-full py-3 rounded-2xl gold-btn text-xs font-extrabold cursor-pointer flex items-center justify-center space-x-2 mt-2 shadow-lg">
+                        <i class="fa-solid fa-share-nodes text-xs"></i> <span>Share Profile</span>
+                    </button>
                 </div>
-                <button onclick="saveNewContactFromModal()" class="w-full py-3.5 gold-btn text-xs rounded-xl font-extrabold cursor-pointer shadow-lg mt-2 uppercase tracking-wider">
-                    কন্টাক্ট সেভ করুন
-                </button>
             </div>
-        </div>
-    `;
-    document.body.appendChild(overlay);
+        `;
+    } else {
+        listContainer.innerHTML = `
+            <div class="p-4 space-y-4 pb-20">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Edit Profile</h3>
+                    <button onclick="renderProfileView(false)" class="text-gray-400 hover:text-white text-xs cursor-pointer">Cancel</button>
+                </div>
+                <div class="theme-card p-5 rounded-3xl space-y-3">
+                    <div class="text-center">
+                        <img id="editAvatarPreview" src="${avatarUrl}" class="w-20 h-20 rounded-full object-cover mx-auto mb-2 shadow-xl">
+                        <label class="text-[10px] text-amber-300 cursor-pointer font-bold underline">
+                            Change Avatar URL
+                            <input type="text" id="editAvatarInput" value="${avatarUrl}" oninput="document.getElementById('editAvatarPreview').src=this.value" class="hidden">
+                        </label>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-amber-300 uppercase">Full Name</label>
+                        <input type="text" id="editNameInput" value="${displayName}" class="w-full theme-input text-xs px-3.5 py-3 rounded-2xl text-white focus:outline-none">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-amber-300 uppercase">Username</label>
+                        <input type="text" id="editUsernameInput" value="${username}" class="w-full theme-input text-xs px-3.5 py-3 rounded-2xl text-white focus:outline-none">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-amber-300 uppercase">Mobile Number (Secret)</label>
+                        <input type="text" value="${phone}" disabled class="w-full theme-input text-xs px-3.5 py-3 rounded-2xl text-gray-400 cursor-not-allowed">
+                    </div>
+                    <button onclick="saveProfileChanges()" class="w-full py-3.5 gold-btn text-xs font-extrabold rounded-2xl cursor-pointer shadow-lg uppercase tracking-wider mt-2">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        `;
+    }
 }
-function saveNewContactFromModal() {
-    const nameInput = document.getElementById('newContactNameInput');
-    const phoneInput = document.getElementById('newContactPhoneInput');
-    if (!nameInput || !phoneInput) return;
 
-    const name = nameInput.value.trim();
-    const phone = phoneInput.value.trim();
-    if (!name || !phone) {
-        if (typeof showToast === 'function') showToast("নাম এবং ফোন নম্বর উভয়ই দিন", true);
+function saveProfileChanges() {
+    const name = document.getElementById('editNameInput')?.value.trim();
+    const username = document.getElementById('editUsernameInput')?.value.trim();
+    const avatar = document.getElementById('editAvatarInput')?.value.trim();
+
+    if (!name || !username) {
+        if (typeof showToast === 'function') showToast("Name and username cannot be empty", true);
         return;
     }
-    let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
-    const cleanPhone = String(phone).replace(/[\s\-\(\)\+]/g, '');
 
-    const existingIndex = localContacts.findIndex(c => String(c.phone || '').replace(/[\s\-\(\)\+]/g, '') === cleanPhone);
-    if (existingIndex !== -1) {
-        if (typeof showToast === 'function') showToast("এই ফোন নম্বরটি ইতিমধ্যে কন্টাক্ট লিস্টে রয়েছে!", true);
-        return;
+    let profiles = JSON.parse(localStorage.getItem('message_profiles_v18') || '[{}]');
+    profiles[0].name = name;
+    profiles[0].username = username;
+    profiles[0].avatar = avatar || profiles[0].avatar;
+    localStorage.setItem('message_profiles_v18', JSON.stringify(profiles));
+
+    if (typeof showToast === 'function') showToast("Profile updated successfully!");
+    renderProfileView(false);
+}
+
+function shareMyProfile(name, username, phone) {
+    const shareData = {
+        title: 'MESSAGE Profile',
+        text: `Connect with ${name} (@${username}) on MESSAGE Global Messenger!`,
+        url: window.location.href
+    };
+    if (navigator.share) {
+        navigator.share(shareData).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(window.location.href);
+        if (typeof showToast === 'function') showToast("Profile link copied to clipboard!");
     }
-    localContacts.push({ name: name, phone: cleanPhone, avatar: "", isOnline: false, appUser: false });
-    localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
-    document.getElementById('addContactModalOverlay')?.remove();
-    if (typeof showToast === 'function') showToast("কন্টাক্ট সফলভাবে সংরক্ষিত হয়েছে!");
-    renderContactsView();
 }
