@@ -1,4 +1,4 @@
-// discover.js - Global Directory & Contacts Sync Module (Mobile Chat Input & Status Fixed)
+// discover.js - Global Directory & Contacts Sync Module (Fully Optimized & Fixed)
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -173,10 +173,11 @@ function openChat(phone, name, avatar = '') {
     if (workspace) {
         workspace.classList.remove('hidden');
         if (window.innerWidth < 768) {
-            // মোবাইলের জন্য ফুল-স্ক্রিন ওভারলে ও ফ্লেক্স নিশ্চিত করা হলো
-            workspace.classList.add('absolute', 'inset-0', 'z-30', 'flex');
+            // মোবাইলের জন্য ফুল-স্ক্রিন ওভারলে ও ফ্লেক্স কলাম নিশ্চিত করা হলো যাতে ইনপুট বার নিচে থাকে
+            workspace.className = "absolute inset-0 z-30 flex flex-col bg-[#030305]";
         } else {
             workspace.style.display = 'flex';
+            workspace.classList.add('flex-col');
         }
     }
 
@@ -310,9 +311,11 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
         usersHtml = matchedUsers.map(c => {
             const isOnline = c.isOnline === true || c.isOnline === 1 || c.isOnline === "1";
             const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
-            const statusText = isOnline ? '<span class="text-[#2ed573] font-semibold">Online</span>' : '<span class="text-gray-400">Offline</span>';
+            const statusIndicator = isOnline 
+                ? `<span class="inline-flex items-center space-x-1 text-[10px] text-[#2ed573] font-semibold"><span class="w-2 h-2 rounded-full bg-[#2ed573] inline-block"></span><span>Online</span></span>` 
+                : `<span class="text-[10px] text-gray-500">Offline</span>`;
 
-            const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
+            const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20 shrink-0">${c.name.charAt(0)}</div>`;
             const safeName = c.name.replace(/'/g, "\\'");
             return `
             <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card border border-white/5 cursor-pointer" onclick="openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')">
@@ -321,16 +324,14 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
                         ${avatarImg}
                         <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${statusColor}"></span>
                     </div>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>
-                        <div class="flex items-center space-x-1.5 text-[10px]">
-                            <span>${countryObj.flag} ${countryObj.name}</span>
-                            <span>•</span>
-                            ${statusText}
+                    <div class="min-w-0 flex-1 pr-2">
+                        <p class="text-xs font-semibold gold-gradient-text truncate">${countryObj.flag} ${c.name}</p>
+                        <div class="mt-0.5">
+                            ${statusIndicator}
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center space-x-2 shrink-0 pl-2">
+                <div class="flex items-center space-x-1.5 shrink-0 pl-1">
                     <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/20" title="Chat">
                         <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                     </button>
@@ -393,10 +394,12 @@ function renderContactsView(searchQuery = '') {
         contactsHtml = filteredContacts.map(c => {
             const isOnline = c.isOnline === true || c.isOnline === 1 || c.isOnline === "1";
             const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
-            const statusText = isOnline ? '<span class="text-[#2ed573] font-semibold">Online</span>' : '<span class="text-gray-400">Offline</span>';
+            const statusIndicator = isOnline 
+                ? `<span class="inline-flex items-center space-x-1 text-[10px] text-[#2ed573] font-semibold"><span class="w-2 h-2 rounded-full bg-[#2ed573] inline-block"></span><span>Online</span></span>` 
+                : `<span class="text-[10px] text-gray-500">Offline</span>`;
 
             const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐', name: 'Global' };
-            const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20">${c.name.charAt(0)}</div>`;
+            const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20 shrink-0">${c.name.charAt(0)}</div>`;
             const safeName = c.name.replace(/'/g, "\\'");
             
             return `
@@ -406,16 +409,14 @@ function renderContactsView(searchQuery = '') {
                         ${avatarImg}
                         <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${statusColor}"></span>
                     </div>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold gold-gradient-text truncate">${c.name}</p>
-                        <div class="flex items-center space-x-1.5 text-[10px]">
-                            <span>${countryInfo.flag} ${countryInfo.name}</span>
-                            <span>•</span>
-                            ${statusText}
+                    <div class="min-w-0 flex-1 pr-2">
+                        <p class="text-xs font-semibold gold-gradient-text truncate">${countryInfo.flag} ${c.name}</p>
+                        <div class="mt-0.5">
+                            ${statusIndicator}
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center space-x-2 shrink-0">
+                <div class="flex items-center space-x-1.5 shrink-0">
                     <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/20" title="Chat">
                         <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                     </button>
