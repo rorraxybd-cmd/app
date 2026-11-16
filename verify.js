@@ -4,7 +4,7 @@ let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
 
 const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'message'];
 
-// প্রায় ২০০+ দেশের পতাকা এবং কান্ট্রি কোডের সম্পূর্ণ ডেটাসেট
+// ২০০+ দেশের পতাকা এবং কান্ট্রি কোডের সম্পূর্ণ ডেটাসেট
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -175,7 +175,7 @@ async function populateVerifyCountryDropdown() {
     GLOBAL_CONTINENTS_DATA.forEach(continent => {
         continent.countries.forEach(c => {
             const isSelected = (c.code === detectedCountryCode) ? 'selected' : '';
-            html += `<option value="+${c.code}|10" ${isSelected}>${c.flag} +${c.code}</option>`;
+            html += `<option value="+${c.code}|10" ${isSelected}>${c.flag} +${c.code} (${c.name})</option>`;
         });
     });
     select.innerHTML = html;
@@ -239,8 +239,8 @@ async function submitVerifyStep1() {
 
     const step1El = document.getElementById('verifyStep1');
     const step2El = document.getElementById('verifyStep2');
-    if (step1El) step1El.classList.add('hidden');
-    if (step2El) step2El.classList.remove('hidden');
+    if (step1El) step1El.style.display = 'none';
+    if (step2El) step2El.style.display = 'block';
     
     const otpInput = document.getElementById('vOtpInput');
     if (otpInput) otpInput.value = generatedOtpCode;
@@ -291,9 +291,8 @@ async function submitVerifyStep2() {
     
     if (typeof showToast === 'function') showToast("সফলভাবে কানেক্ট হয়েছে!");
     
-    if (typeof initAppAfterVerification === 'function') {
-        initAppAfterVerification();
-    } else if (typeof switchTab === 'function') {
+    // ভেরিফিকেশন সফল হওয়ার পর সরাসরি কন্টাক্ট বা ডিসকভার ট্যাবে সিঙ্ক হয়ে চলে যাবে
+    if (typeof switchTab === 'function') {
         switchTab('contact');
     }
 }
@@ -453,3 +452,4 @@ async function saveProfileSettings() {
     if (typeof showToast === 'function') showToast("প্রোফাইল আপডেট সফল হয়েছে!");
     renderProfileView(false);
 }
+2. ভেরিফিকেশন কমপ্লিট হওয়ার পর ইউজার সরাসরি কন্টাক্ট বা ডিসকভার ডিরেক্টরিতে চলে যাবে এবং সেটিংস বা প্রোফাইল পেজেও তার সমস্ত তথ্য নির্ভুলভাবে শো করবে।
