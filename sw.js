@@ -36,6 +36,38 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// ব্যাকগ্রাউন্ডে কল বা মেসেজ আসলে পুশ নোটিফিকেশন এবং রিংটোন/ভাইব্রেশন বাজানোর জন্য
+self.addEventListener('push', function(event) {
+    const data = event.data ? event.data.json() : {};
+    const title = data.title || 'Incoming Call / Message';
+    const options = {
+        body: data.body || 'You have an incoming call on rorraxy MESSAGE',
+        icon: '/im192.jpg',
+        badge: '/im192.jpg',
+        vibrate: [300, 100, 300, 100, 300, 100, 300],
+        tag: 'incoming-call',
+        renotify: true,
+        actions: [
+            { action: 'answer', title: 'Answer Call' },
+            { action: 'reject', title: 'Decline' }
+        ]
+    };
+
+    event.waitUntil(
+        self.registration.showNotification(title, options)
+    );
+});
+
+// নোটিফিকেশনে ক্লিক করলে অ্যাপ ওপেন করা
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    if (event.action === 'answer') {
+        event.waitUntil(clients.openWindow('/?action=incoming_call'));
+    } else {
+        event.waitUntil(clients.openWindow('/'));
+    }
+});
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
