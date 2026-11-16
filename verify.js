@@ -1,9 +1,7 @@
-// verify.js - Professional Verification & Profile Module (Full 200+ Countries Searchable Dropdown)
+// verify.js - Strict Single-Account Per Phone Number + Cloud Auto-Sync
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
 let selectedCountryData = { flag: "🇧🇩", name: "Bangladesh", code: "880" };
-
-const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'message'];
 
 const GLOBAL_VERIFY_CONTINENTS = [
     {
@@ -143,12 +141,14 @@ const GLOBAL_VERIFY_CONTINENTS = [
 ];
 
 let savedProfiles = JSON.parse(localStorage.getItem('message_profiles_v18') || 'null') || [{
-    name: "rorraxy.com",
-    phone: "+8801538187301",
-    username: "rorraxy.com",
+    name: "",
+    phone: "",
+    username: "",
     themeColor: "emerald",
     avatar: ""
 }];
+
+function normPhone(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
 
 async function populateVerifyCountryDropdown() {
     const container = document.getElementById('vCountrySelectContainer');
@@ -245,9 +245,7 @@ function toggleCountryDropdownModal() {
 
 function filterCountryList(val) {
     const scrollArea = document.getElementById('countryListScrollArea');
-    if (scrollArea) {
-        scrollArea.innerHTML = generateCountryListHtml(val);
-    }
+    if (scrollArea) scrollArea.innerHTML = generateCountryListHtml(val);
 }
 
 function selectCountryItem(flag, name, code) {
@@ -268,10 +266,10 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function getCountryInfo(phone) {
-    const p = String(phone || '').replace(/[\s\-\(\)]/g, '');
+    const p = normPhone(phone);
     for (const cont of GLOBAL_VERIFY_CONTINENTS) {
         for (const c of cont.countries) {
-            if (p.startsWith('+' + c.code) || p.startsWith(c.code)) {
+            if (p.startsWith(c.code)) {
                 return { code: '+' + c.code, name: c.name, flag: c.flag };
             }
         }
@@ -281,7 +279,6 @@ function getCountryInfo(phone) {
 
 function getActiveProfile() { return savedProfiles[0]; }
 function saveProfiles() { localStorage.setItem('message_profiles_v18', JSON.stringify(savedProfiles)); }
-function normPhone(p) { return String(p || '').replace(/[\s\-\(\)]/g, ''); }
 
 function updatePhoneValidation() {
     const phoneInput = document.getElementById('vPhoneInput');
@@ -289,100 +286,135 @@ function updatePhoneValidation() {
     phoneInput.placeholder = selectedCountryData.code === '880' ? "1700000000" : "Enter phone number";
 }
 
+let existingCloudAccount = null;
+
 async function submitVerifyStep1() {
     const nameInput = document.getElementById('vFullName');
     const phoneInput = document.getElementById('vPhoneInput');
 
     const name = nameInput ? nameInput.value.trim() : '';
-    const phone = phoneInput ? phoneInput.value.trim() : '';
+    let rawPhone = phoneInput ? phoneInput.value.trim().replace(/^0+/, '') : '';
 
-    if (!name) { 
+    if (!name) {
         if (typeof showToast === 'function') showToast("Please enter your full name", true);
-        return; 
+        return;
     }
-    if (!phone || phone.length < 6) { 
+    if (!rawPhone || rawPhone.length < 6) {
         if (typeof showToast === 'function') showToast("Please enter a valid phone number", true);
-        return; 
+        return;
     }
 
-    tempVerifyName = name; 
-    tempVerifyPhone = '+' + selectedCountryData.code + phone;
+    tempVerifyName = name;
+    tempVerifyPhone = normPhone(selectedCountryData.code + rawPhone);
     generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    existingCloudAccount = null;
 
     try {
-        await fetch('/api/chat?action=send_magic_link', {
+        const res = await fetch('/api/chat?action=send_magic_link', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ display_name: tempVerifyName, phone: tempVerifyPhone, magic_code: generatedOtpCode, ip: userDeviceIp })
+            body: JSON.stringify({
+                display_name: tempVerifyName,
+                phone: tempVerifyPhone,
+                magic_code: generatedOtpCode,
+                ip: userDeviceIp
+            })
         });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.already_exists && data.user) {
+                existingCloudAccount = data.user;
+                if (typeof showToast === 'function') showToast("Existing account found! Restoring your profile...");
+            }
+        }
     } catch (e) {}
 
     const step1El = document.getElementById('verifyStep1');
     const step2El = document.getElementById('verifyStep2');
     if (step1El) step1El.style.display = 'none';
     if (step2El) step2El.style.display = 'block';
-    
+
     const otpInput = document.getElementById('vOtpInput');
     if (otpInput) otpInput.value = generatedOtpCode;
-
-    if (typeof showToast === 'function') showToast("Verification code auto-filled");
 }
 
 async function submitVerifyStep2() {
     const otpEl = document.getElementById('vOtpInput');
     const entered = otpEl ? otpEl.value.trim() : '';
-    
-    if (entered !== generatedOtpCode) { 
-        if (typeof showToast === 'function') showToast("Invalid verification code", true); 
-        return; 
+
+    if (entered !== generatedOtpCode) {
+        if (typeof showToast === 'function') showToast("Invalid verification code", true);
+        return;
     }
 
     const cleanVerifyPhone = normPhone(tempVerifyPhone);
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
-    const existingContact = localContacts.find(c => normPhone(c.phone) === cleanVerifyPhone);
-    const autoUsername = 'user_' + Math.floor(1000 + Math.random() * 9000);
+    const existingLocal = localContacts.find(c => normPhone(c.phone) === cleanVerifyPhone);
+
+    // একবার অ্যাকাউন্ট তৈরি থাকলে ক্লাউডের পুরনো তথ্যই প্রাধান্য পাবে (দ্বিতীয় অ্যাকাউন্ট হবে না)
+    const finalName = existingCloudAccount?.display_name || existingLocal?.name || tempVerifyName;
+    const finalUsername = existingCloudAccount?.username || existingLocal?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
+    const finalAvatar = existingCloudAccount?.avatar_url || existingLocal?.avatar || "";
 
     isVerifiedSession = true;
     localStorage.setItem('message_verified_v18', 'true');
 
-    // ছবি আপলোড না করলে avatar খালি রাখা হবে যাতে নামের প্রথম অক্ষর দিয়ে লোগো দেখায়
-    if (!existingContact) {
-        localContacts.push({
-            name: tempVerifyName,
-            phone: cleanVerifyPhone,
-            username: autoUsername,
-            avatar: "",
-            isOnline: true,
-            appUser: true
-        });
-        localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
-    }
-
     savedProfiles[0] = {
-        name: tempVerifyName,
+        name: finalName,
         phone: cleanVerifyPhone,
-        username: existingContact?.username || autoUsername,
+        username: finalUsername,
         themeColor: "emerald",
-        avatar: existingContact?.avatar || ""
+        avatar: finalAvatar
     };
     saveProfiles();
 
+    // কন্টাক্ট লিস্টে নিজের অ্যাকাউন্ট নিশ্চিতভাবে যোগ করা (যাতে যে কেউ ভেরিফাই করলেই কন্টাক্টে আসে)
+    const idx = localContacts.findIndex(c => normPhone(c.phone) === cleanVerifyPhone);
+    if (idx === -1) {
+        localContacts.push({
+            name: finalName,
+            phone: cleanVerifyPhone,
+            username: finalUsername,
+            avatar: finalAvatar,
+            isOnline: true,
+            appUser: true
+        });
+    } else {
+        localContacts[idx].name = finalName;
+        localContacts[idx].username = finalUsername;
+        localContacts[idx].avatar = finalAvatar;
+        localContacts[idx].isOnline = true;
+        localContacts[idx].appUser = true;
+    }
+    localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
+
+    // ক্লাউডফ্লেয়ারে চূড়ান্ত সিঙ্ক
     try {
         await fetch('/api/chat?action=register_or_update_user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(savedProfiles[0])
+            body: JSON.stringify({
+                phone: cleanVerifyPhone,
+                name: finalName,
+                username: finalUsername,
+                avatar: finalAvatar,
+                is_edit: false
+            })
         });
     } catch (e) {}
 
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-    
+
     const overlay = document.getElementById('verifyOverlay');
     if (overlay) overlay.style.display = 'none';
-    
-    if (typeof showToast === 'function') showToast("Connected successfully!");
-    
-    if (typeof switchTab === 'function') {
+
+    if (typeof initAppAfterVerification === 'function') {
+        initAppAfterVerification();
+    } else if (typeof switchTab === 'function') {
         switchTab('contact');
+    }
+
+    if (typeof showToast === 'function') {
+        showToast(existingCloudAccount ? `Welcome back, ${finalName}!` : "Connected & synced globally!");
     }
 }
