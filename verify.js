@@ -197,7 +197,7 @@ function renderCountrySelectorUI() {
 
         <div id="countryDropdownModal" class="hidden absolute top-full left-0 right-0 mt-2 theme-card border border-amber-400/30 rounded-2xl shadow-2xl z-50 overflow-hidden max-h-72 flex flex-col">
             <div class="p-2.5 border-b border-white/10 bg-black/50 sticky top-0 z-10">
-                <input type="text" id="countrySearchBox" placeholder="দেশ খুঁজুন (Search country)..." oninput="filterCountryList(this.value)" class="w-full theme-input text-xs px-3 py-2 rounded-xl text-white focus:outline-none border border-amber-400/20">
+                <input type="text" id="countrySearchBox" placeholder="Search country" oninput="filterCountryList(this.value)" class="w-full theme-input text-xs px-3 py-2 rounded-xl text-white focus:outline-none border border-amber-400/20">
             </div>
             <div id="countryListScrollArea" class="overflow-y-auto p-1.5 space-y-2 flex-1 max-h-60">
                 ${generateCountryListHtml()}
