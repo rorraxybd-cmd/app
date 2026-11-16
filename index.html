@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=21.0">
+    <link rel="stylesheet" href="/discover.css?v=22.0">
     <style>
         :root {
             --bg-main: #030305;
@@ -58,8 +58,6 @@
             font-weight: 700; 
             background-color: #08110c;
             color: #F5D061;
-            max-height: 200px;
-            overflow-y: auto;
         }
         #vCountrySelect option {
             background-color: #030305;
@@ -73,33 +71,18 @@
 </head>
 <body class="h-[100dvh] w-full flex flex-col overflow-hidden fixed inset-0">
 
-    <!-- Auto-Verify & Install Overlay -->
+    <!-- Direct Verification & Profile Overlay (No Install Step) -->
     <div id="verifyOverlay" style="display: flex;" class="z-50 absolute inset-0 bg-[#030305] items-center justify-center p-4">
         <div class="verify-card space-y-5 text-center">
             
-            <!-- Install Step -->
-            <div id="pwaInstallContainer" class="space-y-4">
-                <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto">
-                <h1 class="brand-title-font text-3xl font-extrabold gold-gradient-text">MESSAGE</h1>
-                <p class="text-[11px] text-white/80 tracking-[0.25em] font-semibold uppercase">Private Global Messenger</p>
-                <div class="pt-3 space-y-2">
-                    <button onclick="handleCustomInstall()" class="gold-btn w-full py-4 rounded-xl text-xs font-extrabold tracking-wider inline-flex items-center justify-center space-x-2 cursor-pointer uppercase">
-                        <i class="fa-solid fa-download"></i><span>INSTALL APP</span>
-                    </button>
-                    <button onclick="skipToProfileStep()" class="w-full py-2.5 text-xs text-amber-300/80 hover:text-amber-300 transition font-semibold cursor-pointer tracking-wider uppercase">
-                        Already Installed? Continue →
-                    </button>
-                </div>
-            </div>
-
             <!-- Verify Step 1: Profile Details -->
-            <div id="verifyStep1" class="space-y-4 text-left hidden">
+            <div id="verifyStep1" class="space-y-4 text-left">
                 <div class="text-center pb-1">
-                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto mb-2" style="width: 64px; height: 64px;">
-                    <h2 class="brand-title-font text-2xl font-bold gold-gradient-text">Create Profile</h2>
-                    <p class="text-[10px] text-white/70 tracking-widest uppercase mt-0.5">Enter your details to connect</p>
+                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto mb-2" style="width: 72px; height: 72px;">
+                    <h1 class="brand-title-font text-2xl font-bold gold-gradient-text">MESSAGE</h1>
+                    <p class="text-[10px] text-white/70 tracking-[0.2em] uppercase mt-0.5">Favorite Global Messenger</p>
                 </div>
-                <div class="space-y-1.5">
+                <div class="space-y-1.5 pt-2">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">FULL NAME <span class="text-pink-500">*</span></label>
                     <input type="text" id="vFullName" placeholder="Enter your full name" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
                 </div>
@@ -110,7 +93,7 @@
                         <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
                     </div>
                 </div>
-                <button onclick="submitVerifyStep1()" class="w-full py-4 gold-btn text-xs rounded-xl cursor-pointer mt-2 font-extrabold flex items-center justify-center space-x-2 uppercase tracking-wider">
+                <button onclick="submitVerifyStep1()" class="w-full py-4 gold-btn text-xs rounded-xl cursor-pointer mt-2 font-extrabold flex items-center justify-center space-x-2 uppercase tracking-wider shadow-lg">
                     <span>CONTINUE</span> <i class="fa-solid fa-circle-check text-pink-600 text-sm"></i>
                 </button>
             </div>
@@ -123,7 +106,7 @@
                     <label class="text-[11px] font-bold tracking-wider text-white block uppercase">AUTO-FILLED CODE <span class="text-emerald-400">✓</span></label>
                     <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-2xl font-extrabold tracking-[12px] px-4 py-4 rounded-xl text-white focus:outline-none border border-amber-400/20">
                 </div>
-                <button onclick="submitVerifyStep2()" class="w-full py-4 gold-btn text-xs rounded-xl cursor-pointer mt-3 font-extrabold flex items-center justify-center space-x-2 uppercase tracking-wider">
+                <button onclick="submitVerifyStep2()" class="w-full py-4 gold-btn text-xs rounded-xl cursor-pointer mt-3 font-extrabold flex items-center justify-center space-x-2 uppercase tracking-wider shadow-lg">
                     <span>VERIFY & START</span> <i class="fa-solid fa-circle-check text-pink-600 text-sm"></i>
                 </button>
             </div>
@@ -209,10 +192,10 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/discover.js?v=22.0"></script>
-    <script src="/verify.js?v=22.0"></script>
-    <script src="/call.js?v=22.0"></script>
-    <script src="/message.js?v=22.0"></script>
+    <script src="/discover.js?v=23.0"></script>
+    <script src="/verify.js?v=23.0"></script>
+    <script src="/call.js?v=23.0"></script>
+    <script src="/message.js?v=23.0"></script>
     
     <script>
         async function fetchCloudContacts() {
@@ -320,66 +303,6 @@
             switchTab('contact');
         }
 
-        async function loadCountryCodesIntoSelect() {
-            const selectEl = document.getElementById('vCountrySelect');
-            if (!selectEl) return;
-            
-            let detectedCountryCode = '880';
-            try {
-                const ipRes = await fetch('https://ipapi.co/json/');
-                if (ipRes.ok) {
-                    const ipData = await ipRes.json();
-                    const countryName = ipData.country_name;
-                    if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined') {
-                        for (const cont of GLOBAL_CONTINENTS_DATA) {
-                            const found = cont.countries.find(c => c.name.toLowerCase() === countryName?.toLowerCase());
-                            if (found) {
-                                detectedCountryCode = found.code;
-                                break;
-                            }
-                        }
-                    }
-                }
-            } catch (e) {}
-
-            selectEl.innerHTML = '';
-            if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined') {
-                GLOBAL_CONTINENTS_DATA.forEach(continent => {
-                    continent.countries.forEach(country => {
-                        const option = document.createElement('option');
-                        option.value = `+${country.code}|10`;
-                        option.textContent = `${country.flag} +${country.code}`;
-                        if (country.code === detectedCountryCode || (detectedCountryCode === '880' && country.name === 'Bangladesh')) {
-                            option.selected = true;
-                        }
-                        selectEl.appendChild(option);
-                    });
-                });
-            } else {
-                selectEl.innerHTML = `<option value="+880|10" selected>🇧🇩 +880</option>`;
-            }
-            updatePhoneValidation();
-        }
-
-        async function handleCustomInstall() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const choiceResult = await deferredPrompt.userChoice;
-                deferredPrompt = null;
-            }
-            skipToProfileStep();
-        }
-
-        function skipToProfileStep() {
-            const installContainer = document.getElementById('pwaInstallContainer');
-            const step1 = document.getElementById('verifyStep1');
-            if (installContainer) installContainer.classList.add('hidden');
-            if (step1) {
-                step1.classList.remove('hidden');
-                loadCountryCodesIntoSelect();
-            }
-        }
-
         window.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('verifyOverlay');
             const savedTheme = JSON.parse(localStorage.getItem('message_profiles_v18') || '[{}]')[0]?.themeColor || 'emerald';
@@ -390,13 +313,13 @@
                 initAppAfterVerification();
             } else {
                 if (overlay) overlay.style.display = 'flex';
-                const installContainer = document.getElementById('pwaInstallContainer');
                 const step1 = document.getElementById('verifyStep1');
                 const step2 = document.getElementById('verifyStep2');
-                if (installContainer) installContainer.classList.remove('hidden');
-                if (step1) step1.classList.add('hidden');
+                if (step1) step1.classList.remove('hidden');
                 if (step2) step2.classList.add('hidden');
-                loadCountryCodesIntoSelect();
+                if (typeof populateVerifyCountryDropdown === 'function') {
+                    populateVerifyCountryDropdown();
+                }
             }
         });
     </script>
