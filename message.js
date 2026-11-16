@@ -200,8 +200,3 @@ function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
         </div>`;
     document.body.appendChild(modal);
 }
-```[cite: 2, 7]
-
----
-
-এই ফাইলগুলো আপনার প্রজেক্টে সঠিকভাবে আপলোড করলে এখন **Settings, Discover, Contacts, Chats, এবং Calls**—এই ৫টি মেনুই সম্পূর্ণ সক্রিয় থাকবে এবং একে অপরের সাথে নিখুঁতভাবে কাজ করবে[cite: 6, 7, 8, 10, 11]।
