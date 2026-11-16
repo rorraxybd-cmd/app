@@ -173,7 +173,8 @@ function openChat(phone, name, avatar = '') {
     if (workspace) {
         workspace.classList.remove('hidden');
         if (window.innerWidth < 768) {
-            workspace.className = "absolute inset-0 z-30 flex flex-col bg-[#030305]";
+            // মোবাইলে সঠিক ফুল-স্ক্রিন ফিক্সড লেআউট যাতে মেনু বা ইনপুট বার ঢাকা না পড়ে
+            workspace.className = "fixed inset-0 z-40 flex flex-col bg-[#030305] h-[100dvh]";
         } else {
             workspace.style.display = 'flex';
             workspace.classList.add('flex-col');
@@ -310,7 +311,6 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
         usersHtml = matchedUsers.map(c => {
             const isOnline = c.isOnline === true || c.isOnline === 1 || c.isOnline === "1";
             const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
-            // রিডানড্যান্ট "Online" টেক্সট বাদ দিয়ে শুধুমাত্র ক্লিন ডট বা স্ট্যাটাস ইন্ডিকেটর
             const statusIndicator = isOnline 
                 ? `<span class="w-2.5 h-2.5 rounded-full bg-[#2ed573] inline-block shadow-[0_0_8px_#2ed573]" title="Online"></span>` 
                 : `<span class="w-2.5 h-2.5 rounded-full bg-gray-500 inline-block" title="Offline"></span>`;
@@ -325,7 +325,6 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
                         <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${statusColor}"></span>
                     </div>
                     <div class="min-w-0 flex-1 pr-2">
-                        <!-- নাম এবং তার পাশেই দেশের পতাকা (ডাবল লাইন বা নিচে নাম ছাড়াই) -->
                         <p class="text-xs font-semibold gold-gradient-text truncate flex items-center space-x-1.5">
                             <span>${c.name}</span>
                             <span class="text-sm">${countryObj.flag}</span>
@@ -347,7 +346,7 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
                         <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg>
                     </button>
                 </div>
-            </div>`;
+            `;
         }).join('');
     }
 
@@ -400,7 +399,7 @@ function renderContactsView(searchQuery = '') {
             const isOnline = c.isOnline === true || c.isOnline === 1 || c.isOnline === "1";
             const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
             const statusIndicator = isOnline 
-                ? `<span class="w-2.5 h-2.5 rounded-full bg-[#2ed573] inline-block shadow-[0_0_8px_#2ed573]"></span>` 
+                ? `<span class="w-2.5 h-2.5 rounded-full bg-[#2ed573] inline-block"></span>` 
                 : `<span class="w-2.5 h-2.5 rounded-full bg-gray-500 inline-block"></span>`;
 
             const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐', name: 'Global' };
@@ -436,7 +435,7 @@ function renderContactsView(searchQuery = '') {
                         <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg>
                     </button>
                 </div>
-            </div>`;
+            `;
         }).join('');
     }
 
@@ -509,7 +508,6 @@ function saveNewContactFromModal() {
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const cleanPhone = phone.replace(/[\s\-\(\)\+]/g, '');
 
-    // একটি নম্বর দিয়ে একবারই ভেরিফিকেশন ও ডুপ্লিকেট রোধের কঠোর লজিক
     const exists = localContacts.find(c => String(c.phone || '').replace(/[\s\-\(\)\+]/g, '') === cleanPhone);
     if (exists) {
         if (typeof showToast === 'function') showToast("এই ফোন নম্বরটি দিয়ে ইতিমধ্যে অ্যাকাউন্ট রেজিস্টার্ড রয়েছে! ক্লাউড ভেরিফিকেশনের কারণে দ্বিতীয়বার এই নম্বর দিয়ে অ্যাকাউন্ট তৈরি করা যাবে না।", true);
