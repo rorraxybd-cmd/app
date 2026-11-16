@@ -1,10 +1,10 @@
-// verify.js - Professional Verification & Profile Module (Fixed & Clean)
+// verify.js - Professional Verification & Profile Module (Custom Searchable Country Dropdown)
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
+let selectedCountryData = { flag: "🇧🇩", name: "Bangladesh", code: "880" };
 
 const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'message'];
 
-// ২০০+ দেশের পতাকা এবং কান্ট্রি কোডের সম্পূর্ণ ডেটাসেট
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -150,12 +150,10 @@ let savedProfiles = JSON.parse(localStorage.getItem('message_profiles_v18') || '
     avatar: "https://pub-e1469a425020465cb5f7971065e07a62.r2.dev/logo.jpg"
 }];
 
-// অটোমেটিক কান্ট্রি ড্রপডাউন লোড করার ফাংশন
+// অটোমেটিক আইপি ডিটেক্ট করে কান্ট্রি সেট করা এবং কাস্টম ড্রপডাউন রেন্ডার করা
 async function populateVerifyCountryDropdown() {
-    const select = document.getElementById('vCountrySelect');
-    if (!select) return;
-    
-    let detectedCountryCode = '880'; 
+    const container = document.getElementById('vCountrySelectContainer');
+    if (!container) return;
 
     try {
         const ipRes = await fetch('https://ipapi.co/json/');
@@ -166,29 +164,111 @@ async function populateVerifyCountryDropdown() {
             for (const cont of GLOBAL_CONTINENTS_DATA) {
                 const found = cont.countries.find(c => c.name.toLowerCase() === countryName?.toLowerCase());
                 if (found) {
-                    detectedCountryCode = found.code;
+                    selectedCountryData = found;
                     break;
                 }
             }
         }
     } catch (e) {}
 
-    let html = '';
-    GLOBAL_CONTINENTS_DATA.forEach(continent => {
-        continent.countries.forEach(c => {
-            const isSelected = (c.code === detectedCountryCode) ? 'selected' : '';
-            // এখানে পতাকা, কোড এবং দেশের নাম সুন্দরভাবে দেওয়া হলো
-            html += `<option value="+${c.code}|10" ${isSelected} style="background: #030305; color: #ffffff; padding: 6px;">${c.flag} +${c.code} (${c.name})</option>`;
-        });
-    });
-    
-    select.innerHTML = html;
+    renderCountrySelectorUI();
+}
+
+function renderCountrySelectorUI() {
+    let existingWrapper = document.getElementById('customCountrySelectWrapper');
+    if (existingWrapper) existingWrapper.remove();
+
+    const parentContainer = document.getElementById('vCountrySelectContainer');
+    if (!parentContainer) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.id = 'customCountrySelectWrapper';
+    wrapper.className = 'relative w-full';
+
+    wrapper.innerHTML = `
+        <div id="countryDropdownBtn" onclick="toggleCountryDropdownModal()" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-amber-300 font-bold flex items-center justify-between cursor-pointer border border-amber-400/20">
+            <div class="flex items-center space-x-2.5">
+                <span class="text-lg">${selectedCountryData.flag}</span>
+                <span class="text-white">${selectedCountryData.name} (+${selectedCountryData.code})</span>
+            </div>
+            <i class="fa-solid fa-chevron-down text-amber-300 text-xs"></i>
+        </div>
+
+        <div id="countryDropdownModal" class="hidden absolute top-full left-0 right-0 mt-2 theme-card border border-amber-400/30 rounded-2xl shadow-2xl z-50 overflow-hidden max-h-64 flex flex-col">
+            <div class="p-2.5 border-b border-white/10 bg-black/40">
+                <input type="text" id="countrySearchBox" placeholder="দেশ খুঁজুন (Search country)..." oninput="filterCountryList(this.value)" class="w-full theme-input text-xs px-3 py-2 rounded-xl text-white focus:outline-none border border-amber-400/20">
+            </div>
+            <div id="countryListScrollArea" class="overflow-y-auto p-1 space-y-1 flex-1 max-h-52">
+                ${generateCountryListHtml()}
+            </div>
+        </div>
+    `;
+
+    parentContainer.appendChild(wrapper);
     updatePhoneValidation();
 }
-// পেজ লোড হওয়ার সাথে সাথেই যেন ড্রপডাউন কল হয়
+
+function generateCountryListHtml(searchQuery = '') {
+    let html = '';
+    const q = searchQuery.toLowerCase().trim();
+
+    GLOBAL_CONTINENTS_DATA.forEach(continent => {
+        const filtered = continent.countries.filter(c => c.name.toLowerCase().includes(q) || c.code.includes(q));
+        if (filtered.length === 0) return;
+
+        html += `<div class="px-2 py-1 text-[10px] font-bold text-amber-400/70 uppercase">${continent.title}</div>`;
+        filtered.forEach(c => {
+            const isSelected = c.code === selectedCountryData.code && c.name === selectedCountryData.name;
+            html += `
+                <div onclick="selectCountryItem('${c.flag}', '${c.name.replace(/'/g, "\\'")}', '${c.code}')" class="flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer hover:bg-white/10 transition ${isSelected ? 'bg-amber-400/20 text-amber-300 font-bold' : 'text-white font-medium'}">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="text-base">${c.flag}</span>
+                        <span class="text-xs">${c.name}</span>
+                    </div>
+                    <span class="text-xs text-amber-300">+${c.code}</span>
+                </div>
+            `;
+        });
+    });
+    return html;
+}
+
+function toggleCountryDropdownModal() {
+    const modal = document.getElementById('countryDropdownModal');
+    if (!modal) return;
+    if (modal.classList.contains('hidden')) {
+        modal.classList.remove('hidden');
+        document.getElementById('countrySearchBox')?.focus();
+    } else {
+        modal.classList.add('hidden');
+    }
+}
+
+function filterCountryList(val) {
+    const scrollArea = document.getElementById('countryListScrollArea');
+    if (scrollArea) {
+        scrollArea.innerHTML = generateCountryListHtml(val);
+    }
+}
+
+function selectCountryItem(flag, name, code) {
+    selectedCountryData = { flag, name, code };
+    document.getElementById('countryDropdownModal')?.classList.add('hidden');
+    renderCountrySelectorUI();
+}
+
+// উইন্ডোতে ক্লিক করলে ড্রপডাউন বন্ধ হয়ে যাবে
+window.addEventListener('click', (e) => {
+    const wrapper = document.getElementById('customCountrySelectWrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+        document.getElementById('countryDropdownModal')?.classList.add('hidden');
+    }
+});
+
 window.addEventListener('DOMContentLoaded', () => {
     populateVerifyCountryDropdown();
 });
+
 function getCountryInfo(phone) {
     const p = String(phone || '').replace(/[\s\-\(\)]/g, '');
     for (const cont of GLOBAL_CONTINENTS_DATA) {
@@ -206,21 +286,16 @@ function saveProfiles() { localStorage.setItem('message_profiles_v18', JSON.stri
 function normPhone(p) { return String(p || '').replace(/[\s\-\(\)]/g, ''); }
 
 function updatePhoneValidation() {
-    const select = document.getElementById('vCountrySelect'), phoneInput = document.getElementById('vPhoneInput');
-    if (!select || !phoneInput) return;
-    const val = select.value.split('|');
-    phoneInput.maxLength = val[1] || 10;
-    phoneInput.placeholder = "1700000000";
+    const phoneInput = document.getElementById('vPhoneInput');
+    if (!phoneInput) return;
+    phoneInput.placeholder = selectedCountryData.code === '880' ? "1700000000" : "Enter phone number";
 }
 
 async function submitVerifyStep1() {
     const nameInput = document.getElementById('vFullName');
-    const selectEl = document.getElementById('vCountrySelect');
     const phoneInput = document.getElementById('vPhoneInput');
 
     const name = nameInput ? nameInput.value.trim() : '';
-    const selectData = selectEl ? selectEl.value.split('|') : ['+880', '10'];
-    const countryCode = selectData[0];
     const phone = phoneInput ? phoneInput.value.trim() : '';
 
     if (!name) { 
@@ -233,7 +308,7 @@ async function submitVerifyStep1() {
     }
 
     tempVerifyName = name; 
-    tempVerifyPhone = countryCode + phone;
+    tempVerifyPhone = '+' + selectedCountryData.code + phone;
     generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     try {
