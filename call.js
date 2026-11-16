@@ -1,4 +1,4 @@
-// call.js - Professional Audio & Video Calling Module with Cloudflare TURN Integration
+// call.js - Professional Audio & Video Calling Module with Real-Time WebRTC
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
 let callRingInterval = null, activeAudioCtx = null, callPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
@@ -120,12 +120,12 @@ function toggleVideoSwap() {
 
     if (isLocalMain) {
         localVid.className = "w-full h-full object-cover";
-        remoteVid.className = "w-28 h-36 object-cover rounded-2xl border-2 border-amber-400/60 absolute bottom-24 right-4 bg-gray-900 shadow-2xl cursor-pointer hover:scale-105 transition-all z-20";
+        remoteVid.className = "w-28 h-36 object-cover rounded-2xl absolute bottom-24 right-4 bg-gray-900 cursor-pointer transition-all z-20";
         localVid.onclick = null;
         remoteVid.onclick = toggleVideoSwap;
     } else {
         remoteVid.className = "w-full h-full object-cover";
-        localVid.className = "w-28 h-36 object-cover rounded-2xl border-2 border-amber-400/60 absolute bottom-24 right-4 bg-gray-900 shadow-2xl cursor-pointer hover:scale-105 transition-all z-20";
+        localVid.className = "w-28 h-36 object-cover rounded-2xl absolute bottom-24 right-4 bg-gray-900 cursor-pointer transition-all z-20";
         remoteVid.onclick = null;
         localVid.onclick = toggleVideoSwap;
     }
@@ -365,7 +365,7 @@ function toggleMicMute() {
     localStream.getAudioTracks().forEach(t => t.enabled = !isMicMuted);
     const btn = document.getElementById('muteMicBtn');
     if (btn) {
-        btn.innerHTML = isMicMuted ? `<i class="fa-solid fa-microphone-slash text-red-400"></i>` : `<i class="fa-solid fa-microphone"></i>`;
+        btn.innerHTML = isMicMuted ? `<i class="fa-solid fa-microphone-slash text-red-400 text-xl"></i>` : `<i class="fa-solid fa-microphone text-xl"></i>`;
     }
     if (typeof showToast === 'function') showToast(isMicMuted ? "Muted" : "Unmuted");
 }
@@ -380,41 +380,41 @@ function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     
     modal.innerHTML = `
         <div class="w-full flex justify-between items-center z-30 pt-2">
-            <span id="callTypeBadge" class="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-[11px] font-bold uppercase tracking-wider">${mode} call</span>
-            <p id="callStatusLabel" class="text-xs text-gray-300 font-medium">${statusText}</p>
+            <span id="callTypeBadge" class="text-amber-300 text-xs font-semibold uppercase tracking-wider">${mode} call</span>
+            <p id="callStatusLabel" class="text-xs text-gray-400 font-medium">${statusText}</p>
             <div class="w-16"></div>
         </div>
 
         <div class="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
             <div id="callerInfoBox" class="${mode === 'video' ? 'hidden' : 'flex'} flex-col items-center space-y-4 pointer-events-auto">
-                <img src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-32 h-32 rounded-full object-cover border-4 border-amber-400/60 shadow-2xl animate-pulse bg-black">
-                <h2 class="text-2xl font-extrabold gold-gradient-text tracking-wide">${peerName}</h2>
+                <img src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-32 h-32 rounded-full object-cover bg-black">
+                <h2 class="text-2xl font-extrabold text-white tracking-wide">${peerName}</h2>
             </div>
         </div>
 
         <div id="videoStreamsBox" class="${mode === 'video' ? 'flex' : 'hidden'} absolute inset-0 w-full h-full bg-black z-0 overflow-hidden">
             <video id="callRemoteVideo" autoplay playsinline class="w-full h-full object-cover"></video>
-            <video id="callLocalVideo" autoplay muted playsinline class="w-28 h-36 object-cover rounded-2xl border-2 border-amber-400/60 absolute bottom-24 right-4 bg-gray-900 shadow-2xl cursor-pointer hover:scale-105 transition-all z-20" onclick="toggleVideoSwap()"></video>
+            <video id="callLocalVideo" autoplay muted playsinline class="w-28 h-36 object-cover rounded-2xl absolute bottom-24 right-4 bg-gray-900 cursor-pointer transition-all z-20" onclick="toggleVideoSwap()"></video>
         </div>
         <audio id="callRemoteAudio" autoplay></audio>
 
         <div class="w-full flex justify-center items-center z-30 pb-8 pointer-events-auto">
-            <div id="callControlButtons" class="flex items-center space-x-6 bg-black/60 backdrop-blur-md px-8 py-4 rounded-full border border-white/10 shadow-2xl">
+            <div id="callControlButtons" class="flex items-center space-x-8">
                 ${isIncoming ? `
-                    <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition" title="Decline Call">
+                    <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer transition" title="Decline Call">
                         <i class="fa-solid fa-phone-slash text-xl"></i>
                     </button>
-                    <button type="button" onclick="acceptWhatsAppCall()" class="w-16 h-16 rounded-full bg-green-600 hover:bg-green-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition animate-bounce" title="Accept Call">
+                    <button type="button" onclick="acceptWhatsAppCall()" class="w-16 h-16 rounded-full bg-green-600 hover:bg-green-500 text-white flex items-center justify-center cursor-pointer transition animate-bounce" title="Accept Call">
                         <i class="fa-solid fa-phone text-xl"></i>
                     </button>
                 ` : `
-                    <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center shadow-lg cursor-pointer transition transform hover:scale-110" title="Mute">
-                        <i class="fa-solid fa-microphone text-lg"></i>
+                    <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-12 h-12 rounded-full text-white flex items-center justify-center cursor-pointer transition hover:opacity-80" title="Mute">
+                        <i class="fa-solid fa-microphone text-xl"></i>
                     </button>
-                    <button type="button" onclick="toggleVideoSwitch()" class="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 text-amber-300 flex items-center justify-center shadow-lg cursor-pointer transition transform hover:scale-110" title="Video Switch">
-                        <i class="fa-solid fa-video text-lg"></i>
+                    <button type="button" onclick="toggleVideoSwitch()" class="w-12 h-12 rounded-full text-amber-300 flex items-center justify-center cursor-pointer transition hover:opacity-80" title="Video Switch">
+                        <i class="fa-solid fa-video text-xl"></i>
                     </button>
-                    <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition" title="End Call">
+                    <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer transition" title="End Call">
                         <i class="fa-solid fa-phone-slash text-xl"></i>
                     </button>
                 `}
@@ -432,13 +432,13 @@ function updateInCallButtons() {
     
     if (!box) return;
     box.innerHTML = `
-        <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center shadow-lg cursor-pointer transition transform hover:scale-110" title="Mute">
-            <i class="fa-solid fa-microphone text-lg"></i>
+        <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-12 h-12 rounded-full text-white flex items-center justify-center cursor-pointer transition hover:opacity-80" title="Mute">
+            <i class="fa-solid fa-microphone text-xl"></i>
         </button>
-        <button type="button" onclick="toggleVideoSwitch()" class="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 text-amber-300 flex items-center justify-center shadow-lg cursor-pointer transition transform hover:scale-110" title="Video Switch">
-            <i class="fa-solid fa-video text-lg"></i>
+        <button type="button" onclick="toggleVideoSwitch()" class="w-12 h-12 rounded-full text-amber-300 flex items-center justify-center cursor-pointer transition hover:opacity-80" title="Video Switch">
+            <i class="fa-solid fa-video text-xl"></i>
         </button>
-        <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-2xl cursor-pointer transform hover:scale-110 transition" title="End Call">
+        <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer transition" title="End Call">
             <i class="fa-solid fa-phone-slash text-xl"></i>
         </button>
     `;
