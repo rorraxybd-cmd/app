@@ -26,8 +26,3 @@ export async function onRequest(context) {
         return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: corsHeaders });
     }
 }
-```[cite: 1]
-
----
-
-আপনার কোডগুলো সম্পূর্ণ স্ট্যাবল এবং একটার সাথে অন্যটি কানেক্টেড রয়েছে। আপনি প্রজেক্টে এগুলো আপলোড করে টেস্ট করে দেখতে পারেন। কোনো অতিরিক্ত মডিউলের প্রয়োজন হলে জানাতে পারেন!
