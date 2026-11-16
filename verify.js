@@ -1,11 +1,12 @@
-// verify.js - Professional Verification & Profile Module (Custom Searchable Country Dropdown)
+// verify.js - Professional Verification & Profile Module (Full 200+ Countries Searchable Dropdown)
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
 let selectedCountryData = { flag: "🇧🇩", name: "Bangladesh", code: "880" };
 
 const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'message'];
 
-const GLOBAL_CONTINENTS_DATA = [
+// পূর্ণাঙ্গ ২০০+ দেশের তালিকা (মহাদেশ অনুযায়ী সাজানো)
+const GLOBAL_VERIFY_CONTINENTS = [
     {
         id: "asia",
         title: "🌏 Asia",
@@ -150,7 +151,7 @@ let savedProfiles = JSON.parse(localStorage.getItem('message_profiles_v18') || '
     avatar: "https://pub-e1469a425020465cb5f7971065e07a62.r2.dev/logo.jpg"
 }];
 
-// অটোমেটিক আইপি ডিটেক্ট করে কান্ট্রি সেট করা এবং কাস্টম ড্রপডাউন রেন্ডার করা
+// অটোমেটিক আইপি ডিটেক্ট করে ইউজারের দেশ সিলেক্ট করা
 async function populateVerifyCountryDropdown() {
     const container = document.getElementById('vCountrySelectContainer');
     if (!container) return;
@@ -161,7 +162,7 @@ async function populateVerifyCountryDropdown() {
             const ipData = await ipRes.json();
             userDeviceIp = ipData.ip || 'Unknown';
             const countryName = ipData.country_name;
-            for (const cont of GLOBAL_CONTINENTS_DATA) {
+            for (const cont of GLOBAL_VERIFY_CONTINENTS) {
                 const found = cont.countries.find(c => c.name.toLowerCase() === countryName?.toLowerCase());
                 if (found) {
                     selectedCountryData = found;
@@ -175,11 +176,11 @@ async function populateVerifyCountryDropdown() {
 }
 
 function renderCountrySelectorUI() {
+    let parentContainer = document.getElementById('vCountrySelectContainer');
+    if (!parentContainer) return;
+
     let existingWrapper = document.getElementById('customCountrySelectWrapper');
     if (existingWrapper) existingWrapper.remove();
-
-    const parentContainer = document.getElementById('vCountrySelectContainer');
-    if (!parentContainer) return;
 
     const wrapper = document.createElement('div');
     wrapper.id = 'customCountrySelectWrapper';
@@ -194,11 +195,11 @@ function renderCountrySelectorUI() {
             <i class="fa-solid fa-chevron-down text-amber-300 text-xs"></i>
         </div>
 
-        <div id="countryDropdownModal" class="hidden absolute top-full left-0 right-0 mt-2 theme-card border border-amber-400/30 rounded-2xl shadow-2xl z-50 overflow-hidden max-h-64 flex flex-col">
-            <div class="p-2.5 border-b border-white/10 bg-black/40">
+        <div id="countryDropdownModal" class="hidden absolute top-full left-0 right-0 mt-2 theme-card border border-amber-400/30 rounded-2xl shadow-2xl z-50 overflow-hidden max-h-72 flex flex-col">
+            <div class="p-2.5 border-b border-white/10 bg-black/50 sticky top-0 z-10">
                 <input type="text" id="countrySearchBox" placeholder="দেশ খুঁজুন (Search country)..." oninput="filterCountryList(this.value)" class="w-full theme-input text-xs px-3 py-2 rounded-xl text-white focus:outline-none border border-amber-400/20">
             </div>
-            <div id="countryListScrollArea" class="overflow-y-auto p-1 space-y-1 flex-1 max-h-52">
+            <div id="countryListScrollArea" class="overflow-y-auto p-1.5 space-y-2 flex-1 max-h-60">
                 ${generateCountryListHtml()}
             </div>
         </div>
@@ -212,20 +213,20 @@ function generateCountryListHtml(searchQuery = '') {
     let html = '';
     const q = searchQuery.toLowerCase().trim();
 
-    GLOBAL_CONTINENTS_DATA.forEach(continent => {
+    GLOBAL_VERIFY_CONTINENTS.forEach(continent => {
         const filtered = continent.countries.filter(c => c.name.toLowerCase().includes(q) || c.code.includes(q));
         if (filtered.length === 0) return;
 
-        html += `<div class="px-2 py-1 text-[10px] font-bold text-amber-400/70 uppercase">${continent.title}</div>`;
+        html += `<div class="px-2 py-1 text-[10px] font-bold text-amber-400/80 uppercase tracking-wider">${continent.title}</div>`;
         filtered.forEach(c => {
             const isSelected = c.code === selectedCountryData.code && c.name === selectedCountryData.name;
             html += `
-                <div onclick="selectCountryItem('${c.flag}', '${c.name.replace(/'/g, "\\'")}', '${c.code}')" class="flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer hover:bg-white/10 transition ${isSelected ? 'bg-amber-400/20 text-amber-300 font-bold' : 'text-white font-medium'}">
+                <div onclick="selectCountryItem('${c.flag}', '${c.name.replace(/'/g, "\\'")}', '${c.code}')" class="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer hover:bg-white/10 transition ${isSelected ? 'bg-amber-400/20 text-amber-300 font-bold' : 'text-white font-medium'}">
                     <div class="flex items-center space-x-2.5">
                         <span class="text-base">${c.flag}</span>
                         <span class="text-xs">${c.name}</span>
                     </div>
-                    <span class="text-xs text-amber-300">+${c.code}</span>
+                    <span class="text-xs text-amber-300 font-bold">+${c.code}</span>
                 </div>
             `;
         });
@@ -257,7 +258,7 @@ function selectCountryItem(flag, name, code) {
     renderCountrySelectorUI();
 }
 
-// উইন্ডোতে ক্লিক করলে ড্রপডাউন বন্ধ হয়ে যাবে
+// বাইরে ক্লিক করলে ড্রপডাউন বন্ধ হয়ে যাবে
 window.addEventListener('click', (e) => {
     const wrapper = document.getElementById('customCountrySelectWrapper');
     if (wrapper && !wrapper.contains(e.target)) {
@@ -271,7 +272,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function getCountryInfo(phone) {
     const p = String(phone || '').replace(/[\s\-\(\)]/g, '');
-    for (const cont of GLOBAL_CONTINENTS_DATA) {
+    for (const cont of GLOBAL_VERIFY_CONTINENTS) {
         for (const c of cont.countries) {
             if (p.startsWith('+' + c.code) || p.startsWith(c.code)) {
                 return { code: '+' + c.code, name: c.name, flag: c.flag };
@@ -356,6 +357,7 @@ async function submitVerifyStep2() {
         });
         localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
     }
+
     savedProfiles[0] = {
         name: tempVerifyName,
         phone: cleanVerifyPhone,
@@ -364,7 +366,17 @@ async function submitVerifyStep2() {
         avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg"
     };
     saveProfiles();
+
+    try {
+        await fetch('/api/chat?action=register_or_update_user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(savedProfiles[0])
+        });
+    } catch (e) {}
+
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+    
     const overlay = document.getElementById('verifyOverlay');
     if (overlay) overlay.style.display = 'none';
     
