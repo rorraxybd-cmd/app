@@ -52,7 +52,20 @@
             border-radius: 50%;
             border: none !important;
         }
-        #vCountrySelect { width: 110px; min-width: 100px; font-weight: 700; text-align: center; }
+        #vCountrySelect { 
+            width: 120px; 
+            min-width: 110px; 
+            font-weight: 700; 
+            background-color: #08110c;
+            color: #F5D061;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        #vCountrySelect option {
+            background-color: #030305;
+            color: #ffffff;
+            padding: 8px;
+        }
         .chat-bubble-me { background: linear-gradient(135deg, #0f2e1a 0%, #081a10 100%); border: 1px solid rgba(46, 213, 115, 0.2); }
         .chat-bubble-them { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(245, 208, 97, 0.1); }
         .pink-btn { background: linear-gradient(135deg, #EC4899 0%, #be185d 100%); color: #ffffff; }
@@ -60,7 +73,7 @@
 </head>
 <body class="h-[100dvh] w-full flex flex-col overflow-hidden fixed inset-0">
 
-    <!-- Auto-Verify & Install Overlay (Install -> Verify -> Dashboard Flow) -->
+    <!-- Auto-Verify & Install Overlay -->
     <div id="verifyOverlay" style="display: flex;" class="z-50 absolute inset-0 bg-[#030305] items-center justify-center p-4">
         <div class="verify-card space-y-5 text-center">
             
@@ -137,33 +150,15 @@
         </div>
     </header>
 
-    <!-- Notification Dropdown Panel -->
-    <div id="notificationPanel" class="hidden absolute right-4 top-16 w-80 max-w-[90vw] theme-card border border-amber-400/20 rounded-2xl z-50 p-4 space-y-3 shadow-2xl">
-        <div class="flex justify-between items-center border-b border-white/10 pb-2">
-            <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Notifications</h3>
-            <div class="flex space-x-2">
-                <button onclick="deleteAllNotifications()" class="text-[10px] text-red-400 hover:underline font-semibold cursor-pointer">Delete All</button>
-                <button onclick="toggleNotificationPanel()" class="text-[10px] text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-        </div>
-        <div id="notificationListContainer" class="space-y-2 max-h-60 overflow-y-auto text-xs text-gray-300">
-            <p class="text-center text-gray-500 py-4 text-[11px]">No new notifications</p>
-        </div>
-    </div>
-
-    <!-- Main Workspace (Sidebar + Chat Area) -->
+    <!-- Main Workspace -->
     <div class="flex flex-1 overflow-hidden relative min-h-0 w-full">
-        <!-- Sidebar Section -->
         <div id="sidebarSection" class="w-full md:w-[360px] theme-surface flex flex-col justify-between shrink-0 z-20 h-full min-h-0 pb-16">
             <div class="flex flex-col flex-1 overflow-hidden min-h-0">
                 <div id="sidebarContentList" class="flex-1 overflow-y-auto space-y-1.5 p-3 pb-20"></div>
             </div>
         </div>
 
-        <!-- Chat Workspace Section -->
         <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full min-h-0 z-10 relative" style="background-color: var(--bg-main);">
-            
-            <!-- Active Chat Header -->
             <div id="activeChatHeader" class="theme-surface px-4 py-3 hidden items-center justify-between shrink-0 border-b border-white/5 z-20">
                 <div class="flex items-center space-x-3">
                     <button onclick="backToSidebarMobile()" class="md:hidden p-1.5 rounded-xl theme-card cursor-pointer">
@@ -172,87 +167,39 @@
                     <div class="flex items-center space-x-3">
                         <div class="relative"><img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" class="w-9 h-9 header-logo-clean"></div>
                         <div>
-                            <div class="flex items-center space-x-1.5">
-                                <span id="activeChatTitle" class="font-semibold text-white text-xs tracking-wide">Select a contact</span>
-                            </div>
+                            <span id="activeChatTitle" class="font-semibold text-white text-xs tracking-wide">Select a contact</span>
                         </div>
                     </div>
                 </div>
-                <!-- Chat Header Action Buttons -->
-                <div class="flex items-center space-x-2">
-                    <button onclick="startWhatsAppCall('audio')" class="p-2.5 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/10" title="Audio Call">
-                        <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                    </button>
-                    <button onclick="startWhatsAppCall('video')" class="p-2.5 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/10" title="Video Call">
-                        <svg class="w-4 h-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect></svg>
-                    </button>
-                    <button onclick="confirmClearChatHistory()" class="p-2.5 theme-card rounded-xl hover:bg-pink-950/20 transition cursor-pointer border border-pink-500/20" title="Clear Chat">
-                        <svg class="w-4 h-4 text-pink-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    </button>
-                </div>
             </div>
-
-            <!-- Messages List Container -->
-            <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 flex flex-col justify-start">
-                <div class="flex flex-col items-center justify-center space-y-3 max-w-xs text-center m-auto">
-                    <div class="w-14 h-14 rounded-2xl theme-card flex items-center justify-center border border-amber-400/10">
-                        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                    </div>
-                    <p class="text-sm font-bold gold-gradient-text">Welcome to rorraxy MESSAGE</p>
-                    <p class="text-[11px] text-gray-400">Select a contact or chat to start messaging or calling.</p>
-                </div>
-            </div>
-
-            <!-- Chat Input Bar -->
-            <div id="chatInputBar" class="theme-surface px-3 py-2.5 hidden items-center shrink-0 z-20 border-t border-white/5">
-                <div class="flex-1 flex items-center theme-input rounded-xl px-3.5 py-2 space-x-2.5">
-                    <label class="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center shrink-0" title="Attach File">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-                        <input type="file" id="universalFileInput" accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.zip,.txt" multiple class="hidden" onchange="handleUniversalFileUpload(this)">
-                    </label>
-                    <input type="text" id="messageInput" placeholder="Write a message..." class="flex-1 bg-transparent text-xs focus:outline-none text-white placeholder-gray-500 py-1 min-w-0" onkeypress="if(event.key === 'Enter') sendTextMessage()">
-                    <button id="sendBtn" onclick="sendTextMessage()" class="flex cursor-pointer hover:scale-110 transition-transform p-1 shrink-0 items-center justify-center text-amber-300" title="Send">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                    </button>
-                </div>
-            </div>
+            <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 flex flex-col justify-start"></div>
+            <div id="chatInputBar" class="theme-surface px-3 py-2.5 hidden items-center shrink-0 z-20 border-t border-white/5"></div>
         </div>
     </div>
 
-    <!-- Bottom Navigation Bar (5 Menus: Settings, Discover, Contacts, Chats, Calls) -->
+    <!-- Bottom Navigation Bar -->
     <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40 border-t border-white/5">
         <div class="flex items-center justify-around w-full px-3">
-            
-            <!-- 1. Settings Menu -->
             <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
                 <svg id="iconProfile" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 <span id="labelProfile" class="nav-label text-[9px] gold-gradient-text font-semibold">Settings</span>
             </button>
-
-            <!-- 2. Discover Menu -->
             <button onclick="switchTab('discover')" id="tabDiscover" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
                 <svg id="iconDiscover" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                 <span id="labelDiscover" class="nav-label text-[9px] gold-gradient-text font-semibold">Discover</span>
             </button>
-
-            <!-- 3. Contacts Menu -->
             <button onclick="switchTab('contact')" id="tabContact" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
                 <svg id="iconContact" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 <span id="labelContact" class="nav-label text-[9px] gold-gradient-text font-semibold">Contacts</span>
             </button>
-
-            <!-- 4. Chats Menu -->
             <button onclick="switchTab('chat')" id="tabChat" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
                 <svg id="iconChat" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                 <span id="labelChat" class="nav-label text-[9px] gold-gradient-text font-semibold">Chats</span>
             </button>
-
-            <!-- 5. Calls Menu -->
             <button onclick="switchTab('calls')" id="tabCalls" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
                 <svg id="iconCalls" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                 <span id="labelCalls" class="nav-label text-[9px] gold-gradient-text font-semibold">Calls</span>
             </button>
-
         </div>
     </nav>
 
@@ -261,11 +208,11 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- Modular JavaScript Files Connection -->
-    <script src="/discover.js?v=21.0"></script>
-    <script src="/verify.js?v=21.0"></script>
-    <script src="/call.js?v=21.0"></script>
-    <script src="/message.js?v=21.0"></script>
+    <!-- Scripts -->
+    <script src="/discover.js?v=22.0"></script>
+    <script src="/verify.js?v=22.0"></script>
+    <script src="/call.js?v=22.0"></script>
+    <script src="/message.js?v=22.0"></script>
     
     <script>
         async function fetchCloudContacts() {
@@ -300,24 +247,6 @@
             } catch (e) {}
         }
 
-        function backToSidebarMobile() {
-            const workspace = document.getElementById('workspaceSection');
-            const sidebar = document.getElementById('sidebarSection');
-            const bottomNav = document.getElementById('bottomNavBar');
-            if (workspace) {
-                workspace.classList.add('hidden');
-                workspace.classList.remove('absolute', 'inset-0', 'z-30', 'flex', 'fixed');
-                workspace.style.display = '';
-            }
-            if (sidebar) {
-                sidebar.classList.remove('hidden');
-            }
-            if (bottomNav) {
-                bottomNav.classList.remove('hidden');
-                bottomNav.style.display = 'flex';
-            }
-        }
-
         function switchTab(tabName) {
             const tabs = ['Profile', 'Discover', 'Contact', 'Chat', 'Calls'];
             tabs.forEach(t => {
@@ -346,21 +275,6 @@
             if (activeLabel) {
                 activeLabel.classList.remove('gold-gradient-text', 'font-semibold');
                 activeLabel.classList.add('pink-gradient-text', 'font-bold');
-            }
-
-            const workspace = document.getElementById('workspaceSection');
-            const sidebar = document.getElementById('sidebarSection');
-            const bottomNav = document.getElementById('bottomNavBar');
-
-            if (tabName !== 'chat' && workspace && window.innerWidth < 768) {
-                workspace.classList.add('hidden');
-                workspace.classList.remove('absolute', 'inset-0', 'z-30', 'flex', 'fixed');
-                workspace.style.display = '';
-                if (sidebar) sidebar.classList.remove('hidden');
-                if (bottomNav) {
-                    bottomNav.classList.remove('hidden');
-                    bottomNav.style.display = 'flex';
-                }
             }
 
             const sidebarList = document.getElementById('sidebarContentList');
@@ -404,9 +318,6 @@
             if (overlay) overlay.style.display = 'none';
             fetchCloudContacts();
             switchTab('contact');
-            if (typeof startIncomingCallPolling === 'function') {
-                startIncomingCallPolling();
-            }
         }
 
         async function loadCountryCodesIntoSelect() {
@@ -450,12 +361,13 @@
             updatePhoneValidation();
         }
 
-        function handleCustomInstall() {
-            if (typeof installPWAApp === 'function') {
-                installPWAApp();
-            } else {
-                skipToProfileStep();
+        async function handleCustomInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const choiceResult = await deferredPrompt.userChoice;
+                deferredPrompt = null;
             }
+            skipToProfileStep();
         }
 
         function skipToProfileStep() {
