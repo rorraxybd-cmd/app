@@ -136,7 +136,6 @@ async function createPeerConnection(peerPhone) {
         peerConnection.close();
     }
 
-    // ক্লাউডফ্লেয়ার টার্ন ক্রেডেনশিয়াল ডাইনামিক লোড করা
     const rtcConfig = await getDynamicRTCConfig();
     peerConnection = new RTCPeerConnection(rtcConfig);
 
