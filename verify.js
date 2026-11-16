@@ -1,4 +1,4 @@
-// verify.js - Professional Verification & Profile Module (Complete with Discover Country Flag & Code Integration)
+// verify.js - Professional Verification & Profile Module (Complete & Clean)
 let deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
@@ -30,46 +30,9 @@ async function installPWAApp() {
     }
     document.getElementById('pwaInstallContainer')?.classList.add('hidden');
     document.getElementById('verifyStep1').style.display = 'block';
-    populateVerifyCountryDropdown();
-}
-
-// discover.js এর গ্লোবাল কান্ট্রি ডাটা ব্যবহার করে পতাকাসহ কান্ট্রি কোড ড্রপডাউন পপুলেট করা
-async function populateVerifyCountryDropdown() {
-    const select = document.getElementById('vCountrySelect');
-    if (!select) return;
-    let detectedCountryCode = '880'; 
-
-    try {
-        const ipRes = await fetch('https://ipapi.co/json/');
-        if (ipRes.ok) {
-            const ipData = await ipRes.json();
-            userDeviceIp = ipData.ip || 'Unknown';
-            const countryName = ipData.country_name;
-            if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined') {
-                for (const cont of GLOBAL_CONTINENTS_DATA) {
-                    const found = cont.countries.find(c => c.name.toLowerCase() === countryName?.toLowerCase());
-                    if (found) {
-                        detectedCountryCode = found.code;
-                        break;
-                    }
-                }
-            }
-        }
-    } catch (e) {}
-
-    if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined' && Array.isArray(GLOBAL_CONTINENTS_DATA)) {
-        let html = '';
-        GLOBAL_CONTINENTS_DATA.forEach(continent => {
-            continent.countries.forEach(c => {
-                const isSelected = (c.code === detectedCountryCode) ? 'selected' : '';
-                html += `<option value="+${c.code}|10" ${isSelected}>${c.flag} +${c.code} (${c.name})</option>`;
-            });
-        });
-        select.innerHTML = html;
-    } else {
-        select.innerHTML = `<option value="+880|10" selected>🇧🇩 +880 (Bangladesh)</option>`;
+    if (typeof loadCountryCodesIntoSelect === 'function') {
+        loadCountryCodesIntoSelect();
     }
-    updatePhoneValidation();
 }
 
 function getCountryInfo(phone) {
@@ -203,35 +166,6 @@ async function submitVerifyStep2() {
     }
 }
 
-function checkInitialVerification() {
-    populateVerifyCountryDropdown();
-    const overlay = document.getElementById('verifyOverlay');
-    if (!isVerifiedSession) {
-        if (overlay) overlay.style.display = 'flex';
-        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-            document.getElementById('pwaInstallContainer')?.classList.add('hidden');
-            const step1 = document.getElementById('verifyStep1');
-            if (step1) step1.style.display = 'block';
-            updatePhoneValidation();
-        } else {
-            document.getElementById('pwaInstallContainer')?.classList.remove('hidden');
-        }
-    } else {
-        if (overlay) overlay.style.display = 'none';
-        if (typeof initAppAfterVerification === 'function') {
-            initAppAfterVerification();
-        } else {
-            setTimeout(() => {
-                if (typeof initAppAfterVerification === 'function') {
-                    initAppAfterVerification();
-                } else if (typeof switchTab === 'function') {
-                    switchTab('contact');
-                }
-            }, 300);
-        }
-    }
-}
-
 function shareProfileLink() {
     const profile = getActiveProfile();
     const profileUrl = `https://chat.rorraxy.com/${profile.username || 'user'}`;
@@ -260,9 +194,9 @@ function renderProfileView(isEditing = false) {
 
     sidebarList.innerHTML = `
         <div class="p-4 space-y-4 max-w-md mx-auto pb-24">
-            <div class="text-center space-y-3 theme-card p-6 rounded-3xl border border-amber-400/20">
+            <div class="text-center space-y-3 theme-card p-6 rounded-3xl border border-amber-400/10">
                 <div class="relative w-24 h-24 mx-auto">
-                    <img id="profileAvatarPreview" src="${profile.avatar}" class="w-24 h-24 rounded-full object-cover bg-black border-2 border-amber-400/50">
+                    <img id="profileAvatarPreview" src="${profile.avatar}" class="w-24 h-24 rounded-full object-cover bg-black border-2 border-amber-400/40">
                     <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-pink-600 hover:bg-pink-500 text-white flex items-center justify-center cursor-pointer shadow-md hover:scale-110 transition" title="Change Photo">
                         <i class="fa-solid fa-camera text-xs"></i>
                         <input type="file" accept="image/*" class="hidden" onchange="handleProfileAvatarChange(this)">
@@ -284,7 +218,7 @@ function renderProfileView(isEditing = false) {
                 </div>
             </div>
 
-            <div class="space-y-4 theme-card p-6 rounded-3xl border border-amber-400/20">
+            <div class="space-y-4 theme-card p-6 rounded-3xl border border-amber-400/10">
                 <div class="flex items-center justify-between border-b border-white/10 pb-2">
                     <h4 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Profile Information</h4>
                     <button onclick="renderProfileView(${!isEditing})" class="text-[11px] text-amber-300 hover:underline font-semibold flex items-center space-x-1 cursor-pointer">
@@ -312,17 +246,17 @@ function renderProfileView(isEditing = false) {
                     <div class="space-y-3.5 pt-1">
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">FULL NAME</label>
-                            <input type="text" id="editDisplayName" value="${profile.name}" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-amber-400/20">
+                            <input type="text" id="editDisplayName" value="${profile.name}" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-amber-400/10">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">USERNAME</label>
-                            <input type="text" id="editUsername" value="${profile.username}" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-amber-400/20" placeholder="username">
+                            <input type="text" id="editUsername" value="${profile.username}" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-amber-400/10" placeholder="username">
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">THEME STYLE</label>
-                            <select id="editThemeColor" onchange="previewThemeStyle(this.value)" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-amber-400/20 cursor-pointer">
+                            <select id="editThemeColor" onchange="previewThemeStyle(this.value)" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-amber-400/10 cursor-pointer">
                                 <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>Emerald Dark (Default)</option>
                                 <option value="skyblue" ${profile.themeColor==='skyblue'?'selected':''}>Sky Blue (Modern)</option>
                                 <option value="black" ${profile.themeColor==='black'?'selected':''}>Classic Black (Pure)</option>
@@ -472,4 +406,3 @@ function deleteAllNotifications() {
     renderNotificationsDropdown();
     if (typeof showToast === 'function') showToast("নোটিফিকেশন ক্লিয়ার করা হয়েছে");
 }
-```[cite: 8]
