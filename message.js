@@ -1,4 +1,4 @@
-// message.js - Real-Time Sync, Smart Video Compression, Voice Recorder, PDF Viewer & Single/All Delete
+// message.js - Real-Time Sync, Delivery Ticks, Smart Compression, Voice Timer & Cloud Delete
 let chatPollInterval = null;
 let globalMsgSyncInterval = null;
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
@@ -6,6 +6,8 @@ let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18'
 let mediaRecorder = null;
 let recordedAudioChunks = [];
 let isRecordingVoice = false;
+let voiceRecordTimer = null;
+let voiceSeconds = 0;
 
 function persistMessages() {
     try { localStorage.setItem('salaam_messages_v18', JSON.stringify(localMessageStore)); } catch (e) {}
@@ -74,15 +76,16 @@ async function fetchMessagesFromCloud() {
             if (!chatPartner) return;
 
             if (!localMessageStore[chatPartner]) localMessageStore[chatPartner] = [];
-            const exists = localMessageStore[chatPartner].some(m => String(m.id) === msgId);
+            const existingMsg = localMessageStore[chatPartner].find(m => String(m.id) === msgId);
 
-            if (!exists) {
+            if (!existingMsg) {
                 const msgObj = {
                     id: msgId,
                     phone_number: sender,
                     message_text: item.message_text || '',
                     media_url: item.media_url || '',
                     type: item.message_type || item.type || 'text',
+                    status: 'delivered',
                     timestamp: item.timestamp ? Number(item.timestamp) : (item.created_at ? new Date(item.created_at).getTime() : Date.now())
                 };
                 localMessageStore[chatPartner].push(msgObj);
@@ -92,6 +95,9 @@ async function fetchMessagesFromCloud() {
                     if (peer && chatPartner === peer) hasNewForActive = true;
                     triggerPushAlert("New Message", msgObj.type === 'text' ? msgObj.message_text : `Sent a ${msgObj.type}`);
                 }
+            } else if (existingMsg.status !== 'delivered') {
+                existingMsg.status = 'delivered';
+                hasNew = true;
             }
         });
 
@@ -111,13 +117,13 @@ async function fetchMessagesFromCloud() {
 function startChatPolling() {
     if (chatPollInterval) clearInterval(chatPollInterval);
     fetchMessagesFromCloud();
-    chatPollInterval = setInterval(fetchMessagesFromCloud, 2000);
+    chatPollInterval = setInterval(fetchMessagesFromCloud, 1800);
 }
 
 function startGlobalMessageSync() {
     if (globalMsgSyncInterval) clearInterval(globalMsgSyncInterval);
     fetchMessagesFromCloud();
-    globalMsgSyncInterval = setInterval(fetchMessagesFromCloud, 3500);
+    globalMsgSyncInterval = setInterval(fetchMessagesFromCloud, 3000);
 }
 
 // টেক্সট মেসেজ পাঠানো
@@ -136,13 +142,13 @@ async function sendTextMessage() {
     if (!localMessageStore[key]) localMessageStore[key] = [];
 
     const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    const msg = { id: msgId, phone_number: me, message_text: text, media_url: '', type: 'text', timestamp: Date.now() };
+    const msg = { id: msgId, phone_number: me, message_text: text, media_url: '', type: 'text', status: 'sending', timestamp: Date.now() };
     localMessageStore[key].push(msg);
     loadMessages();
     persistMessages();
 
     try {
-        await fetch('/api/chat?action=send_chat_message', {
+        const res = await fetch('/api/chat?action=send_chat_message', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -155,10 +161,15 @@ async function sendTextMessage() {
                 timestamp: msg.timestamp
             })
         });
+        if (res.ok) {
+            msg.status = 'delivered';
+            persistMessages();
+            loadMessages();
+        }
     } catch (e) {}
 }
 
-// সরাসরি ভয়েস মেসেজ রেকর্ড ও সেন্ড (Mic Button)
+// সরাসরি ভয়েস মেসেজ রেকর্ড ও সেন্ড (লাইভ রেকর্ডিং টাইমার সহ)
 async function toggleVoiceRecording() {
     if (!window.currentActiveRecipient) {
         if (typeof showToast === 'function') showToast("Select a contact first!", true);
@@ -167,10 +178,13 @@ async function toggleVoiceRecording() {
 
     const micBtn = document.getElementById('voiceRecordBtn');
     const micIcon = document.getElementById('voiceRecordIcon');
+    const msgInp = document.getElementById('messageInput');
 
     if (isRecordingVoice && mediaRecorder) {
         mediaRecorder.stop();
         isRecordingVoice = false;
+        clearInterval(voiceRecordTimer);
+        if (msgInp) { msgInp.placeholder = "Type a message..."; msgInp.disabled = false; }
         if (micBtn) micBtn.classList.remove('bg-red-600', 'text-white', 'animate-pulse');
         if (micIcon) { micIcon.className = 'fa-solid fa-microphone text-sm'; }
         return;
@@ -198,9 +212,10 @@ async function toggleVoiceRecording() {
                 const msg = {
                     id: msgId,
                     phone_number: me,
-                    message_text: 'Voice Message',
+                    message_text: `Voice (${voiceSeconds}s)`,
                     media_url: base64Audio,
                     type: 'audio',
+                    status: 'sending',
                     timestamp: Date.now()
                 };
                 localMessageStore[key].push(msg);
@@ -208,19 +223,24 @@ async function toggleVoiceRecording() {
                 persistMessages();
 
                 try {
-                    await fetch('/api/chat?action=send_chat_message', {
+                    const res = await fetch('/api/chat?action=send_chat_message', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             id: msgId,
                             sender_phone: me,
                             receiver_phone: key,
-                            message_text: 'Voice Message',
+                            message_text: msg.message_text,
                             media_url: base64Audio,
                             message_type: 'audio',
                             timestamp: msg.timestamp
                         })
                     });
+                    if (res.ok) {
+                        msg.status = 'delivered';
+                        persistMessages();
+                        loadMessages();
+                    }
                 } catch (err) {}
             };
             reader.readAsDataURL(audioBlob);
@@ -228,9 +248,17 @@ async function toggleVoiceRecording() {
 
         mediaRecorder.start();
         isRecordingVoice = true;
+        voiceSeconds = 0;
+        if (msgInp) { msgInp.value = ""; msgInp.placeholder = "Recording 0:00... Tap stop to send"; msgInp.disabled = true; }
+        voiceRecordTimer = setInterval(() => {
+            voiceSeconds++;
+            const mins = Math.floor(voiceSeconds / 60);
+            const secs = String(voiceSeconds % 60).padStart(2, '0');
+            if (msgInp) msgInp.placeholder = `Recording ${mins}:${secs}... Tap stop to send`;
+        }, 1000);
+
         if (micBtn) micBtn.classList.add('bg-red-600', 'text-white', 'animate-pulse');
         if (micIcon) { micIcon.className = 'fa-solid fa-stop text-sm'; }
-        if (typeof showToast === 'function') showToast("Recording voice... Tap again to send");
     } catch (err) {
         if (typeof showToast === 'function') showToast("Microphone access denied", true);
     }
@@ -252,8 +280,7 @@ function compressVideoToCompactKB(file) {
                 return;
             }
 
-            // যদি ফাইল ইতিমধ্যে 750KB এর নিচে হয় তবে সরাসরি রিটার্ন
-            if (file.size <= 750 * 1024) {
+            if (file.size <= 650 * 1024) {
                 const reader = new FileReader();
                 reader.onload = () => resolve(reader.result);
                 reader.readAsDataURL(file);
@@ -261,7 +288,7 @@ function compressVideoToCompactKB(file) {
             }
 
             const canvas = document.createElement('canvas');
-            const scale = Math.min(1, 720 / Math.max(video.videoWidth || 720, video.videoHeight || 720));
+            const scale = Math.min(1, 640 / Math.max(video.videoWidth || 640, video.videoHeight || 640));
             canvas.width = Math.round((video.videoWidth || 640) * scale);
             canvas.height = Math.round((video.videoHeight || 360) * scale);
             const ctx = canvas.getContext('2d');
@@ -277,7 +304,7 @@ function compressVideoToCompactKB(file) {
 
             const recorder = new MediaRecorder(stream, {
                 mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm',
-                videoBitsPerSecond: 450000 // ~450 kbps -> 30s ভিডিও মাত্র ~1.5MB বা তার কম KB তে আসবে কিন্তু HD ক্রিস্টাল ক্লিয়ার থাকবে
+                videoBitsPerSecond: 380000
             });
 
             const chunks = [];
@@ -315,14 +342,14 @@ function compressImageToCompactKB(file) {
         img.src = URL.createObjectURL(file);
         img.onload = () => {
             const canvas = document.createElement('canvas');
-            const maxDim = 1280;
+            const maxDim = 1080;
             const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
             canvas.width = Math.round(img.width * scale);
             canvas.height = Math.round(img.height * scale);
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             URL.revokeObjectURL(img.src);
-            resolve(canvas.toDataURL('image/jpeg', 0.78));
+            resolve(canvas.toDataURL('image/jpeg', 0.72));
         };
     });
 }
@@ -347,8 +374,9 @@ async function handleUniversalFileUpload(fileInputElem) {
             } else if (fileType === 'image') {
                 finalDataUrl = await compressImageToCompactKB(file);
             } else {
-                if (file.size > 15 * 1024 * 1024) {
-                    if (typeof showToast === 'function') showToast("File must be under 15MB", true);
+                // D1 ডাটাবেজের নিরাপদ সাইজ লিমিট (850KB)
+                if (file.size > 850 * 1024) {
+                    if (typeof showToast === 'function') showToast("Document/Audio must be under 850KB", true);
                     continue;
                 }
                 finalDataUrl = await new Promise((res) => {
@@ -368,13 +396,14 @@ async function handleUniversalFileUpload(fileInputElem) {
                 message_text: file.name,
                 media_url: finalDataUrl,
                 type: fileType,
+                status: 'sending',
                 timestamp: Date.now()
             };
             localMessageStore[key].push(msg);
             loadMessages();
             persistMessages();
 
-            await fetch('/api/chat?action=send_chat_message', {
+            const res = await fetch('/api/chat?action=send_chat_message', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -387,7 +416,12 @@ async function handleUniversalFileUpload(fileInputElem) {
                     timestamp: msg.timestamp
                 })
             });
-            if (typeof showToast === 'function') showToast("Sent!");
+            if (res.ok) {
+                msg.status = 'delivered';
+                persistMessages();
+                loadMessages();
+                if (typeof showToast === 'function') showToast("Sent!");
+            }
         } catch (err) {
             if (typeof showToast === 'function') showToast(typeof err === 'string' ? err : "Failed to process file", true);
         }
@@ -483,7 +517,7 @@ function showSingleDeleteAction(msgId) {
         <div class="theme-card border border-amber-400/20 rounded-3xl p-5 w-full max-w-xs text-center space-y-4 shadow-2xl">
             <p class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Message Options</p>
             <button onclick="deleteSingleMessage('${msgId}')" class="w-full py-3 rounded-2xl bg-red-600 text-white text-xs font-bold flex items-center justify-center space-x-2 cursor-pointer">
-                <i class="fa-solid fa-trash"></i> <span>Delete This Message</span>
+                <i class="fa-solid fa-trash"></i> <span>Delete For Everyone</span>
             </button>
             <button onclick="document.getElementById('singleDeleteModal').remove()" class="w-full py-2.5 rounded-2xl bg-white/10 text-gray-300 text-xs font-semibold cursor-pointer">
                 Cancel
@@ -493,6 +527,7 @@ function showSingleDeleteAction(msgId) {
     document.body.appendChild(modal);
 }
 
+// লোকাল + সার্ভার উভয় জায়গা থেকে সিঙ্গেল মেসেজ ডিলিট
 async function deleteSingleMessage(msgId) {
     document.getElementById('singleDeleteModal')?.remove();
     if (!window.currentActiveRecipient) return;
@@ -507,6 +542,14 @@ async function deleteSingleMessage(msgId) {
         loadMessages();
     }
     if (typeof showToast === 'function') showToast("Message deleted");
+
+    try {
+        await fetch('/api/chat?action=delete_message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message_id: msgId })
+        });
+    } catch (e) {}
 }
 
 // সমস্ত মেসেজ ডিলিট (All Delete Button)
@@ -527,7 +570,7 @@ function deleteAllChatMessages() {
         <div class="theme-card border border-amber-400/20 rounded-3xl p-5 w-full max-w-xs text-center space-y-4 shadow-2xl">
             <i class="fa-solid fa-trash-can text-2xl text-red-500"></i>
             <h4 class="text-sm font-bold text-white">Delete All Messages?</h4>
-            <p class="text-[11px] text-gray-400">All texts, videos, audios and PDFs in this chat will be removed.</p>
+            <p class="text-[11px] text-gray-400">All texts, videos, audios and PDFs in this chat will be removed from server & device.</p>
             <div class="flex space-x-2 pt-1">
                 <button onclick="document.getElementById('allDeleteConfirmModal').remove()" class="flex-1 py-2.5 rounded-2xl bg-white/10 text-gray-300 text-xs font-semibold cursor-pointer">Cancel</button>
                 <button onclick="confirmDeleteAllChat()" class="flex-1 py-2.5 rounded-2xl bg-red-600 text-white text-xs font-bold cursor-pointer">Delete All</button>
@@ -537,11 +580,13 @@ function deleteAllChatMessages() {
     document.body.appendChild(modal);
 }
 
-function confirmDeleteAllChat() {
+async function confirmDeleteAllChat() {
     document.getElementById('allDeleteConfirmModal')?.remove();
     if (!window.currentActiveRecipient) return;
     const key = normPhone(window.currentActiveRecipient.phone);
-    (localMessageStore[key] || []).forEach(m => {
+    const msgsToDelete = [...(localMessageStore[key] || [])];
+
+    msgsToDelete.forEach(m => {
         if (!deletedMessageIds.includes(String(m.id))) deletedMessageIds.push(String(m.id));
     });
     localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
@@ -549,6 +594,14 @@ function confirmDeleteAllChat() {
     persistMessages();
     loadMessages();
     if (typeof showToast === 'function') showToast("All messages deleted");
+
+    for (const m of msgsToDelete) {
+        fetch('/api/chat?action=delete_message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message_id: m.id })
+        }).catch(() => {});
+    }
 }
 
 function renderChatHistoryList() {
@@ -565,6 +618,7 @@ function renderChatHistoryList() {
         chatsHtml = chatKeys.map(key => {
             const msgs = localMessageStore[key] || [];
             const lastMsg = msgs[msgs.length - 1] || {};
+            const lastTime = lastMsg.timestamp ? new Date(lastMsg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
             let contact = localContacts.find(c => normPhone(c.phone) === normPhone(key)) || { name: key, phone: key, avatar: '' };
             const safeName = (contact.name || key).replace(/'/g, "\\'");
             const initial = (contact.name || 'U').trim().charAt(0).toUpperCase();
@@ -577,8 +631,11 @@ function renderChatHistoryList() {
                 <div class="flex items-center space-x-3 min-w-0 flex-1">
                     ${avatarEl}
                     <div class="min-w-0 flex-1">
-                        <p class="text-xs font-semibold gold-gradient-text truncate">${contact.name}</p>
-                        <p class="text-[10px] text-gray-400 truncate">${escapeHtml(lastMsg.message_text || 'Media')}</p>
+                        <div class="flex justify-between items-center">
+                            <p class="text-xs font-semibold gold-gradient-text truncate">${contact.name}</p>
+                            <span class="text-[9px] text-gray-500 shrink-0 ml-2">${lastTime}</span>
+                        </div>
+                        <p class="text-[10px] text-gray-400 truncate mt-0.5">${escapeHtml(lastMsg.message_text || 'Media')}</p>
                     </div>
                 </div>
             </div>`;
@@ -602,6 +659,7 @@ function loadMessages() {
     container.innerHTML = msgs.map(m => {
         const isMe = normPhone(m.phone_number) === normPhone(getActiveProfile().phone);
         const timeStr = new Date(m.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const tickHtml = isMe ? (m.status === 'delivered' ? `<span class="text-[10px] text-amber-300 font-bold">✓✓</span>` : `<span class="text-[10px] text-gray-400">✓</span>`) : '';
         let contentHtml = `<p class="text-xs text-white break-words leading-relaxed">${escapeHtml(m.message_text || '')}</p>`;
 
         if (m.media_url && m.type === 'image') {
@@ -654,9 +712,10 @@ function loadMessages() {
              onmousedown="handleMsgTouchStart('${m.id}')" onmouseup="handleMsgTouchEnd()" onmouseleave="handleMsgTouchEnd()">
             <div class="max-w-[82%] px-3.5 py-2.5 rounded-2xl ${isMe ? 'chat-bubble-me' : 'chat-bubble-them'} shadow-lg relative group">
                 ${contentHtml}
-                <div class="flex items-center justify-end space-x-2 mt-1">
-                    <button onclick="deleteSingleMessage('${m.id}')" class="text-[9px] text-gray-500 hover:text-red-400 cursor-pointer" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                <div class="flex items-center justify-end space-x-1.5 mt-1">
+                    <button onclick="deleteSingleMessage('${m.id}')" class="text-[9px] text-gray-500 hover:text-red-400 cursor-pointer mr-1" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     <span class="text-[9px] text-gray-400">${timeStr}</span>
+                    ${tickHtml}
                 </div>
             </div>
         </div>`;
