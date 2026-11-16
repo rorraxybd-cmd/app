@@ -140,6 +140,15 @@ let selectedDiscoverCountry = null;
 
 function normPhone(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
 
+// নামের প্রথম অক্ষর দিয়ে গোল্ডেন প্রোফাইল লোগো তৈরির ফাংশন
+function renderAvatarBadge(name, avatarUrl, sizeClass = "w-10 h-10 text-sm") {
+    const initial = (name || 'U').trim().charAt(0).toUpperCase();
+    if (avatarUrl && avatarUrl.trim() !== '') {
+        return `<img src="${avatarUrl}" class="${sizeClass} rounded-full object-cover bg-black shrink-0">`;
+    }
+    return `<div class="${sizeClass} rounded-full gold-btn flex items-center justify-center font-extrabold text-[#030305] shrink-0 shadow-md">${initial}</div>`;
+}
+
 function openChat(phone, name, avatar = '') {
     const recipient = { phone, name, avatar };
     window.currentActiveRecipient = recipient;
@@ -184,7 +193,14 @@ function openChat(phone, name, avatar = '') {
     if (titleEl) titleEl.innerText = name;
 
     const avatarEl = document.getElementById('activeChatAvatar');
-    if (avatarEl && avatar) avatarEl.src = avatar;
+    if (avatarEl) {
+        if (avatar && avatar.trim() !== '') {
+            avatarEl.src = avatar;
+            avatarEl.style.display = 'block';
+        } else {
+            avatarEl.src = 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg';
+        }
+    }
 
     if (typeof loadMessages === 'function') loadMessages();
     if (typeof fetchMessagesFromCloud === 'function') fetchMessagesFromCloud();
@@ -242,7 +258,7 @@ function renderDiscoverDirectory(searchQuery = '') {
 
             html += `
                 <div class="p-3 rounded-2xl cursor-pointer flex flex-col items-center text-center bg-white/5 hover:bg-white/10 transition" onclick="openDiscoverCountry('${country.flag}', '${country.name.replace(/'/g, "\\'")}', '${country.code}')">
-                    <span class="text-2xl">${country.flag}</span>
+                    <span class="text-2xl emoji-flag">${country.flag}</span>
                     <span class="text-xs font-bold text-white mt-1 truncate w-full">${country.name}</span>
                     <span class="text-[9px] px-2 py-0.5 rounded-full mt-1 bg-amber-400/10 text-amber-300 font-semibold">${badgeText}</span>
                 </div>
@@ -276,33 +292,33 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
     const matchedUsers = allUsers.filter(u => {
         const info = typeof getCountryInfo === 'function' ? getCountryInfo(u.phone) : { name: '' };
         const isMatchCountry = (info.name && info.name.toLowerCase() === countryObj.name.toLowerCase()) || String(u.phone || '').replace(/[\s\-\(\)]/g, '').startsWith(countryObj.code);
-        const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase()) || String(u.phone).includes(searchQuery);
+        const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase()) || String(u.username || '').toLowerCase().includes(searchQuery.toLowerCase());
         return isMatchCountry && matchesSearch;
     });
 
     let usersHtml = matchedUsers.length === 0 ? `
         <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 theme-card rounded-2xl mt-2">
-            <span class="text-4xl">${countryObj.flag}</span>
+            <span class="text-4xl emoji-flag">${countryObj.flag}</span>
             <p class="text-xs font-bold gold-gradient-text">No members found in ${countryObj.name}</p>
         </div>
     ` : matchedUsers.map(c => {
         const isOnline = c.isOnline === true || c.isOnline === 1;
         const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-transparent';
-        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text shrink-0">${c.name.charAt(0)}</div>`;
+        const avatarHtml = renderAvatarBadge(c.name, c.avatar, "w-10 h-10 text-sm");
         const safeName = c.name.replace(/'/g, "\\'");
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card cursor-pointer" onclick="openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')">
             <div class="flex items-center space-x-3 flex-1 min-w-0">
                 <div class="relative shrink-0">
-                    ${avatarImg}
+                    ${avatarHtml}
                     ${isOnline ? `<span class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${statusColor}"></span>` : ''}
                 </div>
                 <div class="min-w-0 flex-1 pr-2">
-                    <p class="text-xs font-semibold gold-gradient-text truncate flex items-center space-x-1.5">
-                        <span>${c.name}</span>
-                        <span class="text-sm">${countryObj.flag}</span>
-                    </p>
-                    <p class="text-[10px] text-gray-400">@${c.username || 'user'} • ${c.phone}</p>
+                    <div class="flex items-center space-x-1.5">
+                        <span class="text-xs font-semibold gold-gradient-text truncate">${c.name}</span>
+                        <span class="text-sm emoji-flag shrink-0">${countryObj.flag}</span>
+                    </div>
+                    <p class="text-[10px] text-gray-400 truncate">@${c.username || 'user'}</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2 shrink-0 pl-1">
@@ -319,7 +335,7 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
             </button>
             <div class="flex items-center justify-between px-3 py-2.5 rounded-2xl theme-card">
                 <div class="flex items-center space-x-2.5">
-                    <span class="text-2xl">${countryObj.flag}</span>
+                    <span class="text-2xl emoji-flag">${countryObj.flag}</span>
                     <div>
                         <h3 class="text-xs font-bold gold-gradient-text">${countryObj.name}</h3>
                         <p class="text-[9px] text-gray-400">Direct cross-border connection</p>
@@ -341,7 +357,6 @@ function renderContactsView(searchQuery = '') {
     
     const filteredContacts = localContacts.filter(c => 
         c.name.toLowerCase().includes(q) || 
-        String(c.phone || '').includes(q) || 
         String(c.username || '').toLowerCase().includes(q)
     );
 
@@ -354,22 +369,22 @@ function renderContactsView(searchQuery = '') {
         const isOnline = c.isOnline === true || c.isOnline === 1;
         const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-transparent';
         const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐' };
-        const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text shrink-0">${c.name.charAt(0)}</div>`;
+        const avatarHtml = renderAvatarBadge(c.name, c.avatar, "w-10 h-10 text-sm");
         const safeName = c.name.replace(/'/g, "\\'");
         
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card cursor-pointer" onclick="openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')">
             <div class="flex items-center space-x-3 flex-1 min-w-0">
                 <div class="relative shrink-0">
-                    ${avatarImg}
+                    ${avatarHtml}
                     ${isOnline ? `<span class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${statusColor}"></span>` : ''}
                 </div>
                 <div class="min-w-0 flex-1 pr-2">
-                    <p class="text-xs font-semibold gold-gradient-text truncate flex items-center space-x-1.5">
-                        <span>${c.name}</span>
-                        <span class="text-sm">${countryInfo.flag}</span>
-                    </p>
-                    <p class="text-[10px] text-gray-400">@${c.username || 'user'} • ${c.phone}</p>
+                    <div class="flex items-center space-x-1.5">
+                        <span class="text-xs font-semibold gold-gradient-text truncate">${c.name}</span>
+                        <span class="text-sm emoji-flag shrink-0">${countryInfo.flag}</span>
+                    </div>
+                    <p class="text-[10px] text-gray-400 truncate">@${c.username || 'user'}</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2 shrink-0">
@@ -385,12 +400,51 @@ function renderContactsView(searchQuery = '') {
                 <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Contacts Directory</h3>
             </div>
             <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
-                <input type="text" id="contactSearchInput" placeholder="Search by name, mobile or username..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderContactsView(this.value)">
+                <input type="text" id="contactSearchInput" placeholder="Search by name or username..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderContactsView(this.value)">
                 <i class="fa-solid fa-magnifying-glass text-amber-300 text-xs"></i>
             </div>
             ${contactsHtml}
         </div>
     `;
+}
+
+// প্রোফাইল ছবি ফাইল থেকে আপলোড করার ফাংশন
+function handleProfileLogoUpload(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+        if (typeof showToast === 'function') showToast("Image must be under 5MB", true);
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const base64Img = e.target.result;
+        let profiles = JSON.parse(localStorage.getItem('message_profiles_v18') || '[{}]');
+        profiles[0].avatar = base64Img;
+        localStorage.setItem('message_profiles_v18', JSON.stringify(profiles));
+        if (typeof savedProfiles !== 'undefined') savedProfiles[0].avatar = base64Img;
+
+        // কন্টাক্ট লিস্টে নিজের প্রোফাইল আপডেট করা
+        let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+        const myPhone = normPhone(profiles[0].phone);
+        const idx = localContacts.findIndex(c => normPhone(c.phone) === myPhone);
+        if (idx !== -1) {
+            localContacts[idx].avatar = base64Img;
+            localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
+        }
+
+        if (typeof showToast === 'function') showToast("Profile logo updated!");
+        renderProfileView(false);
+
+        try {
+            await fetch('/api/chat?action=register_or_update_user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(profiles[0])
+            });
+        } catch (err) {}
+    };
+    reader.readAsDataURL(file);
 }
 
 function renderProfileView(isEditing = false) {
@@ -400,26 +454,31 @@ function renderProfileView(isEditing = false) {
     let profile = getActiveProfile();
     const displayName = profile.name || 'User';
     const username = profile.username || 'user_' + Math.floor(1000 + Math.random() * 9000);
-    const phone = profile.phone || '';
-    const avatarUrl = profile.avatar || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg';
+    const avatarUrl = profile.avatar || '';
+    const avatarHtml = renderAvatarBadge(displayName, avatarUrl, "w-24 h-24 text-3xl mx-auto");
 
     if (!isEditing) {
         listContainer.innerHTML = `
             <div class="p-4 space-y-4 pb-20">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">My Profile</h3>
+                    <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Settings & Profile</h3>
                     <button onclick="renderProfileView(true)" class="px-3 py-1.5 rounded-xl gold-btn text-[10px] font-extrabold cursor-pointer">
                         <i class="fa-solid fa-pen text-xs"></i> Edit Profile
                     </button>
                 </div>
-                <div class="theme-card p-5 rounded-3xl text-center space-y-3">
-                    <img src="${avatarUrl}" class="w-20 h-20 rounded-full object-cover mx-auto shadow-xl">
-                    <div>
-                        <h2 class="text-sm font-bold gold-gradient-text">${displayName}</h2>
-                        <p class="text-xs text-gray-400 mt-0.5">@${username}</p>
-                        <p class="text-[10px] text-amber-300/80 mt-1 font-mono">${phone}</p>
+                <div class="theme-card p-6 rounded-3xl text-center space-y-4">
+                    <div class="relative w-24 h-24 mx-auto">
+                        ${avatarHtml}
+                        <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full gold-btn flex items-center justify-center cursor-pointer shadow-lg border-2 border-[#030305]" title="Upload Photo">
+                            <i class="fa-solid fa-camera text-xs text-[#030305]"></i>
+                            <input type="file" accept="image/*" class="hidden" onchange="handleProfileLogoUpload(this)">
+                        </label>
                     </div>
-                    <button onclick="shareMyProfile('${displayName}', '${username}', '${phone}')" class="w-full py-3 rounded-2xl gold-btn text-xs font-extrabold cursor-pointer flex items-center justify-center space-x-2 mt-2 shadow-lg">
+                    <div>
+                        <h2 class="text-base font-bold gold-gradient-text">${displayName}</h2>
+                        <p class="text-xs text-gray-400 mt-0.5">@${username}</p>
+                    </div>
+                    <button onclick="shareMyProfile('${username}')" class="w-full py-3.5 rounded-2xl gold-btn text-xs font-extrabold cursor-pointer flex items-center justify-center space-x-2 mt-2 shadow-lg">
                         <i class="fa-solid fa-share-nodes text-xs"></i> <span>Share Profile</span>
                     </button>
                 </div>
@@ -432,12 +491,12 @@ function renderProfileView(isEditing = false) {
                     <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Edit Profile</h3>
                     <button onclick="renderProfileView(false)" class="text-gray-400 hover:text-white text-xs cursor-pointer">Cancel</button>
                 </div>
-                <div class="theme-card p-5 rounded-3xl space-y-3">
-                    <div class="text-center">
-                        <img id="editAvatarPreview" src="${avatarUrl}" class="w-20 h-20 rounded-full object-cover mx-auto mb-2 shadow-xl">
-                        <label class="text-[10px] text-amber-300 cursor-pointer font-bold underline">
-                            Change Avatar URL
-                            <input type="text" id="editAvatarInput" value="${avatarUrl}" oninput="document.getElementById('editAvatarPreview').src=this.value" class="hidden">
+                <div class="theme-card p-5 rounded-3xl space-y-4">
+                    <div class="relative w-24 h-24 mx-auto">
+                        ${avatarHtml}
+                        <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full gold-btn flex items-center justify-center cursor-pointer shadow-lg border-2 border-[#030305]" title="Upload Photo">
+                            <i class="fa-solid fa-camera text-xs text-[#030305]"></i>
+                            <input type="file" accept="image/*" class="hidden" onchange="handleProfileLogoUpload(this)">
                         </label>
                     </div>
                     <div class="space-y-1">
@@ -448,10 +507,6 @@ function renderProfileView(isEditing = false) {
                         <label class="text-[10px] font-bold text-amber-300 uppercase">Username</label>
                         <input type="text" id="editUsernameInput" value="${username}" class="w-full theme-input text-xs px-3.5 py-3 rounded-2xl text-white focus:outline-none">
                     </div>
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-bold text-amber-300 uppercase">Mobile Number (Secret)</label>
-                        <input type="text" value="${phone}" disabled class="w-full theme-input text-xs px-3.5 py-3 rounded-2xl text-gray-400 cursor-not-allowed">
-                    </div>
                     <button onclick="saveProfileChanges()" class="w-full py-3.5 gold-btn text-xs font-extrabold rounded-2xl cursor-pointer shadow-lg uppercase tracking-wider mt-2">
                         Save Changes
                     </button>
@@ -461,10 +516,9 @@ function renderProfileView(isEditing = false) {
     }
 }
 
-function saveProfileChanges() {
+async function saveProfileChanges() {
     const name = document.getElementById('editNameInput')?.value.trim();
-    const username = document.getElementById('editUsernameInput')?.value.trim();
-    const avatar = document.getElementById('editAvatarInput')?.value.trim();
+    const username = document.getElementById('editUsernameInput')?.value.trim().replace(/^@+/, '');
 
     if (!name || !username) {
         if (typeof showToast === 'function') showToast("Name and username cannot be empty", true);
@@ -474,23 +528,40 @@ function saveProfileChanges() {
     let profiles = JSON.parse(localStorage.getItem('message_profiles_v18') || '[{}]');
     profiles[0].name = name;
     profiles[0].username = username;
-    profiles[0].avatar = avatar || profiles[0].avatar;
     localStorage.setItem('message_profiles_v18', JSON.stringify(profiles));
+    if (typeof savedProfiles !== 'undefined') {
+        savedProfiles[0].name = name;
+        savedProfiles[0].username = username;
+    }
+
+    let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+    const myPhone = normPhone(profiles[0].phone);
+    const idx = localContacts.findIndex(c => normPhone(c.phone) === myPhone);
+    if (idx !== -1) {
+        localContacts[idx].name = name;
+        localContacts[idx].username = username;
+        localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
+    }
 
     if (typeof showToast === 'function') showToast("Profile updated successfully!");
     renderProfileView(false);
+
+    try {
+        await fetch('/api/chat?action=register_or_update_user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(profiles[0])
+        });
+    } catch (e) {}
 }
 
-function shareMyProfile(name, username, phone) {
-    const shareData = {
-        title: 'MESSAGE Profile',
-        text: `Connect with ${name} (@${username}) on MESSAGE Global Messenger!`,
-        url: window.location.href
-    };
+function shareMyProfile(username) {
+    const cleanUser = String(username || '').replace(/^@+/, '');
+    const shareUrl = `https://chat.rorraxy.com/${cleanUser}`;
     if (navigator.share) {
-        navigator.share(shareData).catch(() => {});
+        navigator.share({ url: shareUrl }).catch(() => {});
     } else {
-        navigator.clipboard.writeText(window.location.href);
-        if (typeof showToast === 'function') showToast("Profile link copied to clipboard!");
+        navigator.clipboard.writeText(shareUrl);
+        if (typeof showToast === 'function') showToast("Profile link copied!");
     }
 }
