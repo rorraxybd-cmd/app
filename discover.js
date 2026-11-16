@@ -236,7 +236,6 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
         </div>
     `;
 }
-
 function renderContactsView(searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
@@ -244,7 +243,6 @@ function renderContactsView(searchQuery = '') {
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const q = searchQuery.toLowerCase().trim();
     const filteredContacts = localContacts.filter(c => c.name.toLowerCase().includes(q));
-
     let contactsHtml = filteredContacts.length === 0 ? `
         <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 theme-card rounded-2xl border border-white/5 mt-4">
             <i class="fa-solid fa-address-book text-3xl text-amber-300"></i>
@@ -256,7 +254,6 @@ function renderContactsView(searchQuery = '') {
         const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐' };
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text border border-amber-400/20 shrink-0">${c.name.charAt(0)}</div>`;
         const safeName = c.name.replace(/'/g, "\\'");
-        
         return `
         <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card border border-white/5 cursor-pointer" onclick="openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')">
             <div class="flex items-center space-x-3 flex-1 min-w-0">
@@ -296,7 +293,6 @@ function renderContactsView(searchQuery = '') {
         </div>
     `;
 }
-
 function openAddContactModal() {
     let existingModal = document.getElementById('addContactModalOverlay');
     if (existingModal) existingModal.remove();
@@ -327,7 +323,6 @@ function openAddContactModal() {
     `;
     document.body.appendChild(overlay);
 }
-
 function saveNewContactFromModal() {
     const nameInput = document.getElementById('newContactNameInput');
     const phoneInput = document.getElementById('newContactPhoneInput');
@@ -339,7 +334,6 @@ function saveNewContactFromModal() {
         if (typeof showToast === 'function') showToast("নাম এবং ফোন নম্বর উভয়ই দিন", true);
         return;
     }
-
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const cleanPhone = String(phone).replace(/[\s\-\(\)\+]/g, '');
 
@@ -348,7 +342,6 @@ function saveNewContactFromModal() {
         if (typeof showToast === 'function') showToast("এই ফোন নম্বরটি ইতিমধ্যে কন্টাক্ট লিস্টে রয়েছে!", true);
         return;
     }
-
     localContacts.push({ name: name, phone: cleanPhone, avatar: "", isOnline: false, appUser: false });
     localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
     document.getElementById('addContactModalOverlay')?.remove();
