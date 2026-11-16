@@ -1,4 +1,4 @@
-// message.js - Professional Chat & Media Messaging Module (100% English UI)
+// message.js - Professional Chat & Media Messaging Module (100% English & Clean UI)
 let chatPollInterval = null;
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
 let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
