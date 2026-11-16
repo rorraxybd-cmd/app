@@ -16,8 +16,6 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=23.0">
     <style>
         :root {
             --bg-main: #030305;
@@ -29,40 +27,15 @@
         .brand-title-font { font-family: 'Cinzel', serif; letter-spacing: 0.16em; }
         .gold-gradient-text { background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .pink-gradient-text { background: linear-gradient(135deg, #EC4899 0%, #ff2e7e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        .verify-card {
-            background: #030305;
-            border-radius: 24px;
-            padding: 32px 24px;
-            max-width: 440px;
-            width: 100%;
-            border: 1px solid rgba(245, 208, 97, 0.1);
-        }
+        .verify-card { background: #030305; border-radius: 24px; padding: 32px 24px; max-width: 440px; width: 100%; border: 1px solid rgba(245, 208, 97, 0.1); }
         .gold-btn { background: var(--gold-gradient); color: #030305; font-weight: 700; transition: transform 0.2s; }
         .gold-btn:hover { transform: scale(1.02); }
         .theme-surface { background-color: var(--surface); }
         .theme-card { background-color: var(--card); }
         .theme-input { background-color: rgba(255, 255, 255, 0.02); border: 1px solid rgba(245, 208, 97, 0.1); color: #fff; }
-        
-        .header-logo-clean {
-            width: 96px;
-            height: 96px;
-            object-fit: cover;
-            background: transparent !important;
-            border-radius: 50%;
-            border: none !important;
-        }
-        #vCountrySelect { 
-            width: 100%; 
-            font-weight: 700; 
-            background-color: #08110c;
-            color: #F5D061;
-        }
-        #vCountrySelect option {
-            background-color: #030305;
-            color: #ffffff;
-            padding: 8px;
-        }
+        .header-logo-clean { width: 42px; height: 42px; object-fit: cover; background: transparent !important; border-radius: 50%; }
+        #vCountrySelect { width: 100%; font-weight: 700; background-color: #08110c; color: #F5D061; }
+        #vCountrySelect option { background-color: #030305; color: #ffffff; padding: 8px; }
         .chat-bubble-me { background: linear-gradient(135deg, #0f2e1a 0%, #081a10 100%); border: 1px solid rgba(46, 213, 115, 0.2); }
         .chat-bubble-them { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(245, 208, 97, 0.1); }
         .pink-btn { background: linear-gradient(135deg, #EC4899 0%, #be185d 100%); color: #ffffff; }
@@ -73,20 +46,18 @@
     <!-- Direct Verification & Profile Overlay -->
     <div id="verifyOverlay" style="display: flex;" class="z-50 absolute inset-0 bg-[#030305] items-center justify-center p-4">
         <div class="verify-card space-y-5 text-center">
-            
-            <!-- Verify Step 1: Profile Details -->
             <div id="verifyStep1" class="space-y-4 text-left">
                 <div class="text-center pb-1">
-                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto mb-2" style="width: 72px; height: 72px;">
+                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="mx-auto mb-2 rounded-full" style="width: 72px; height: 72px; object-fit: cover;">
                     <h1 class="brand-title-font text-2xl font-bold gold-gradient-text">MESSAGE</h1>
-                    <p class="text-[10px] text-white/70 tracking-[0.2em] uppercase mt-0.5">Favorite Global Messenger</p>
+                    <p class="text-[10px] text-white/75 tracking-[0.2em] uppercase mt-0.5">Favorite Global Messenger</p>
                 </div>
                 <div class="space-y-1.5 pt-2">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">FULL NAME <span class="text-pink-500">*</span></label>
                     <input type="text" id="vFullName" placeholder="Enter your full name" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
                 </div>
                 <div class="space-y-1.5">
-                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-pink-500">*</span> <span class="text-[9px] text-gray-400 lowercase">(kept secret)</span></label>
+                    <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-pink-500">*</span></label>
                     <div class="flex flex-col space-y-2 w-full">
                         <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-3 py-3 rounded-xl text-amber-300 font-bold focus:outline-none cursor-pointer w-full"></select>
                         <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
@@ -97,10 +68,9 @@
                 </button>
             </div>
 
-            <!-- Verify Step 2: Code Verification -->
             <div id="verifyStep2" class="space-y-4 text-left hidden">
                 <div class="space-y-2 text-center pt-2">
-                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean mx-auto mb-2" style="width: 64px; height: 64px;">
+                    <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="mx-auto mb-2 rounded-full" style="width: 64px; height: 64px; object-fit: cover;">
                     <h2 class="brand-title-font text-2xl font-bold gold-gradient-text">Verify Code</h2>
                     <label class="text-[11px] font-bold tracking-wider text-white block uppercase">AUTO-FILLED CODE <span class="text-emerald-400">✓</span></label>
                     <input type="text" id="vOtpInput" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-center text-2xl font-extrabold tracking-[12px] px-4 py-4 rounded-xl text-white focus:outline-none border border-amber-400/20">
@@ -115,20 +85,14 @@
     <!-- Header Bar -->
     <header class="theme-surface px-4 py-3 flex justify-between items-center shrink-0 z-30 border-b border-white/5">
         <div class="flex items-center space-x-3">
-            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean" style="width: 42px; height: 42px;">
+            <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean">
             <div>
                 <div class="flex items-center space-x-1.5">
                     <h1 class="brand-title-font font-extrabold text-lg sm:text-xl gold-gradient-text leading-none">MESSAGE</h1>
                     <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M12 2L14.8 4.2L18.3 4.3L19.5 7.6L22 10L20.8 13.3L21.5 16.8L18.3 18.4L16.7 21.5L13.3 20.8L10 22L7.6 19.5L4.3 18.3L4.2 14.8L2 12L4.2 9.2L4.3 5.7L7.6 4.5L10 2L12 2Z" fill="#F5D061"/><path d="M8.5 12.2L10.8 14.5L15.6 9.5" stroke="#030305" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
-                <a href="https://rorraxy.com" target="_blank" class="text-[11px] text-white/70 hover:text-amber-300 transition block tracking-wider mt-0.5">rorraxy.com</a>
+                <a href="https://rorraxy.com" target="_blank" class="text-[11px] text-white/75 hover:text-amber-300 transition block tracking-wider mt-0.5">rorraxy.com</a>
             </div>
-        </div>
-        <div class="flex items-center space-x-2">
-            <button onclick="toggleNotificationPanel()" class="relative p-2.5 theme-card rounded-xl hover:brightness-125 transition cursor-pointer border border-amber-400/10">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                <span id="headerNotifBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full pink-btn text-[9px] flex items-center justify-center font-bold">0</span>
-            </button>
         </div>
     </header>
 
@@ -147,7 +111,7 @@
                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                     </button>
                     <div class="flex items-center space-x-3">
-                        <div class="relative"><img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" class="w-9 h-9 header-logo-clean"></div>
+                        <div class="relative"><img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" class="w-9 h-9 rounded-full object-cover"></div>
                         <div>
                             <span id="activeChatTitle" class="font-semibold text-white text-xs tracking-wide">Select a contact</span>
                         </div>
@@ -159,15 +123,15 @@
         </div>
     </div>
 
-    <!-- Bottom Navigation Bar -->
+    <!-- Bottom Navigation Bar (5 Tabs) -->
     <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40 border-t border-white/5">
         <div class="flex items-center justify-around w-full px-3">
             <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
-                <svg id="iconProfile" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <svg id="iconProfile" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 <span id="labelProfile" class="nav-label text-[9px] gold-gradient-text font-semibold">Settings</span>
             </button>
             <button onclick="switchTab('discover')" id="tabDiscover" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
-                <svg id="iconDiscover" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                <svg id="iconDiscover" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                 <span id="labelDiscover" class="nav-label text-[9px] gold-gradient-text font-semibold">Discover</span>
             </button>
             <button onclick="switchTab('contact')" id="tabContact" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
@@ -191,12 +155,50 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/discover.js?v=24.0"></script>
-    <script src="/verify.js?v=24.0"></script>
-    <script src="/call.js?v=24.0"></script>
-    <script src="/message.js?v=24.0"></script>
+    <script src="/discover.js?v=26.0"></script>
+    <script src="/verify.js?v=26.0"></script>
+    <script src="/call.js?v=26.0"></script>
+    <script src="/message.js?v=26.0"></script>
     
     <script>
+        function backToSidebarMobile() {
+            const workspace = document.getElementById('workspaceSection');
+            if (workspace) { workspace.classList.add('hidden'); workspace.style.display = ''; }
+            document.getElementById('sidebarSection')?.classList.remove('hidden');
+            document.getElementById('bottomNavBar')?.classList.remove('hidden');
+        }
+
+        function setupChatInputUI() {
+            const chatHeader = document.getElementById('activeChatHeader');
+            if (chatHeader && !document.getElementById('headerCallActions')) {
+                const callBtns = document.createElement('div');
+                callBtns.id = 'headerCallActions';
+                callBtns.className = 'flex items-center space-x-2';
+                callBtns.innerHTML = `
+                    <button onclick="startWhatsAppCall('audio')" class="p-2 theme-card rounded-xl border border-amber-400/20 text-amber-300 cursor-pointer" title="Audio Call"><i class="fa-solid fa-phone text-xs"></i></button>
+                    <button onclick="startWhatsAppCall('video')" class="p-2 theme-card rounded-xl border border-amber-400/20 text-amber-300 cursor-pointer" title="Video Call"><i class="fa-solid fa-video text-xs"></i></button>
+                    <button onclick="confirmClearChatHistory()" class="p-2 theme-card rounded-xl border border-red-400/20 text-red-400 cursor-pointer" title="Clear Chat"><i class="fa-solid fa-trash text-xs"></i></button>
+                `;
+                chatHeader.appendChild(callBtns);
+            }
+
+            const chatInputBar = document.getElementById('chatInputBar');
+            if (chatInputBar && chatInputBar.innerHTML.trim() === '') {
+                chatInputBar.innerHTML = `
+                    <div class="flex items-center space-x-2 w-full">
+                        <label class="p-2.5 theme-card rounded-xl border border-amber-400/20 text-amber-300 cursor-pointer shrink-0">
+                            <i class="fa-solid fa-paperclip text-sm"></i>
+                            <input type="file" multiple class="hidden" onchange="handleUniversalFileUpload(this)">
+                        </label>
+                        <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendTextMessage()" class="flex-1 theme-input text-xs px-4 py-3 rounded-xl text-white focus:outline-none border border-amber-400/20">
+                        <button id="sendBtn" onclick="sendTextMessage()" class="p-3 gold-btn rounded-xl flex items-center justify-center cursor-pointer shrink-0">
+                            <i class="fa-solid fa-paper-plane text-xs"></i>
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
         async function fetchCloudContacts() {
             try {
                 const res = await fetch('/api/chat?action=get_global_users');
@@ -209,13 +211,7 @@
                             if (!phone) return;
                             const exists = localContacts.find(c => String(c.phone || '').replace(/[\s\-\(\)]/g, '') === phone);
                             if (!exists) {
-                                localContacts.push({
-                                    name: u.display_name || phone,
-                                    phone: phone,
-                                    avatar: u.avatar_url || '',
-                                    isOnline: u.is_online === 1,
-                                    appUser: true
-                                });
+                                localContacts.push({ name: u.display_name || phone, phone: phone, avatar: u.avatar_url || '', isOnline: u.is_online === 1, appUser: true });
                             } else {
                                 exists.name = u.display_name || exists.name;
                                 exists.avatar = u.avatar_url || exists.avatar;
@@ -234,30 +230,15 @@
             tabs.forEach(t => {
                 const icon = document.getElementById('icon' + t);
                 const label = document.getElementById('label' + t);
-                if (icon) {
-                    icon.classList.remove('text-[#EC4899]');
-                    icon.classList.add('text-amber-300');
-                    icon.style.stroke = '#F5D061';
-                }
-                if (label) {
-                    label.classList.remove('pink-gradient-text', 'font-bold');
-                    label.classList.add('gold-gradient-text', 'font-semibold');
-                }
+                if (icon) { icon.classList.remove('text-[#EC4899]'); icon.classList.add('text-amber-300'); icon.style.stroke = '#F5D061'; }
+                if (label) { label.classList.remove('pink-gradient-text', 'font-bold'); label.classList.add('gold-gradient-text', 'font-semibold'); }
             });
 
             const activeKey = tabName.charAt(0).toUpperCase() + tabName.slice(1);
             const activeIcon = document.getElementById('icon' + activeKey);
             const activeLabel = document.getElementById('label' + activeKey);
-
-            if (activeIcon) {
-                activeIcon.classList.remove('text-amber-300');
-                activeIcon.classList.add('text-[#EC4899]');
-                activeIcon.style.stroke = '#EC4899';
-            }
-            if (activeLabel) {
-                activeLabel.classList.remove('gold-gradient-text', 'font-semibold');
-                activeLabel.classList.add('pink-gradient-text', 'font-bold');
-            }
+            if (activeIcon) { activeIcon.classList.remove('text-amber-300'); activeIcon.classList.add('text-[#EC4899]'); activeIcon.style.stroke = '#EC4899'; }
+            if (activeLabel) { activeLabel.classList.remove('gold-gradient-text', 'font-semibold'); activeLabel.classList.add('pink-gradient-text', 'font-bold'); }
 
             const sidebarList = document.getElementById('sidebarContentList');
             if (sidebarList) sidebarList.innerHTML = '';
@@ -269,9 +250,7 @@
                 if (typeof renderDiscoverDirectory === 'function') renderDiscoverDirectory();
             } else if (tabName === 'contact') {
                 if (typeof renderContactsView === 'function') renderContactsView();
-                fetchCloudContacts().then(() => {
-                    if (typeof renderContactsView === 'function') renderContactsView();
-                });
+                fetchCloudContacts().then(() => { if (typeof renderContactsView === 'function') renderContactsView(); });
             } else if (tabName === 'chat') {
                 if (typeof renderChatHistoryList === 'function') renderChatHistoryList();
             } else if (tabName === 'calls') {
@@ -284,26 +263,23 @@
             const toastText = document.getElementById('toastText');
             const toastDot = document.getElementById('toastDot');
             if (!banner || !toastText) return;
-            
             toastText.innerText = text;
             if (toastDot) toastDot.style.backgroundColor = isError ? '#ff4757' : '#2ed573';
-            banner.classList.add('hidden');
+            banner.classList.remove('hidden');
             banner.style.display = 'flex';
-            setTimeout(() => {
-                banner.classList.add('hidden');
-                banner.style.display = 'none';
-            }, 3000);
+            setTimeout(() => { banner.classList.add('hidden'); banner.style.display = 'none'; }, 3000);
         }
 
         function initAppAfterVerification() {
             const overlay = document.getElementById('verifyOverlay');
             if (overlay) overlay.style.display = 'none';
-            fetchCloudContacts().then(() => {
-                switchTab('contact'); // ভেরিফিকেশনের পর ডিফল্টভাবে কন্টাক্ট ট্যাব ওপেন করবে
-            });
+            setupChatInputUI();
+            if (typeof startIncomingCallPolling === 'function') startIncomingCallPolling();
+            fetchCloudContacts().then(() => { switchTab('contact'); });
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            setupChatInputUI();
             const overlay = document.getElementById('verifyOverlay');
             const savedTheme = JSON.parse(localStorage.getItem('message_profiles_v18') || '[{}]')[0]?.themeColor || 'emerald';
             document.documentElement.setAttribute('data-theme', savedTheme);
@@ -313,13 +289,9 @@
                 initAppAfterVerification();
             } else {
                 if (overlay) overlay.style.display = 'flex';
-                const step1 = document.getElementById('verifyStep1');
-                const step2 = document.getElementById('verifyStep2');
-                if (step1) step1.style.display = 'block';
-                if (step2) step2.style.display = 'none';
-                if (typeof populateVerifyCountryDropdown === 'function') {
-                    populateVerifyCountryDropdown();
-                }
+                document.getElementById('verifyStep1').style.display = 'block';
+                document.getElementById('verifyStep2').style.display = 'none';
+                if (typeof populateVerifyCountryDropdown === 'function') populateVerifyCountryDropdown();
             }
         });
     </script>
