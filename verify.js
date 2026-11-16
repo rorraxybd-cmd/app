@@ -1,4 +1,4 @@
-// verify.js - Professional Verification & Profile Module (Complete & Clean)
+// verify.js - Professional Verification & Profile Module (Complete)
 let deferredPrompt = null;
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
@@ -18,36 +18,6 @@ window.addEventListener('beforeinstallprompt', (e) => {
     deferredPrompt = e;
     document.getElementById('pwaInstallContainer')?.classList.remove('hidden');
 });
-
-async function installPWAApp() {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const choiceResult = await deferredPrompt.userChoice;
-        if (choiceResult.outcome === 'accepted') {
-            document.getElementById('pwaInstallContainer')?.classList.add('hidden');
-        }
-        deferredPrompt = null;
-    }
-    document.getElementById('pwaInstallContainer')?.classList.add('hidden');
-    document.getElementById('verifyStep1').style.display = 'block';
-    if (typeof loadCountryCodesIntoSelect === 'function') {
-        loadCountryCodesIntoSelect();
-    }
-}
-
-function getCountryInfo(phone) {
-    const p = String(phone || '').replace(/[\s\-\(\)]/g, '');
-    if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined') {
-        for (const cont of GLOBAL_CONTINENTS_DATA) {
-            for (const c of cont.countries) {
-                if (p.startsWith('+' + c.code) || p.startsWith(c.code)) {
-                    return { code: '+' + c.code, name: c.name, flag: c.flag };
-                }
-            }
-        }
-    }
-    return { code: 'OTHER', name: 'Global', flag: '🌐' };
-}
 
 function getActiveProfile() { return savedProfiles[0]; }
 function saveProfiles() { localStorage.setItem('message_profiles_v18', JSON.stringify(savedProfiles)); }
@@ -108,7 +78,7 @@ async function submitVerifyStep2() {
     const entered = otpEl ? otpEl.value.trim() : '';
     
     if (entered !== generatedOtpCode) { 
-        if (typeof showToast === 'function') showToast("ভুল পাসওয়ার্ড বা কোড দেওয়া হয়েছে", true); 
+        if (typeof showToast === 'function') showToast("ভুল কোড দেওয়া হয়েছে", true); 
         return; 
     }
 
@@ -139,25 +109,12 @@ async function submitVerifyStep2() {
     };
     saveProfiles();
 
-    try {
-        const res = await fetch(`/api/chat?action=get_user_profile&phone=${encodeURIComponent(tempVerifyPhone)}`);
-        if (res.ok) {
-            const data = await res.json();
-            if (data.success && data.user) {
-                savedProfiles[0].username = data.user.username || savedProfiles[0].username;
-                savedProfiles[0].themeColor = data.user.themeColor || "emerald";
-                savedProfiles[0].avatar = data.user.avatar_url || savedProfiles[0].avatar;
-                saveProfiles();
-            }
-        }
-    } catch (e) {}
-
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
     
     const overlay = document.getElementById('verifyOverlay');
     if (overlay) overlay.style.display = 'none';
     
-    if (typeof showToast === 'function') showToast("সফলভাবে ভেরিফাই হয়ে মূল মেনুতে প্রবেশ করেছে!");
+    if (typeof showToast === 'function') showToast("সফলভাবে ভেরিফাই হয়ে গেছে!");
     
     if (typeof initAppAfterVerification === 'function') {
         initAppAfterVerification();
@@ -237,10 +194,6 @@ function renderProfileView(isEditing = false) {
                             <span class="text-gray-400 font-medium">Username</span>
                             <span class="font-bold text-amber-300">@${profile.username}</span>
                         </div>
-                        <div class="flex justify-between items-center py-2">
-                            <span class="text-gray-400 font-medium">Theme Style</span>
-                            <span class="font-bold text-white capitalize">${profile.themeColor || 'Emerald'}</span>
-                        </div>
                     </div>
                 ` : `
                     <div class="space-y-3.5 pt-1">
@@ -254,15 +207,6 @@ function renderProfileView(isEditing = false) {
                             <input type="text" id="editUsername" value="${profile.username}" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-amber-400/10" placeholder="username">
                         </div>
 
-                        <div class="space-y-1.5">
-                            <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">THEME STYLE</label>
-                            <select id="editThemeColor" onchange="previewThemeStyle(this.value)" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-amber-400/10 cursor-pointer">
-                                <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>Emerald Dark (Default)</option>
-                                <option value="skyblue" ${profile.themeColor==='skyblue'?'selected':''}>Sky Blue (Modern)</option>
-                                <option value="black" ${profile.themeColor==='black'?'selected':''}>Classic Black (Pure)</option>
-                            </select>
-                        </div>
-
                         <button onclick="saveProfileSettings()" class="w-full py-3.5 gold-btn text-xs rounded-xl font-extrabold cursor-pointer mt-2 transition hover:brightness-110 uppercase tracking-wider">
                             SAVE CHANGES
                         </button>
@@ -271,14 +215,6 @@ function renderProfileView(isEditing = false) {
             </div>
         </div>
     `;
-}
-
-function previewThemeStyle(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    const profile = getActiveProfile();
-    profile.themeColor = theme;
-    saveProfiles();
-    if (typeof showToast === 'function') showToast(`থিম সেট হয়েছে: ${theme}`);
 }
 
 function handleProfileAvatarChange(input) {
@@ -325,13 +261,11 @@ function handleProfileAvatarChange(input) {
 async function saveProfileSettings() {
     const nameInput = document.getElementById('editDisplayName');
     const userSelectInput = document.getElementById('editUsername');
-    const themeSelect = document.getElementById('editThemeColor');
 
     if (!nameInput || !userSelectInput) return;
 
     const newName = nameInput.value.trim();
     const newUsername = userSelectInput.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-    const newTheme = themeSelect ? themeSelect.value : 'emerald';
     
     if (!newName) { if (typeof showToast === 'function') showToast("নাম খালি রাখা যাবে না", true); return; }
     if (RESERVED_USERNAMES.includes(newUsername)) { if (typeof showToast === 'function') showToast("এই ইউজারনেমটি সংরক্ষিত", true); return; }
@@ -339,70 +273,8 @@ async function saveProfileSettings() {
     const profile = getActiveProfile();
     profile.name = newName;
     if (newUsername) profile.username = newUsername;
-    profile.themeColor = newTheme;
     saveProfiles();
-    document.documentElement.setAttribute('data-theme', newTheme);
 
     if (typeof showToast === 'function') showToast("প্রোফাইল আপডেট সফল হয়েছে!");
     renderProfileView(false);
-}
-
-let notificationStore = JSON.parse(localStorage.getItem('message_notifications_v1') || '[]');
-
-function toggleNotificationPanel() {
-    const panel = document.getElementById('notificationPanel');
-    if (!panel) return;
-    if (panel.classList.contains('hidden')) {
-        panel.classList.remove('hidden');
-        renderNotificationsDropdown();
-    } else {
-        panel.classList.add('hidden');
-    }
-}
-
-function renderNotificationsDropdown() {
-    const container = document.getElementById('notificationListContainer');
-    if (!container) return;
-
-    if (notificationStore.length === 0) {
-        container.innerHTML = `<p class="text-center text-gray-500 py-4 text-[11px]">কোনো নতুন নোটিফিকেশন নেই</p>`;
-        document.getElementById('headerNotifBadge')?.classList.add('hidden');
-        return;
-    }
-
-    container.innerHTML = notificationStore.map((n, idx) => `
-        <div class="flex items-center justify-between p-2 rounded-xl bg-black/40 border border-white/5 space-x-2">
-            <div class="flex items-center space-x-2 min-w-0">
-                <input type="checkbox" ${n.keepPinned ? 'checked' : ''} onchange="togglePinNotification(${idx})" class="accent-amber-400 cursor-pointer" title="Keep important">
-                <p class="truncate text-white text-[11px]">${n.text}</p>
-            </div>
-            <button onclick="deleteSingleNotification(${idx})" class="text-gray-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-trash"></i></button>
-        </div>
-    `).join('');
-
-    const badge = document.getElementById('headerNotifBadge');
-    if (badge) {
-        badge.innerText = notificationStore.length;
-        badge.classList.remove('hidden');
-    }
-}
-
-function togglePinNotification(idx) {
-    if (notificationStore[idx]) {
-        notificationStore[idx].keepPinned = !notificationStore[idx].keepPinned;
-        localStorage.setItem('message_notifications_v1', JSON.stringify(notificationStore));
-    }
-}
-
-function deleteSingleNotification(idx) {
-    notificationStore.splice(idx, 1);
-    localStorage.setItem('message_notifications_v1', JSON.stringify(notificationStore));
-    renderNotificationsDropdown();
-}
-
-function deleteAllNotifications() {
-    notificationStore = notificationStore.filter(n => n.keepPinned);
-    localStorage.setItem('message_notifications_v1', JSON.stringify(notificationStore));
-    renderNotificationsDropdown();
-    if (typeof showToast === 'function') showToast("নোটিফিকেশন ক্লিয়ার করা হয়েছে");
 }
