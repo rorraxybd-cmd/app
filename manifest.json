@@ -1,22 +1,22 @@
 {
   "name": "MESSAGE - rorraxy.com",
   "short_name": "MESSAGE",
-  "description": "Secure Real-Time Messenger by rorraxy.com",
+  "description": "Luxury Real-Time Global Messenger & HD Call by rorraxy.com",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#04120b",
-  "theme_color": "#04120b",
+  "background_color": "#030305",
+  "theme_color": "#030305",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/im192.jpg",
+      "src": "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg",
       "sizes": "192x192",
       "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
-      "src": "/im512.jpg",
+      "src": "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any maskable"
