@@ -23,7 +23,8 @@
             --card: #08110c;
             --gold-gradient: linear-gradient(135deg, #F5D061 0%, #FCF6BA 35%, #D4AF37 65%, #FBF5B7 85%, #AA771C 100%);
         }
-        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-main); color: #ffffff; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-main); color: #ffffff; margin: 0; padding: 0; }
         .brand-title-font { font-family: 'Cinzel', serif; letter-spacing: 0.16em; }
         .gold-gradient-text { background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .pink-gradient-text { background: linear-gradient(135deg, #EC4899 0%, #ff2e7e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -36,14 +37,15 @@
         }
         .verify-card { background: #030305; border-radius: 24px; padding: 32px 24px; max-width: 440px; width: 100%; }
         .gold-btn { background: var(--gold-gradient); color: #030305; font-weight: 700; transition: transform 0.2s; }
-        .gold-btn:hover { transform: scale(1.02); }
+        .gold-btn:active { transform: scale(0.96); }
         .theme-surface { background-color: var(--surface); }
         .theme-card { background-color: var(--card); }
-        .theme-input { background-color: rgba(255, 255, 255, 0.03); color: #fff; }
+        .theme-input { background-color: rgba(255, 255, 255, 0.05); color: #fff; }
         .header-logo-clean { width: 42px; height: 42px; object-fit: cover; background: transparent !important; border-radius: 50%; }
-        .chat-bubble-me { background: linear-gradient(135deg, #0f2e1a 0%, #081a10 100%); }
-        .chat-bubble-them { background: rgba(255, 255, 255, 0.04); }
+        .chat-bubble-me { background: linear-gradient(135deg, #0f2e1a 0%, #081a10 100%); border: 1px solid rgba(245, 208, 97, 0.12); }
+        .chat-bubble-them { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.06); }
         .pink-btn { background: linear-gradient(135deg, #EC4899 0%, #be185d 100%); color: #ffffff; }
+        .pb-safe { padding-bottom: max(0.65rem, env(safe-area-inset-bottom)); }
     </style>
 </head>
 <body class="h-[100dvh] w-full flex flex-col overflow-hidden fixed inset-0">
@@ -88,7 +90,7 @@
     </div>
 
     <!-- Header Bar -->
-    <header class="theme-surface px-4 py-3 flex justify-between items-center shrink-0 z-30">
+    <header class="theme-surface px-4 py-3 flex justify-between items-center shrink-0 z-30 border-b border-white/5">
         <div class="flex items-center space-x-3">
             <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean">
             <div>
@@ -109,27 +111,42 @@
             </div>
         </div>
 
-        <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full min-h-0 z-10 relative" style="background-color: var(--bg-main);">
-            <div id="activeChatHeader" class="theme-surface px-4 py-3 hidden items-center justify-between shrink-0 z-20">
-                <div class="flex items-center space-x-3">
-                    <button onclick="backToSidebarMobile()" class="md:hidden p-1.5 rounded-2xl theme-card cursor-pointer">
+        <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full min-h-0 z-10 relative w-full" style="background-color: var(--bg-main);">
+            <!-- Active Chat Header (Clean, Single Set of Action Buttons + All Delete) -->
+            <div id="activeChatHeader" class="theme-surface px-3 py-2.5 hidden items-center justify-between shrink-0 z-20 border-b border-white/5 w-full">
+                <div class="flex items-center space-x-2.5 min-w-0 flex-1">
+                    <button onclick="backToSidebarMobile()" class="md:hidden w-8 h-8 rounded-full theme-card flex items-center justify-center shrink-0 cursor-pointer">
                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#F5D061" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                     </button>
-                    <div class="flex items-center space-x-3">
-                        <div class="relative"><img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" class="w-9 h-9 rounded-full object-cover"></div>
-                        <div>
-                            <span id="activeChatTitle" class="font-semibold text-white text-xs tracking-wide">Select a contact</span>
-                        </div>
+                    <img id="activeChatAvatar" src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" class="w-9 h-9 rounded-full object-cover shrink-0">
+                    <div class="min-w-0 flex-1 pr-1">
+                        <span id="activeChatTitle" class="font-semibold text-white text-xs tracking-wide block truncate">Select a contact</span>
+                        <span id="activeChatStatus" class="text-[10px] text-emerald-400 block truncate">Online</span>
                     </div>
                 </div>
+                <div id="chatHeaderControls" class="flex items-center space-x-1 shrink-0">
+                    <button onclick="startWhatsAppCall('audio')" class="w-9 h-9 rounded-full hover:bg-white/10 text-amber-300 flex items-center justify-center cursor-pointer transition" title="Audio Call">
+                        <i class="fa-solid fa-phone text-sm"></i>
+                    </button>
+                    <button onclick="startWhatsAppCall('video')" class="w-9 h-9 rounded-full hover:bg-white/10 text-amber-300 flex items-center justify-center cursor-pointer transition" title="Video Call">
+                        <i class="fa-solid fa-video text-sm"></i>
+                    </button>
+                    <button onclick="deleteAllChatMessages()" class="w-9 h-9 rounded-full hover:bg-red-500/20 text-red-400 flex items-center justify-center cursor-pointer transition" title="Delete All Messages">
+                        <i class="fa-solid fa-trash-can text-sm"></i>
+                    </button>
+                </div>
             </div>
-            <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 flex flex-col justify-start"></div>
-            <div id="chatInputBar" class="theme-surface px-3 py-2.5 hidden items-center shrink-0 z-20"></div>
+
+            <!-- Messages Scroll Area -->
+            <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto p-3 space-y-2.5 flex flex-col justify-start w-full"></div>
+
+            <!-- Mobile-Fitted Unified Input Bar (Attach + Text + Voice Mic + Send all inside cleanly) -->
+            <div id="chatInputBar" class="theme-surface px-2.5 py-2 pb-safe hidden items-center shrink-0 z-20 border-t border-white/5 w-full"></div>
         </div>
     </div>
 
     <!-- Bottom Navigation Bar (5 Tabs) -->
-    <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40">
+    <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40 border-t border-white/5">
         <div class="flex items-center justify-around w-full px-3">
             <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
                 <svg id="iconProfile" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
@@ -153,15 +170,17 @@
             </button>
         </div>
     </nav>
+
     <!-- Toast Banner -->
-    <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 theme-card text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden items-center space-x-2">
+    <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 theme-card border border-amber-400/20 text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden items-center space-x-2">
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
+
     <!-- Scripts -->
-    <script src="/discover.js?v=30.0"></script>
-    <script src="/verify.js?v=30.0"></script>
-    <script src="/call.js?v=30.0"></script>
-    <script src="/message.js?v=30.0"></script>
+    <script src="/discover.js?v=32.0"></script>
+    <script src="/verify.js?v=32.0"></script>
+    <script src="/call.js?v=32.0"></script>
+    <script src="/message.js?v=32.0"></script>
     <script>
         function normPhoneNum(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
 
@@ -170,19 +189,23 @@
             if (workspace) { workspace.classList.add('hidden'); workspace.style.display = ''; }
             document.getElementById('sidebarSection')?.classList.remove('hidden');
             document.getElementById('bottomNavBar')?.classList.remove('hidden');
+            window.currentActiveRecipient = null;
         }
 
         function setupChatInputUI() {
             const chatInputBar = document.getElementById('chatInputBar');
-            if (chatInputBar && chatInputBar.innerHTML.trim() === '') {
+            if (chatInputBar) {
                 chatInputBar.innerHTML = `
-                    <div class="flex items-center space-x-2 w-full px-2 py-1">
-                        <label class="text-amber-300 hover:text-white p-2.5 cursor-pointer shrink-0">
-                            <i class="fa-solid fa-paperclip text-base"></i>
-                            <input type="file" multiple class="hidden" onchange="handleUniversalFileUpload(this)">
+                    <div class="flex items-center w-full theme-input rounded-full px-2 py-1 border border-amber-400/20 space-x-1">
+                        <label class="w-9 h-9 rounded-full hover:bg-white/10 text-amber-300 flex items-center justify-center cursor-pointer shrink-0 transition" title="Attach Photo, Video, Audio or PDF">
+                            <i class="fa-solid fa-paperclip text-sm"></i>
+                            <input type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx" multiple class="hidden" onchange="handleUniversalFileUpload(this)">
                         </label>
-                        <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendTextMessage()" class="flex-1 theme-input text-xs px-4 py-3 rounded-2xl text-white focus:outline-none">
-                        <button id="sendBtn" onclick="sendTextMessage()" class="p-3 gold-btn rounded-2xl flex items-center justify-center cursor-pointer shrink-0 shadow-md">
+                        <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendTextMessage()" class="flex-1 min-w-0 bg-transparent text-xs px-1.5 py-2 text-white placeholder-gray-400 focus:outline-none">
+                        <button type="button" id="voiceRecordBtn" onclick="toggleVoiceRecording()" class="w-9 h-9 rounded-full hover:bg-white/10 text-amber-300 flex items-center justify-center cursor-pointer shrink-0 transition" title="Record Voice Message">
+                            <i id="voiceRecordIcon" class="fa-solid fa-microphone text-sm"></i>
+                        </button>
+                        <button type="button" id="sendBtn" onclick="sendTextMessage()" class="w-9 h-9 gold-btn rounded-full flex items-center justify-center cursor-pointer shrink-0 shadow-md">
                             <i class="fa-solid fa-paper-plane text-xs"></i>
                         </button>
                     </div>
@@ -197,20 +220,18 @@
                     const data = await res.json();
                     if (data.success && Array.isArray(data.users)) {
                         let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
-                        
                         data.users.forEach(u => {
                             const phone = normPhoneNum(u.phone_number);
                             if (!phone) return;
-                            
                             const existingIndex = localContacts.findIndex(c => normPhoneNum(c.phone) === phone);
                             if (existingIndex === -1) {
-                                localContacts.push({ 
-                                    name: u.display_name || 'User', 
-                                    phone: phone, 
-                                    username: u.username || ('user_' + Math.floor(1000 + Math.random() * 9000)), 
-                                    avatar: u.avatar_url || '', 
-                                    isOnline: u.is_online === 1, 
-                                    appUser: true 
+                                localContacts.push({
+                                    name: u.display_name || 'User',
+                                    phone: phone,
+                                    username: u.username || ('user_' + Math.floor(1000 + Math.random() * 9000)),
+                                    avatar: u.avatar_url || '',
+                                    isOnline: u.is_online === 1,
+                                    appUser: true
                                 });
                             } else {
                                 localContacts[existingIndex].name = u.display_name || localContacts[existingIndex].name;
@@ -280,13 +301,21 @@
             }
         }
 
+        function requestPushNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().catch(() => {});
+            }
+        }
+
         function initAppAfterVerification() {
             const overlay = document.getElementById('verifyOverlay');
             if (overlay) overlay.style.display = 'none';
             setupChatInputUI();
+            requestPushNotificationPermission();
             if (typeof startIncomingCallPolling === 'function') startIncomingCallPolling();
-            fetchCloudContacts().then(() => { 
-                switchTab('contact'); 
+            if (typeof startGlobalMessageSync === 'function') startGlobalMessageSync();
+            fetchCloudContacts().then(() => {
+                switchTab('contact');
                 handleDirectUsernameRoute();
             });
         }
