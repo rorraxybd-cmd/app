@@ -1,4 +1,484 @@
-// discover.js - Global Directory & Contacts Sync Module (Fully Optimized & Clean UI)
+// verify.js - Professional Verification & Profile Module (Complete & Duplicate-Proof)
+let deferredPrompt = null;
+let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
+let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
+
+const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'message'];
+
+let savedProfiles = JSON.parse(localStorage.getItem('message_profiles_v18') || 'null') || [{
+    name: "rorraxy.com",
+    phone: "+8801538187301",
+    username: "rorraxy.com",
+    themeColor: "emerald",
+    avatar: "https://pub-e1469a425020465cb5f7971065e07a62.r2.dev/logo.jpg"
+}];
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('pwaInstallContainer')?.classList.remove('hidden');
+});
+
+async function installPWAApp() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const choiceResult = await deferredPrompt.userChoice;
+        if (choiceResult.outcome === 'accepted') {
+            document.getElementById('pwaInstallContainer')?.classList.add('hidden');
+        }
+        deferredPrompt = null;
+    }
+    document.getElementById('pwaInstallContainer')?.classList.add('hidden');
+    document.getElementById('verifyStep1').style.display = 'block';
+    populateVerifyCountryDropdown();
+}
+
+async function populateVerifyCountryDropdown() {
+    const select = document.getElementById('vCountrySelect');
+    if (!select) return;
+    let detectedCountryCode = '880'; 
+
+    try {
+        const ipRes = await fetch('https://ipapi.co/json/');
+        if (ipRes.ok) {
+            const ipData = await ipRes.json();
+            userDeviceIp = ipData.ip || 'Unknown';
+            const countryName = ipData.country_name;
+            if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined') {
+                for (const cont of GLOBAL_CONTINENTS_DATA) {
+                    const found = cont.countries.find(c => c.name.toLowerCase() === countryName?.toLowerCase());
+                    if (found) {
+                        detectedCountryCode = found.code;
+                        break;
+                    }
+                }
+            }
+        }
+    } catch (e) {}
+
+    if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined' && Array.isArray(GLOBAL_CONTINENTS_DATA)) {
+        let html = '';
+        GLOBAL_CONTINENTS_DATA.forEach(continent => {
+            continent.countries.forEach(c => {
+                const isSelected = (c.code === detectedCountryCode) ? 'selected' : '';
+                html += `<option value="+${c.code}|10" ${isSelected}>${c.flag} +${c.code} (${c.name})</option>`;
+            });
+        });
+        select.innerHTML = html;
+    } else {
+        select.innerHTML = `<option value="+880|10" selected>🇧🇩 +880 (Bangladesh)</option>`;
+    }
+    updatePhoneValidation();
+}
+
+function getCountryInfo(phone) {
+    const p = String(phone || '').replace(/[\s\-\(\)]/g, '');
+    if (typeof GLOBAL_CONTINENTS_DATA !== 'undefined') {
+        for (const cont of GLOBAL_CONTINENTS_DATA) {
+            for (const c of cont.countries) {
+                if (p.startsWith('+' + c.code) || p.startsWith(c.code)) {
+                    return { code: '+' + c.code, name: c.name, flag: c.flag };
+                }
+            }
+        }
+    }
+    return { code: 'OTHER', name: 'Global', flag: '🌐' };
+}
+
+function getActiveProfile() { return savedProfiles[0]; }
+function saveProfiles() { localStorage.setItem('message_profiles_v18', JSON.stringify(savedProfiles)); }
+function normPhone(p) { return String(p || '').replace(/[\s\-\(\)]/g, ''); }
+
+function updatePhoneValidation() {
+    const select = document.getElementById('vCountrySelect'), phoneInput = document.getElementById('vPhoneInput');
+    if (!select || !phoneInput) return;
+    const val = select.value.split('|');
+    phoneInput.maxLength = val[1] || 10;
+    phoneInput.placeholder = "1700000000";
+}
+
+async function submitVerifyStep1() {
+    const nameInput = document.getElementById('vFullName');
+    const selectEl = document.getElementById('vCountrySelect');
+    const phoneInput = document.getElementById('vPhoneInput');
+
+    const name = nameInput ? nameInput.value.trim() : '';
+    const selectData = selectEl ? selectEl.value.split('|') : ['+880', '10'];
+    const countryCode = selectData[0];
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+
+    if (!name) { 
+        if (typeof showToast === 'function') showToast("দয়া করে আপনার পুরো নাম লিখুন", true);
+        return; 
+    }
+    if (!phone || phone.length < 6) { 
+        if (typeof showToast === 'function') showToast("সঠিক ফোন নম্বর দিন", true);
+        return; 
+    }
+
+    tempVerifyName = name; 
+    tempVerifyPhone = countryCode + phone;
+    generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    try {
+        await fetch('/api/chat?action=send_magic_link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ display_name: tempVerifyName, phone: tempVerifyPhone, magic_code: generatedOtpCode, ip: userDeviceIp })
+        });
+    } catch (e) {}
+
+    const step1El = document.getElementById('verifyStep1');
+    const step2El = document.getElementById('verifyStep2');
+    if (step1El) step1El.style.display = 'none';
+    if (step2El) step2El.style.display = 'block';
+    
+    const otpInput = document.getElementById('vOtpInput');
+    if (otpInput) otpInput.value = generatedOtpCode;
+
+    if (typeof showToast === 'function') showToast("ভেরিফিকেশন কোড অটো-ফিল করা হয়েছে");
+}
+
+async function submitVerifyStep2() {
+    const otpEl = document.getElementById('vOtpInput');
+    const entered = otpEl ? otpEl.value.trim() : '';
+    
+    if (entered !== generatedOtpCode) { 
+        if (typeof showToast === 'function') showToast("ভুল কোড দেওয়া হয়েছে", true); 
+        return; 
+    }
+
+    const cleanVerifyPhone = normPhone(tempVerifyPhone);
+    let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+    const existingContact = localContacts.find(c => normPhone(c.phone) === cleanVerifyPhone);
+
+    isVerifiedSession = true;
+    localStorage.setItem('message_verified_v18', 'true');
+
+    if (!existingContact) {
+        localContacts.push({
+            name: tempVerifyName,
+            phone: cleanVerifyPhone,
+            avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg",
+            isOnline: true,
+            appUser: true
+        });
+        localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
+    }
+
+    savedProfiles[0] = {
+        name: tempVerifyName,
+        phone: cleanVerifyPhone,
+        username: 'user_' + Math.floor(1000 + Math.random() * 9000),
+        themeColor: "emerald",
+        avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg"
+    };
+    saveProfiles();
+
+    try {
+        const res = await fetch(`/api/chat?action=get_user_profile&phone=${encodeURIComponent(tempVerifyPhone)}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.user) {
+                savedProfiles[0].username = data.user.username || savedProfiles[0].username;
+                savedProfiles[0].themeColor = data.user.themeColor || "emerald";
+                savedProfiles[0].avatar = data.user.avatar_url || savedProfiles[0].avatar;
+                saveProfiles();
+            }
+        }
+    } catch (e) {}
+
+    if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+    
+    const overlay = document.getElementById('verifyOverlay');
+    if (overlay) overlay.style.display = 'none';
+    
+    if (typeof showToast === 'function') showToast("সফলভাবে কানেক্ট হয়েছে!");
+    
+    if (typeof initAppAfterVerification === 'function') {
+        initAppAfterVerification();
+    } else if (typeof switchTab === 'function') {
+        switchTab('contact');
+    }
+}
+
+function checkInitialVerification() {
+    populateVerifyCountryDropdown();
+    const overlay = document.getElementById('verifyOverlay');
+    if (!isVerifiedSession) {
+        if (overlay) overlay.style.display = 'flex';
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+            document.getElementById('pwaInstallContainer')?.classList.add('hidden');
+            const step1 = document.getElementById('verifyStep1');
+            if (step1) step1.style.display = 'block';
+            updatePhoneValidation();
+        } else {
+            document.getElementById('pwaInstallContainer')?.classList.remove('hidden');
+        }
+    } else {
+        if (overlay) overlay.style.display = 'none';
+        if (typeof initAppAfterVerification === 'function') {
+            initAppAfterVerification();
+        } else {
+            setTimeout(() => {
+                if (typeof initAppAfterVerification === 'function') {
+                    initAppAfterVerification();
+                } else if (typeof switchTab === 'function') {
+                    switchTab('contact');
+                }
+            }, 300);
+        }
+    }
+}
+
+function shareProfileLink() {
+    const profile = getActiveProfile();
+    const profileUrl = `https://chat.rorraxy.com/${profile.username || 'user'}`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'MESSAGE by rorraxy.com',
+            url: profileUrl
+        }).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(profileUrl).then(() => {
+            if (typeof showToast === 'function') showToast(`কপি হয়েছে: ${profileUrl}`);
+        }).catch(() => {
+            if (typeof showToast === 'function') showToast("লিংক কপি করতে ব্যর্থ হয়েছে", true);
+        });
+    }
+}
+
+function renderProfileView(isEditing = false) {
+    const profile = getActiveProfile();
+    const sidebarList = document.getElementById('sidebarContentList');
+    if (!sidebarList) return;
+
+    const phoneStr = profile.phone || '';
+    const maskedPhone = phoneStr.length > 6 ? phoneStr.substring(0, 5) + '******' + phoneStr.slice(-2) : phoneStr;
+
+    sidebarList.innerHTML = `
+        <div class="p-4 space-y-4 max-w-md mx-auto pb-24">
+            <div class="text-center space-y-3 theme-card p-6 rounded-3xl border border-amber-400/20">
+                <div class="relative w-24 h-24 mx-auto">
+                    <img id="profileAvatarPreview" src="${profile.avatar}" class="w-24 h-24 rounded-full object-cover bg-black border-2 border-amber-400/50">
+                    <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-pink-600 hover:bg-pink-500 text-white flex items-center justify-center cursor-pointer shadow-md hover:scale-110 transition" title="Change Photo">
+                        <i class="fa-solid fa-camera text-xs"></i>
+                        <input type="file" accept="image/*" class="hidden" onchange="handleProfileAvatarChange(this)">
+                    </label>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold gold-gradient-text">${profile.name}</h3>
+                    <p class="text-[11px] text-gray-400 mt-1 flex items-center justify-center space-x-1">
+                        <i class="fa-solid fa-phone text-amber-300"></i>
+                        <span class="tracking-wider">${maskedPhone}</span>
+                        <span class="text-[10px] text-emerald-400 font-semibold ml-1">Verified</span>
+                    </p>
+                </div>
+
+                <div class="pt-2">
+                    <button onclick="shareProfileLink()" class="w-full py-3.5 px-4 rounded-2xl theme-input hover:border-pink-500/50 transition cursor-pointer flex items-center justify-center">
+                        <span class="text-xs font-extrabold pink-gradient-text tracking-wider uppercase">Share Profile</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-4 theme-card p-6 rounded-3xl border border-amber-400/20">
+                <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                    <h4 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Profile Information</h4>
+                    <button onclick="renderProfileView(${!isEditing})" class="text-[11px] text-amber-300 hover:underline font-semibold flex items-center space-x-1 cursor-pointer">
+                        <i class="fa-solid ${isEditing ? 'fa-xmark' : 'fa-pen-to-square'}"></i>
+                        <span>${isEditing ? 'বাতিল' : 'এডিট প্রোফাইল'}</span>
+                    </button>
+                </div>
+
+                ${!isEditing ? `
+                    <div class="space-y-3 pt-2 text-xs text-gray-300">
+                        <div class="flex justify-between items-center py-2 border-b border-white/5">
+                            <span class="text-gray-400 font-medium">Full Name</span>
+                            <span class="font-bold text-white">${profile.name}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/5">
+                            <span class="text-gray-400 font-medium">Username</span>
+                            <span class="font-bold text-amber-300">@${profile.username}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-gray-400 font-medium">Theme Style</span>
+                            <span class="font-bold text-white capitalize">${profile.themeColor || 'Emerald'}</span>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="space-y-3.5 pt-1">
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">FULL NAME</label>
+                            <input type="text" id="editDisplayName" value="${profile.name}" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-amber-400/20">
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">USERNAME</label>
+                            <input type="text" id="editUsername" value="${profile.username}" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white focus:outline-none border border-amber-400/20" placeholder="username">
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-bold tracking-wider text-gray-300 uppercase">THEME STYLE</label>
+                            <select id="editThemeColor" onchange="previewThemeStyle(this.value)" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none border border-amber-400/20 cursor-pointer">
+                                <option value="emerald" ${profile.themeColor==='emerald'?'selected':''}>Emerald Dark (Default)</option>
+                                <option value="skyblue" ${profile.themeColor==='skyblue'?'selected':''}>Sky Blue (Modern)</option>
+                                <option value="black" ${profile.themeColor==='black'?'selected':''}>Classic Black (Pure)</option>
+                            </select>
+                        </div>
+
+                        <button onclick="saveProfileSettings()" class="w-full py-3.5 gold-btn text-xs rounded-xl font-extrabold cursor-pointer mt-2 transition hover:brightness-110 uppercase tracking-wider">
+                            SAVE CHANGES
+                        </button>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+function previewThemeStyle(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const profile = getActiveProfile();
+    profile.themeColor = theme;
+    saveProfiles();
+    if (typeof showToast === 'function') showToast(`থিম সেট হয়েছে: ${theme}`);
+}
+
+function handleProfileAvatarChange(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = async function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 350;
+            const MAX_HEIGHT = 350;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+            } else {
+                if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+            
+            const profile = getActiveProfile();
+            profile.avatar = compressedDataUrl;
+            saveProfiles();
+            
+            const avatarPreview = document.getElementById('profileAvatarPreview');
+            if (avatarPreview) avatarPreview.src = compressedDataUrl;
+
+            if (typeof showToast === 'function') showToast("প্রোফাইল ছবি সেভ হয়েছে");
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+async function saveProfileSettings() {
+    const nameInput = document.getElementById('editDisplayName');
+    const userSelectInput = document.getElementById('editUsername');
+    const themeSelect = document.getElementById('editThemeColor');
+
+    if (!nameInput || !userSelectInput) return;
+
+    const newName = nameInput.value.trim();
+    const newUsername = userSelectInput.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const newTheme = themeSelect ? themeSelect.value : 'emerald';
+    
+    if (!newName) { if (typeof showToast === 'function') showToast("নাম খালি রাখা যাবে না", true); return; }
+    if (RESERVED_USERNAMES.includes(newUsername)) { if (typeof showToast === 'function') showToast("এই ইউজারনেমটি সংরক্ষিত", true); return; }
+
+    const profile = getActiveProfile();
+    profile.name = newName;
+    if (newUsername) profile.username = newUsername;
+    profile.themeColor = newTheme;
+    saveProfiles();
+    document.documentElement.setAttribute('data-theme', newTheme);
+
+    if (typeof showToast === 'function') showToast("প্রোফাইল আপডেট সফল হয়েছে!");
+    renderProfileView(false);
+}
+
+let notificationStore = JSON.parse(localStorage.getItem('message_notifications_v1') || '[]');
+
+function toggleNotificationPanel() {
+    const panel = document.getElementById('notificationPanel');
+    if (!panel) return;
+    if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        renderNotificationsDropdown();
+    } else {
+        panel.classList.add('hidden');
+    }
+}
+
+function renderNotificationsDropdown() {
+    const container = document.getElementById('notificationListContainer');
+    if (!container) return;
+
+    if (notificationStore.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-500 py-4 text-[11px]">কোনো নতুন নোটিফিকেশন নেই</p>`;
+        document.getElementById('headerNotifBadge')?.classList.add('hidden');
+        return;
+    }
+
+    container.innerHTML = notificationStore.map((n, idx) => `
+        <div class="flex items-center justify-between p-2 rounded-xl bg-black/40 border border-white/5 space-x-2">
+            <div class="flex items-center space-x-2 min-w-0">
+                <input type="checkbox" ${n.keepPinned ? 'checked' : ''} onchange="togglePinNotification(${idx})" class="accent-amber-400 cursor-pointer" title="Keep important">
+                <p class="truncate text-white text-[11px]">${n.text}</p>
+            </div>
+            <button onclick="deleteSingleNotification(${idx})" class="text-gray-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-trash"></i></button>
+        </div>
+    `).join('');
+
+    const badge = document.getElementById('headerNotifBadge');
+    if (badge) {
+        badge.innerText = notificationStore.length;
+        badge.classList.remove('hidden');
+    }
+}
+
+function togglePinNotification(idx) {
+    if (notificationStore[idx]) {
+        notificationStore[idx].keepPinned = !notificationStore[idx].keepPinned;
+        localStorage.setItem('message_notifications_v1', JSON.stringify(notificationStore));
+    }
+}
+
+function deleteSingleNotification(idx) {
+    notificationStore.splice(idx, 1);
+    localStorage.setItem('message_notifications_v1', JSON.stringify(notificationStore));
+    renderNotificationsDropdown();
+}
+
+function deleteAllNotifications() {
+    notificationStore = notificationStore.filter(n => n.keepPinned);
+    localStorage.setItem('message_notifications_v1', JSON.stringify(notificationStore));
+    renderNotificationsDropdown();
+    if (typeof showToast === 'function') showToast("নোটিফিকেশন ক্লিয়ার করা হয়েছে");
+}
+```[cite: 6, 7, 8]
+
+---
+
+### ২. সম্পূর্ণ `discover.js` ফাইল (ইউনিক কন্টাক্ট ও গ্লোবাল ডিসকভারি মডিউল)
+
+```javascript
+// discover.js - Global Directory & Contacts Sync Module (Fully Optimized & Duplicate-Proof)
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -142,38 +622,10 @@ function openChat(phone, name, avatar = '') {
     const recipient = { phone, name, avatar };
     window.currentActiveRecipient = recipient;
 
-    const tabs = ['Profile', 'Discover', 'Contact', 'Chat', 'Calls'];
-    tabs.forEach(t => {
-        const icon = document.getElementById('icon' + t);
-        const label = document.getElementById('label' + t);
-        if (icon) {
-            icon.classList.remove('text-[#EC4899]');
-            icon.classList.add('text-amber-300');
-            icon.style.stroke = '#F5D061';
-        }
-        if (label) {
-            label.classList.remove('pink-gradient-text', 'font-bold');
-            label.classList.add('gold-gradient-text', 'font-semibold');
-        }
-    });
-
-    const activeIcon = document.getElementById('iconChat');
-    const activeLabel = document.getElementById('labelChat');
-    if (activeIcon) {
-        activeIcon.classList.remove('text-amber-300');
-        activeIcon.classList.add('text-[#EC4899]');
-        activeIcon.style.stroke = '#EC4899';
-    }
-    if (activeLabel) {
-        activeLabel.classList.remove('gold-gradient-text', 'font-semibold');
-        activeLabel.classList.add('pink-gradient-text', 'font-bold');
-    }
-
     const workspace = document.getElementById('workspaceSection');
     if (workspace) {
         workspace.classList.remove('hidden');
         if (window.innerWidth < 768) {
-            // মোবাইলে সঠিক ফুল-স্ক্রিন ফিক্সড লেআউট যাতে মেনু বা ইনপুট বার ঢাকা না পড়ে
             workspace.className = "fixed inset-0 z-40 flex flex-col bg-[#030305] h-[100dvh]";
         } else {
             workspace.style.display = 'flex';
@@ -227,13 +679,13 @@ function renderDiscoverDirectory(searchQuery = '') {
 
     let html = `
         <div class="discover-wrapper p-3 space-y-3">
-            <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
+            <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-xl border border-amber-400/20">
                 <input type="text" id="discoverCountrySearch" placeholder="Search country name..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderDiscoverDirectory(this.value)">
                 <i class="fa-solid fa-magnifying-glass text-amber-300 text-xs"></i>
             </div>
-            <div class="discover-hero mb-2">
-                <h2 class="discover-hero-title">Global Network Directory</h2>
-                <p class="discover-hero-sub">Select any country to connect directly across borders</p>
+            <div class="theme-card p-4 rounded-2xl border border-amber-400/20 text-center">
+                <h2 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Global Network Directory</h2>
+                <p class="text-[10px] text-gray-400 mt-1">Select any country to connect directly across borders</p>
             </div>
     `;
 
@@ -242,11 +694,11 @@ function renderDiscoverDirectory(searchQuery = '') {
         if (filteredCountries.length === 0) return;
 
         html += `
-            <div class="discover-continent-box mb-3">
-                <div class="discover-continent-header">
+            <div class="theme-card rounded-2xl p-3 border border-white/5 space-y-2">
+                <div class="text-xs font-bold gold-gradient-text border-b border-white/10 pb-1.5 flex justify-between items-center">
                     <span>${continent.title}</span>
                 </div>
-                <div class="discover-countries-grid grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-2 gap-2">
         `;
 
         filteredCountries.forEach(country => {
@@ -259,7 +711,7 @@ function renderDiscoverDirectory(searchQuery = '') {
             const badgeText = count > 0 ? `${count} Active` : `+${country.code}`;
 
             html += `
-                <div class="discover-country-card p-3 rounded-xl border border-amber-400/20 cursor-pointer flex flex-col items-center text-center bg-white/5 hover:bg-white/10 transition" onclick="openDiscoverCountry('${country.flag}', '${country.name.replace(/'/g, "\\'")}', '${country.code}')">
+                <div class="p-3 rounded-xl border border-amber-400/20 cursor-pointer flex flex-col items-center text-center bg-white/5 hover:bg-white/10 transition" onclick="openDiscoverCountry('${country.flag}', '${country.name.replace(/'/g, "\\'")}', '${country.code}')">
                     <span class="text-2xl">${country.flag}</span>
                     <span class="text-xs font-bold text-white mt-1 truncate w-full">${country.name}</span>
                     <span class="text-[9px] px-2 py-0.5 rounded-full mt-1 bg-amber-400/10 text-amber-300 font-semibold">${badgeText}</span>
@@ -303,8 +755,8 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
         usersHtml = `
             <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 theme-card rounded-2xl border border-white/5 mt-2">
                 <span class="text-4xl">${countryObj.flag}</span>
-                <p class="text-xs font-bold gold-gradient-text">No active members found in ${countryObj.name}</p>
-                <p class="text-[10px] text-gray-400">Anyone joining MESSAGE from ${countryObj.name} will appear here automatically.</p>
+                <p class="text-xs font-bold gold-gradient-text">${countryObj.name} এ কোনো সদস্য পাওয়া যায়নি</p>
+                <p class="text-[10px] text-gray-400">এই দেশ থেকে কেউ যুক্ত হলে এখানে অটোমেটিক শো করবে।</p>
             </div>
         `;
     } else {
@@ -352,21 +804,21 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
 
     listContainer.innerHTML = `
         <div class="pb-16 p-3 space-y-3">
-            <button onclick="backToDiscoverContinents()" class="discover-back-btn flex items-center space-x-2 text-xs font-bold text-amber-300 px-3 py-1.5 rounded-xl bg-amber-400/10 cursor-pointer">
-                <i class="fa-solid fa-arrow-left"></i> <span>All Countries</span>
+            <button onclick="backToDiscoverContinents()" class="flex items-center space-x-2 text-xs font-bold text-amber-300 px-3 py-1.5 rounded-xl bg-amber-400/10 cursor-pointer border border-amber-400/20">
+                <i class="fa-solid fa-arrow-left"></i> <span>সকল দেশ</span>
             </button>
-            <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-white/5 border border-amber-400/20">
-                <div class="flex items-center space-x-2">
-                    <span class="text-xl">${countryObj.flag}</span>
+            <div class="flex items-center justify-between px-3 py-2.5 rounded-2xl theme-card border border-amber-400/20">
+                <div class="flex items-center space-x-2.5">
+                    <span class="text-2xl">${countryObj.flag}</span>
                     <div>
                         <h3 class="text-xs font-bold gold-gradient-text">${countryObj.name}</h3>
-                        <p class="text-[9px] text-gray-400">Direct Cross-Border Connection</p>
+                        <p class="text-[9px] text-gray-400">ডাইরেক্ট ক্রস-বর্ডার কানেকশন</p>
                     </div>
                 </div>
-                <span class="text-[10px] font-bold text-amber-300 px-2 py-0.5 rounded-full bg-amber-400/10">${matchedUsers.length} Contacts</span>
+                <span class="text-[10px] font-bold text-amber-300 px-2.5 py-1 rounded-full bg-amber-400/10">${matchedUsers.length} কন্টাক্ট</span>
             </div>
-            <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
-                <input type="text" id="countryMemberSearch" placeholder="Search members in ${countryObj.name}..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderCountryContactsView(selectedDiscoverCountry, this.value)">
+            <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-xl border border-amber-400/20">
+                <input type="text" id="countryMemberSearch" placeholder="${countryObj.name} এর সদস্য খুঁজুন..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderCountryContactsView(selectedDiscoverCountry, this.value)">
                 <i class="fa-solid fa-magnifying-glass text-amber-300 text-xs"></i>
             </div>
             ${usersHtml}
@@ -390,8 +842,8 @@ function renderContactsView(searchQuery = '') {
         contactsHtml = `
             <div class="flex flex-col items-center justify-center p-8 text-center space-y-3 theme-card rounded-2xl border border-white/5 mt-4">
                 <i class="fa-solid fa-address-book text-3xl text-amber-300"></i>
-                <p class="text-xs font-bold gold-gradient-text">No contacts found</p>
-                <p class="text-[10px] text-gray-400">Add a new contact or wait for global users to sync automatically.</p>
+                <p class="text-xs font-bold gold-gradient-text">কোনো কন্টাক্ট পাওয়া যায়নি</p>
+                <p class="text-[10px] text-gray-400">নতুন কন্টাক্ট যুক্ত করুন অথবা গ্লোবাল ইউজার সিঙ্কের জন্য অপেক্ষা করুন।</p>
             </div>
         `;
     } else {
@@ -444,11 +896,11 @@ function renderContactsView(searchQuery = '') {
             <div class="flex items-center justify-between">
                 <h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Contacts Directory</h3>
                 <button onclick="openAddContactModal()" class="px-3 py-1.5 rounded-xl gold-btn text-[10px] font-extrabold flex items-center space-x-1.5 cursor-pointer shadow-md">
-                    <i class="fa-solid fa-user-plus text-xs"></i> <span>Add New</span>
+                    <i class="fa-solid fa-user-plus text-xs"></i> <span>নতুন যোগ করুন</span>
                 </button>
             </div>
-            <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-2xl">
-                <input type="text" id="contactSearchInput" placeholder="Search contact by name..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderContactsView(this.value)">
+            <div class="flex items-center space-x-2 theme-input px-3.5 py-2.5 rounded-xl border border-amber-400/20">
+                <input type="text" id="contactSearchInput" placeholder="নাম দিয়ে কন্টাক্ট খুঁজুন..." value="${searchQuery}" class="w-full bg-transparent text-xs focus:outline-none text-white placeholder-gray-500" oninput="renderContactsView(this.value)">
                 <i class="fa-solid fa-magnifying-glass text-amber-300 text-xs"></i>
             </div>
             ${contactsHtml}
@@ -467,20 +919,20 @@ function openAddContactModal() {
     overlay.innerHTML = `
         <div class="theme-card border border-amber-400/40 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
             <div class="flex justify-between items-center border-b border-white/10 pb-2">
-                <h3 class="text-sm font-bold gold-gradient-text uppercase tracking-wider">Add New Contact</h3>
+                <h3 class="text-sm font-bold gold-gradient-text uppercase tracking-wider">নতুন কন্টাক্ট যোগ করুন</h3>
                 <button onclick="document.getElementById('addContactModalOverlay').remove()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-sm"></i></button>
             </div>
             <div class="space-y-3">
                 <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-amber-300 uppercase">Contact Name</label>
-                    <input type="text" id="newContactNameInput" placeholder="Enter full name" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white placeholder-gray-500 focus:outline-none">
+                    <label class="text-[10px] font-bold text-amber-300 uppercase">কন্টাক্টের নাম</label>
+                    <input type="text" id="newContactNameInput" placeholder="পূর্ণ নাম লিখুন" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white placeholder-gray-500 focus:outline-none border border-amber-400/20">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-amber-300 uppercase">Phone Number (with Country Code)</label>
-                    <input type="tel" id="newContactPhoneInput" placeholder="+8801700000000" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white placeholder-gray-500 focus:outline-none">
+                    <label class="text-[10px] font-bold text-amber-300 uppercase">ফোন নম্বর (কান্ট্রি কোডসহ)</label>
+                    <input type="tel" id="newContactPhoneInput" placeholder="+8801700000000" class="w-full theme-input text-xs px-3.5 py-3 rounded-xl text-white placeholder-gray-500 focus:outline-none border border-amber-400/20">
                 </div>
                 <button onclick="saveNewContactFromModal()" class="w-full py-3.5 gold-btn text-xs rounded-xl font-extrabold cursor-pointer shadow-lg mt-2 uppercase tracking-wider">
-                    SAVE CONTACT
+                    কন্টাক্ট সেভ করুন
                 </button>
             </div>
         </div>
@@ -497,20 +949,21 @@ function saveNewContactFromModal() {
     const phone = phoneInput.value.trim();
 
     if (!name) {
-        if (typeof showToast === 'function') showToast("Please enter contact name", true);
+        if (typeof showToast === 'function') showToast("দয়া করে কন্টাক্টের নাম লিখুন", true);
         return;
     }
     if (!phone) {
-        if (typeof showToast === 'function') showToast("Please enter phone number", true);
+        if (typeof showToast === 'function') showToast("দয়া করে ফোন নম্বর দিন", true);
         return;
     }
 
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
-    const cleanPhone = phone.replace(/[\s\-\(\)\+]/g, '');
+    const cleanPhone = String(phone).replace(/[\s\-\(\)\+]/g, '');
 
-    const exists = localContacts.find(c => String(c.phone || '').replace(/[\s\-\(\)\+]/g, '') === cleanPhone);
-    if (exists) {
-        if (typeof showToast === 'function') showToast("এই ফোন নম্বরটি দিয়ে ইতিমধ্যে অ্যাকাউন্ট রেজিস্টার্ড রয়েছে! ক্লাউড ভেরিফিকেশনের কারণে দ্বিতীয়বার এই নম্বর দিয়ে অ্যাকাউন্ট তৈরি করা যাবে না।", true);
+    // ইউনিক চেক: একই নম্বর দিয়ে দ্বিতীয়বার কন্টাক্ট সেভ হতে দেবে না
+    const existingIndex = localContacts.findIndex(c => String(c.phone || '').replace(/[\s\-\(\)\+]/g, '') === cleanPhone);
+    if (existingIndex !== -1) {
+        if (typeof showToast === 'function') showToast("এই ফোন নম্বরটি ইতিমধ্যে কন্টাক্ট লিস্টে রয়েছে!", true);
         return;
     }
 
@@ -524,6 +977,7 @@ function saveNewContactFromModal() {
 
     localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
     document.getElementById('addContactModalOverlay')?.remove();
-    if (typeof showToast === 'function') showToast("Contact added successfully!");
+    if (typeof showToast === 'function') showToast("কন্টাক্ট সফলভাবে সংরক্ষিত হয়েছে!");
     renderContactsView();
 }
+```[cite: 8]
