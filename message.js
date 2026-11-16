@@ -99,7 +99,6 @@ function renderChatHistoryList() {
 
     listContainer.innerHTML = `<div class="p-3 space-y-3 pb-20"><h3 class="text-xs font-bold gold-gradient-text uppercase">Recent Chats</h3>${chatsHtml}</div>`;
 }
-
 function loadMessages() {
     const container = document.getElementById('chatMessages');
     if (!container || !currentActiveRecipient) return;
@@ -125,78 +124,4 @@ function loadMessages() {
         </div>`;
     }).join('');
     container.scrollTop = container.scrollHeight;
-}
-```[cite: 10, 11]
-
----
-
-### ৩. `call.js` (কল হিস্ট্রি ও WebRTC কল মডিউল)
-এই ফাইলের সাথে অবশ্যই **`renderCallsHistoryView()`** ফাংশনটি যুক্ত থাকতে হবে যাতে **Calls** ট্যাবে ক্লিক করলে কল লিস্ট ও মিসড কলের ইতিহাস দেখা যায়:
-
-```javascript
-// call.js - Professional Audio & Video Calling Module
-let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
-let callRingInterval = null, activeAudioCtx = null, callPollInterval = null, callTimerInterval = null, callSeconds = 0;
-let peerConnection = null, localStream = null, remoteStream = null, isMicMuted = false, lastHandledSignalTs = 0;
-
-const DEFAULT_RTC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
-
-async function getDynamicRTCConfig() {
-    try {
-        const res = await fetch('/api/call-credentials');
-        const data = await res.json();
-        if (data.success && data.iceServers) return Array.isArray(data.iceServers) ? { iceServers: data.iceServers } : { iceServers: data.iceServers.iceServers || DEFAULT_RTC_CONFIG.iceServers };
-    } catch (e) {}
-    return DEFAULT_RTC_CONFIG;
-}
-
-function renderCallsHistoryView() {
-    const listContainer = document.getElementById('sidebarContentList');
-    if (!listContainer) return;
-    let callHistory = JSON.parse(localStorage.getItem('salaam_calls_v18') || '[]');
-    let callsHtml = callHistory.length === 0 ? `<div class="p-8 text-center theme-card rounded-2xl border border-white/5 mt-4"><p class="text-xs font-bold gold-gradient-text">কোনো কল হিস্ট্রি নেই</p></div>` : callHistory.map(call => {
-        const safeName = (call.name || call.phone).replace(/'/g, "\\'");
-        return `
-        <div class="flex justify-between items-center px-4 py-3 my-1.5 rounded-2xl theme-card border border-white/5">
-            <div class="flex items-center space-x-3">
-                <i class="fa-solid fa-phone text-amber-300"></i>
-                <div>
-                    <p class="text-xs font-semibold gold-gradient-text">${call.name || call.phone}</p>
-                    <p class="text-[10px] text-gray-400 capitalize">${call.type} call • ${call.status || 'Completed'}</p>
-                </div>
-            </div>
-            <button onclick="openChat('${call.phone}', '${safeName}', ''); startWhatsAppCall('${call.type}')" class="p-2 theme-card rounded-xl border border-amber-400/20 text-amber-300 cursor-pointer"><i class="fa-solid fa-phone-flip"></i></button>
-        </div>`;
-    }).join('');
-
-    listContainer.innerHTML = `<div class="p-3 space-y-3 pb-20"><h3 class="text-xs font-bold gold-gradient-text uppercase">Calls History</h3>${callsHtml}</div>`;
-}
-
-async function startWhatsAppCall(mode) {
-    if (!currentActiveRecipient) { if (typeof showToast === 'function') showToast("Select a contact first", true); return; }
-    currentCallType = mode;
-    activeCallPeer = currentActiveRecipient;
-    isCallActive = true;
-    renderCallModal(activeCallPeer.name, activeCallPeer.avatar, `Calling ${activeCallPeer.name}...`, mode, false);
-}
-
-function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
-    document.getElementById('whatsAppCallModal')?.remove();
-    const modal = document.createElement('div');
-    modal.id = 'whatsAppCallModal';
-    modal.className = 'fixed inset-0 z-50 bg-[#030305] flex flex-col justify-between p-6 overflow-hidden';
-    modal.innerHTML = `
-        <div class="w-full flex justify-between items-center z-30 pt-2">
-            <span class="text-amber-300 text-xs font-semibold uppercase">${mode} call</span>
-            <p class="text-xs text-gray-400">${statusText}</p>
-            <div class="w-16"></div>
-        </div>
-        <div class="absolute inset-0 flex flex-col items-center justify-center z-10">
-            <img src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg'}" class="w-32 h-32 rounded-full object-cover">
-            <h2 class="text-2xl font-extrabold text-white mt-4">${peerName}</h2>
-        </div>
-        <div class="w-full flex justify-center items-center z-30 pb-8">
-            <button onclick="document.getElementById('whatsAppCallModal').remove(); isCallActive=false;" class="w-16 h-16 rounded-full bg-red-600 text-white flex items-center justify-center cursor-pointer"><i class="fa-solid fa-phone-slash text-xl"></i></button>
-        </div>`;
-    document.body.appendChild(modal);
 }
