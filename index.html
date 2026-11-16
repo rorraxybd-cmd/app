@@ -57,7 +57,6 @@
                 <div class="space-y-1.5">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-pink-500">*</span></label>
                     <div class="flex flex-col space-y-2 w-full">
-                        <!-- Custom Country Selector Container -->
                         <div id="vCountrySelectContainer" class="w-full relative"></div>
                         <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-xs px-4 py-3.5 rounded-2xl text-white placeholder-gray-500 focus:outline-none">
                     </div>
@@ -152,10 +151,10 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
     <!-- Scripts -->
-    <script src="/discover.js?v=26.0"></script>
-    <script src="/verify.js?v=26.0"></script>
-    <script src="/call.js?v=26.0"></script>
-    <script src="/message.js?v=26.0"></script>
+    <script src="/discover.js?v=27.0"></script>
+    <script src="/verify.js?v=27.0"></script>
+    <script src="/call.js?v=27.0"></script>
+    <script src="/message.js?v=27.0"></script>
     <script>
         function backToSidebarMobile() {
             const workspace = document.getElementById('workspaceSection');
@@ -199,17 +198,28 @@
                     const data = await res.json();
                     if (data.success && Array.isArray(data.users)) {
                         let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+                        
                         data.users.forEach(u => {
                             const phone = String(u.phone_number || '').replace(/[\s\-\(\)]/g, '');
                             if (!phone) return;
-                            const exists = localContacts.find(c => String(c.phone || '').replace(/[\s\-\(\)]/g, '') === phone);
-                            if (!exists) {
-                                localContacts.push({ name: u.display_name || phone, phone: phone, username: u.username || ('user_' + Math.floor(1000 + Math.random() * 9000)), avatar: u.avatar_url || '', isOnline: u.is_online === 1, appUser: true });
+                            
+                            // Check existing index by normalized phone number to avoid duplicates
+                            const existingIndex = localContacts.findIndex(c => String(c.phone || '').replace(/[\s\-\(\)]/g, '') === phone);
+                            if (existingIndex === -1) {
+                                localContacts.push({ 
+                                    name: u.display_name || phone, 
+                                    phone: phone, 
+                                    username: u.username || ('user_' + Math.floor(1000 + Math.random() * 9000)), 
+                                    avatar: u.avatar_url || '', 
+                                    isOnline: u.is_online === 1, 
+                                    appUser: true 
+                                });
                             } else {
-                                exists.name = u.display_name || exists.name;
-                                exists.avatar = u.avatar_url || exists.avatar;
-                                exists.isOnline = u.is_online === 1;
-                                exists.appUser = true;
+                                localContacts[existingIndex].name = u.display_name || localContacts[existingIndex].name;
+                                localContacts[existingIndex].username = u.username || localContacts[existingIndex].username;
+                                localContacts[existingIndex].avatar = u.avatar_url || localContacts[existingIndex].avatar;
+                                localContacts[existingIndex].isOnline = u.is_online === 1;
+                                localContacts[existingIndex].appUser = true;
                             }
                         });
                         localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
