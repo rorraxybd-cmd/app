@@ -125,7 +125,7 @@
     <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40">
         <div class="flex items-center justify-around w-full px-3">
             <button onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
-                <svg id="iconProfile" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <svg id="iconProfile" class="w-5 h-5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1 z"></path></svg>
                 <span id="labelProfile" class="nav-label text-[9px] gold-gradient-text font-semibold">Settings</span>
             </button>
             <button onclick="switchTab('discover')" id="tabDiscover" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
@@ -151,10 +151,10 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
     <!-- Scripts -->
-    <script src="/discover.js?v=28.0"></script>
-    <script src="/verify.js?v=28.0"></script>
-    <script src="/call.js?v=28.0"></script>
-    <script src="/message.js?v=28.0"></script>
+    <script src="/discover.js?v=29.0"></script>
+    <script src="/verify.js?v=29.0"></script>
+    <script src="/call.js?v=29.0"></script>
+    <script src="/message.js?v=29.0"></script>
     <script>
         function normPhoneNum(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
 
@@ -166,22 +166,7 @@
         }
 
         function setupChatInputUI() {
-            const chatHeader = document.getElementById('activeChatHeader');
-            if (chatHeader) {
-                // ডুপ্লিকেট রোধ করতে পুরনো কল অ্যাকশন থাকলে রিমুভ করে দেওয়া হলো
-                const existingCallActions = document.getElementById('headerCallActions');
-                if (existingCallActions) existingCallActions.remove();
-
-                const callBtns = document.createElement('div');
-                callBtns.id = 'headerCallActions';
-                callBtns.className = 'flex items-center space-x-3 ml-auto';
-                callBtns.innerHTML = `
-                    <button onclick="startWhatsAppCall('audio')" class="text-amber-300 hover:text-white p-2 cursor-pointer transition" title="Audio Call"><i class="fa-solid fa-phone text-sm"></i></button>
-                    <button onclick="startWhatsAppCall('video')" class="text-amber-300 hover:text-white p-2 cursor-pointer transition" title="Video Call"><i class="fa-solid fa-video text-sm"></i></button>
-                `;
-                chatHeader.appendChild(callBtns);
-            }
-
+            // এখানে হেডার কল বাটন রিমুভ করা হয়েছে যাতে discover.js থেকে ডাবল রেন্ডার না হয়
             const chatInputBar = document.getElementById('chatInputBar');
             if (chatInputBar && chatInputBar.innerHTML.trim() === '') {
                 chatInputBar.innerHTML = `
@@ -211,7 +196,6 @@
                             const phone = normPhoneNum(u.phone_number);
                             if (!phone) return;
                             
-                            // নিখুঁতভাবে ফোন নম্বর মিলিয়ে ডুপ্লিকেট এন্ট্রি চিরতরে বন্ধ করা হলো
                             const existingIndex = localContacts.findIndex(c => normPhoneNum(c.phone) === phone);
                             if (existingIndex === -1) {
                                 localContacts.push({ 
