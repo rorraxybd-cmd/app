@@ -5,7 +5,6 @@ let selectedCountryData = { flag: "🇧🇩", name: "Bangladesh", code: "880" };
 
 const RESERVED_USERNAMES = ['rorraxy', 'mrmasudar', 'admin', 'support', 'message'];
 
-// পূর্ণাঙ্গ ২০০+ দেশের তালিকা (মহাদেশ অনুযায়ী সাজানো)
 const GLOBAL_VERIFY_CONTINENTS = [
     {
         id: "asia",
@@ -148,10 +147,9 @@ let savedProfiles = JSON.parse(localStorage.getItem('message_profiles_v18') || '
     phone: "+8801538187301",
     username: "rorraxy.com",
     themeColor: "emerald",
-    avatar: "https://pub-e1469a425020465cb5f7971065e07a62.r2.dev/logo.jpg"
+    avatar: ""
 }];
 
-// অটোমেটিক আইপি ডিটেক্ট করে ইউজারের দেশ সিলেক্ট করা
 async function populateVerifyCountryDropdown() {
     const container = document.getElementById('vCountrySelectContainer');
     if (!container) return;
@@ -189,7 +187,7 @@ function renderCountrySelectorUI() {
     wrapper.innerHTML = `
         <div id="countryDropdownBtn" onclick="toggleCountryDropdownModal()" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-amber-300 font-bold flex items-center justify-between cursor-pointer border border-amber-400/20">
             <div class="flex items-center space-x-2.5">
-                <span class="text-lg">${selectedCountryData.flag}</span>
+                <span class="text-lg emoji-flag">${selectedCountryData.flag}</span>
                 <span class="text-white">${selectedCountryData.name} (+${selectedCountryData.code})</span>
             </div>
             <i class="fa-solid fa-chevron-down text-amber-300 text-xs"></i>
@@ -223,7 +221,7 @@ function generateCountryListHtml(searchQuery = '') {
             html += `
                 <div onclick="selectCountryItem('${c.flag}', '${c.name.replace(/'/g, "\\'")}', '${c.code}')" class="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer hover:bg-white/10 transition ${isSelected ? 'bg-amber-400/20 text-amber-300 font-bold' : 'text-white font-medium'}">
                     <div class="flex items-center space-x-2.5">
-                        <span class="text-base">${c.flag}</span>
+                        <span class="text-base emoji-flag">${c.flag}</span>
                         <span class="text-xs">${c.name}</span>
                     </div>
                     <span class="text-xs text-amber-300 font-bold">+${c.code}</span>
@@ -258,7 +256,6 @@ function selectCountryItem(flag, name, code) {
     renderCountrySelectorUI();
 }
 
-// বাইরে ক্লিক করলে ড্রপডাউন বন্ধ হয়ে যাবে
 window.addEventListener('click', (e) => {
     const wrapper = document.getElementById('customCountrySelectWrapper');
     if (wrapper && !wrapper.contains(e.target)) {
@@ -300,11 +297,11 @@ async function submitVerifyStep1() {
     const phone = phoneInput ? phoneInput.value.trim() : '';
 
     if (!name) { 
-        if (typeof showToast === 'function') showToast("দয়া করে আপনার পুরো নাম লিখুন", true);
+        if (typeof showToast === 'function') showToast("Please enter your full name", true);
         return; 
     }
     if (!phone || phone.length < 6) { 
-        if (typeof showToast === 'function') showToast("সঠিক ফোন নম্বর দিন", true);
+        if (typeof showToast === 'function') showToast("Please enter a valid phone number", true);
         return; 
     }
 
@@ -328,7 +325,7 @@ async function submitVerifyStep1() {
     const otpInput = document.getElementById('vOtpInput');
     if (otpInput) otpInput.value = generatedOtpCode;
 
-    if (typeof showToast === 'function') showToast("ভেরিফিকেশন কোড অটো-ফিল করা হয়েছে");
+    if (typeof showToast === 'function') showToast("Verification code auto-filled");
 }
 
 async function submitVerifyStep2() {
@@ -336,22 +333,25 @@ async function submitVerifyStep2() {
     const entered = otpEl ? otpEl.value.trim() : '';
     
     if (entered !== generatedOtpCode) { 
-        if (typeof showToast === 'function') showToast("ভুল কোড দেওয়া হয়েছে", true); 
+        if (typeof showToast === 'function') showToast("Invalid verification code", true); 
         return; 
     }
 
     const cleanVerifyPhone = normPhone(tempVerifyPhone);
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const existingContact = localContacts.find(c => normPhone(c.phone) === cleanVerifyPhone);
+    const autoUsername = 'user_' + Math.floor(1000 + Math.random() * 9000);
 
     isVerifiedSession = true;
     localStorage.setItem('message_verified_v18', 'true');
 
+    // ছবি আপলোড না করলে avatar খালি রাখা হবে যাতে নামের প্রথম অক্ষর দিয়ে লোগো দেখায়
     if (!existingContact) {
         localContacts.push({
             name: tempVerifyName,
             phone: cleanVerifyPhone,
-            avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg",
+            username: autoUsername,
+            avatar: "",
             isOnline: true,
             appUser: true
         });
@@ -361,9 +361,9 @@ async function submitVerifyStep2() {
     savedProfiles[0] = {
         name: tempVerifyName,
         phone: cleanVerifyPhone,
-        username: 'user_' + Math.floor(1000 + Math.random() * 9000),
+        username: existingContact?.username || autoUsername,
         themeColor: "emerald",
-        avatar: "https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg"
+        avatar: existingContact?.avatar || ""
     };
     saveProfiles();
 
@@ -380,7 +380,7 @@ async function submitVerifyStep2() {
     const overlay = document.getElementById('verifyOverlay');
     if (overlay) overlay.style.display = 'none';
     
-    if (typeof showToast === 'function') showToast("সফলভাবে কানেক্ট হয়েছে!");
+    if (typeof showToast === 'function') showToast("Connected successfully!");
     
     if (typeof switchTab === 'function') {
         switchTab('contact');
