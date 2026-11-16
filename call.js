@@ -4,14 +4,12 @@ let callRingInterval = null, activeAudioCtx = null, callPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
 let peerConnection = null, localStream = null, remoteStream = null;
 let isMicMuted = false, lastHandledSignalTs = 0, isLocalMain = false;
-
 const DEFAULT_RTC_CONFIG = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' }
     ]
 };
-
 async function getDynamicRTCConfig() {
     try {
         const res = await fetch('/api/call-credentials');
@@ -22,7 +20,6 @@ async function getDynamicRTCConfig() {
     } catch (e) {}
     return DEFAULT_RTC_CONFIG;
 }
-
 function startContinuousRinging() {
     stopContinuousRinging();
     const playTone = () => {
@@ -43,11 +40,9 @@ function startContinuousRinging() {
     playTone();
     callRingInterval = setInterval(playTone, 2000);
 }
-
 function stopContinuousRinging() {
     if (callRingInterval) { clearInterval(callRingInterval); callRingInterval = null; }
 }
-
 function startCallDurationTimer() {
     stopCallDurationTimer();
     callSeconds = 0;
@@ -59,7 +54,6 @@ function startCallDurationTimer() {
         if (lbl) lbl.innerText = `Connected • ${mins}:${secs}`;
     }, 1000);
 }
-
 function stopCallDurationTimer() {
     if (callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval = null; }
 }
@@ -78,23 +72,19 @@ async function setupLocalMedia(mode) {
         return null;
     }
 }
-
 function applyVideoStreamsToDom() {
     const remoteVid = document.getElementById('callRemoteVideo');
     const localVid = document.getElementById('callLocalVideo');
     if (remoteVid && remoteStream) { remoteVid.srcObject = remoteStream; remoteVid.play().catch(e => {}); }
     if (localVid && localStream) { localVid.srcObject = localStream; localVid.muted = true; localVid.play().catch(e => {}); }
 }
-
 async function createPeerConnection(peerPhone) {
     if (peerConnection) peerConnection.close();
     const rtcConfig = await getDynamicRTCConfig();
     peerConnection = new RTCPeerConnection(rtcConfig);
-
     if (localStream) {
         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
     }
-
     peerConnection.onicecandidate = async (event) => {
         if (event.candidate) {
             const myPhone = normPhone(getActiveProfile().phone);
@@ -107,7 +97,6 @@ async function createPeerConnection(peerPhone) {
             } catch (e) {}
         }
     };
-
     peerConnection.ontrack = (event) => {
         const remoteAud = document.getElementById('callRemoteAudio');
         if (event.streams && event.streams[0]) {
@@ -118,7 +107,6 @@ async function createPeerConnection(peerPhone) {
     };
     return peerConnection;
 }
-
 async function startWhatsAppCall(mode) {
     if (!currentActiveRecipient) {
         if (typeof showToast === 'function') showToast("Select a contact first", true);
@@ -130,19 +118,15 @@ async function startWhatsAppCall(mode) {
         if (typeof showToast === 'function') showToast("You cannot call your own number", true);
         return;
     }
-
     currentCallType = mode;
     activeCallPeer = currentActiveRecipient;
     isCallActive = true;
-
     renderCallModal(activeCallPeer.name, activeCallPeer.avatar, `Calling ${activeCallPeer.name}...`, mode, false);
     startContinuousRinging();
-
     await setupLocalMedia(mode);
     const pc = await createPeerConnection(peerPhone);
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-
     try {
         await fetch('/api/chat?action=send_call_signal', {
             method: 'POST',
@@ -151,7 +135,6 @@ async function startWhatsAppCall(mode) {
         });
     } catch (e) {}
 }
-
 async function acceptWhatsAppCall() {
     if (!activeCallPeer) return;
     stopContinuousRinging();
@@ -170,7 +153,6 @@ async function acceptWhatsAppCall() {
         await pc.setRemoteDescription(new RTCSessionDescription(window.pendingIncomingOffer));
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-
         try {
             await fetch('/api/chat?action=send_call_signal', {
                 method: 'POST',
@@ -180,7 +162,6 @@ async function acceptWhatsAppCall() {
         } catch (e) {}
     }
 }
-
 async function endWhatsAppCall() {
     stopContinuousRinging();
     stopCallDurationTimer();
@@ -253,7 +234,6 @@ function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     document.body.appendChild(modal);
     applyVideoStreamsToDom();
 }
-
 function updateInCallButtons() {
     const box = document.getElementById('callControlButtons');
     const infoBox = document.getElementById('callerInfoBox');
