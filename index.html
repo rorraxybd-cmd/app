@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/verify.css">
-    <link rel="stylesheet" href="/discover.css?v=22.0">
+    <link rel="stylesheet" href="/discover.css?v=23.0">
     <style>
         :root {
             --bg-main: #030305;
@@ -53,8 +53,7 @@
             border: none !important;
         }
         #vCountrySelect { 
-            width: 120px; 
-            min-width: 110px; 
+            width: 100%; 
             font-weight: 700; 
             background-color: #08110c;
             color: #F5D061;
@@ -71,7 +70,7 @@
 </head>
 <body class="h-[100dvh] w-full flex flex-col overflow-hidden fixed inset-0">
 
-    <!-- Direct Verification & Profile Overlay (No Install Step) -->
+    <!-- Direct Verification & Profile Overlay -->
     <div id="verifyOverlay" style="display: flex;" class="z-50 absolute inset-0 bg-[#030305] items-center justify-center p-4">
         <div class="verify-card space-y-5 text-center">
             
@@ -88,9 +87,9 @@
                 </div>
                 <div class="space-y-1.5">
                     <label class="text-[10px] font-bold tracking-wider gold-gradient-text uppercase">MOBILE NUMBER <span class="text-pink-500">*</span> <span class="text-[9px] text-gray-400 lowercase">(kept secret)</span></label>
-                    <div class="flex space-x-2 w-full">
-                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-2 py-3.5 rounded-xl text-amber-300 font-bold focus:outline-none cursor-pointer shrink-0"></select>
-                        <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="flex-1 min-w-0 theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
+                    <div class="flex flex-col space-y-2 w-full">
+                        <select id="vCountrySelect" onchange="updatePhoneValidation()" class="theme-input text-xs px-3 py-3 rounded-xl text-amber-300 font-bold focus:outline-none cursor-pointer w-full"></select>
+                        <input type="tel" id="vPhoneInput" placeholder="1700000000" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-white placeholder-gray-500 focus:outline-none">
                     </div>
                 </div>
                 <button onclick="submitVerifyStep1()" class="w-full py-4 gold-btn text-xs rounded-xl cursor-pointer mt-2 font-extrabold flex items-center justify-center space-x-2 uppercase tracking-wider shadow-lg">
@@ -192,10 +191,10 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/discover.js?v=23.0"></script>
-    <script src="/verify.js?v=23.0"></script>
-    <script src="/call.js?v=23.0"></script>
-    <script src="/message.js?v=23.0"></script>
+    <script src="/discover.js?v=24.0"></script>
+    <script src="/verify.js?v=24.0"></script>
+    <script src="/call.js?v=24.0"></script>
+    <script src="/message.js?v=24.0"></script>
     
     <script>
         async function fetchCloudContacts() {
@@ -299,8 +298,9 @@
         function initAppAfterVerification() {
             const overlay = document.getElementById('verifyOverlay');
             if (overlay) overlay.style.display = 'none';
-            fetchCloudContacts();
-            switchTab('contact');
+            fetchCloudContacts().then(() => {
+                switchTab('contact'); // ভেরিফিকেশনের পর ডিফল্টভাবে কন্টাক্ট ট্যাব ওপেন করবে
+            });
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -315,8 +315,8 @@
                 if (overlay) overlay.style.display = 'flex';
                 const step1 = document.getElementById('verifyStep1');
                 const step2 = document.getElementById('verifyStep2');
-                if (step1) step1.classList.remove('hidden');
-                if (step2) step2.classList.add('hidden');
+                if (step1) step1.style.display = 'block';
+                if (step2) step2.style.display = 'none';
                 if (typeof populateVerifyCountryDropdown === 'function') {
                     populateVerifyCountryDropdown();
                 }
