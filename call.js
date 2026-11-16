@@ -1,15 +1,17 @@
-// call.js - Professional Audio & Video Calling Module with Real-Time WebRTC (Final)
+// call.js - Professional Audio & Video Calling Module with WhatsApp Style (100% English & Fully Fixed)
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
 let callRingInterval = null, activeAudioCtx = null, callPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
 let peerConnection = null, localStream = null, remoteStream = null;
-let isMicMuted = false, lastHandledSignalTs = 0, isLocalMain = false;
+let isMicMuted = false, isSpeakerOn = true, lastHandledSignalTs = 0;
+
 const DEFAULT_RTC_CONFIG = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' }
     ]
 };
+
 async function getDynamicRTCConfig() {
     try {
         const res = await fetch('/api/call-credentials');
@@ -20,6 +22,7 @@ async function getDynamicRTCConfig() {
     } catch (e) {}
     return DEFAULT_RTC_CONFIG;
 }
+
 function startContinuousRinging() {
     stopContinuousRinging();
     const playTone = () => {
@@ -40,9 +43,11 @@ function startContinuousRinging() {
     playTone();
     callRingInterval = setInterval(playTone, 2000);
 }
+
 function stopContinuousRinging() {
     if (callRingInterval) { clearInterval(callRingInterval); callRingInterval = null; }
 }
+
 function startCallDurationTimer() {
     stopCallDurationTimer();
     callSeconds = 0;
@@ -54,6 +59,7 @@ function startCallDurationTimer() {
         if (lbl) lbl.innerText = `Connected • ${mins}:${secs}`;
     }, 1000);
 }
+
 function stopCallDurationTimer() {
     if (callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval = null; }
 }
@@ -72,12 +78,14 @@ async function setupLocalMedia(mode) {
         return null;
     }
 }
+
 function applyVideoStreamsToDom() {
     const remoteVid = document.getElementById('callRemoteVideo');
     const localVid = document.getElementById('callLocalVideo');
     if (remoteVid && remoteStream) { remoteVid.srcObject = remoteStream; remoteVid.play().catch(e => {}); }
     if (localVid && localStream) { localVid.srcObject = localStream; localVid.muted = true; localVid.play().catch(e => {}); }
 }
+
 async function createPeerConnection(peerPhone) {
     if (peerConnection) peerConnection.close();
     const rtcConfig = await getDynamicRTCConfig();
@@ -102,11 +110,16 @@ async function createPeerConnection(peerPhone) {
         if (event.streams && event.streams[0]) {
             remoteStream = event.streams[0];
             applyVideoStreamsToDom();
-            if (remoteAud) { remoteAud.srcObject = remoteStream; remoteAud.play().catch(e => {}); }
+            if (remoteAud) { 
+                remoteAud.srcObject = remoteStream; 
+                remoteAud.muted = !isSpeakerOn;
+                remoteAud.play().catch(e => {}); 
+            }
         }
     };
     return peerConnection;
 }
+
 async function startWhatsAppCall(mode) {
     if (!currentActiveRecipient) {
         if (typeof showToast === 'function') showToast("Select a contact first", true);
@@ -135,6 +148,7 @@ async function startWhatsAppCall(mode) {
         });
     } catch (e) {}
 }
+
 async function acceptWhatsAppCall() {
     if (!activeCallPeer) return;
     stopContinuousRinging();
@@ -162,6 +176,7 @@ async function acceptWhatsAppCall() {
         } catch (e) {}
     }
 }
+
 async function endWhatsAppCall() {
     stopContinuousRinging();
     stopCallDurationTimer();
@@ -193,7 +208,36 @@ function toggleMicMute() {
     isMicMuted = !isMicMuted;
     localStream.getAudioTracks().forEach(t => t.enabled = !isMicMuted);
     const btn = document.getElementById('muteMicBtn');
-    if (btn) btn.innerHTML = isMicMuted ? `<i class="fa-solid fa-microphone-slash text-red-400 text-xl"></i>` : `<i class="fa-solid fa-microphone text-xl"></i>`;
+    if (btn) btn.className = `w-12 h-12 rounded-full flex items-center justify-center cursor-pointer transition ${isMicMuted ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-white hover:bg-white/20'}`;
+}
+
+function toggleSpeaker() {
+    isSpeakerOn = !isSpeakerOn;
+    const remoteAud = document.getElementById('callRemoteAudio');
+    if (remoteAud) remoteAud.muted = !isSpeakerOn;
+    const btn = document.getElementById('speakerBtn');
+    if (btn) btn.className = `w-12 h-12 rounded-full flex items-center justify-center cursor-pointer transition ${!isSpeakerOn ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-white hover:bg-white/20'}`;
+    if (typeof showToast === 'function') showToast(isSpeakerOn ? "Speaker ON" : "Speaker OFF");
+}
+
+async function switchCallMode() {
+    currentCallType = currentCallType === 'audio' ? 'video' : 'audio';
+    const badge = document.getElementById('callTypeBadge');
+    if (badge) badge.innerText = `${currentCallType} call`;
+    
+    await setupLocalMedia(currentCallType);
+    const videoStreamsBox = document.getElementById('videoStreamsBox');
+    const callerInfoBox = document.getElementById('callerInfoBox');
+    
+    if (currentCallType === 'video') {
+        if (videoStreamsBox) videoStreamsBox.classList.remove('hidden');
+        if (callerInfoBox) callerInfoBox.classList.add('hidden');
+    } else {
+        if (videoStreamsBox) videoStreamsBox.classList.add('hidden');
+        if (callerInfoBox) callerInfoBox.classList.remove('hidden');
+    }
+    
+    if (typeof showToast === 'function') showToast(`Switched to ${currentCallType} call`);
 }
 
 function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
@@ -210,23 +254,25 @@ function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
         </div>
         <div class="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
             <div id="callerInfoBox" class="${mode === 'video' ? 'hidden' : 'flex'} flex-col items-center space-y-4 pointer-events-auto">
-                <img src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-32 h-32 rounded-full object-cover bg-black">
+                <img src="${avatarUrl || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/rorraxyfree/mr%20masudar%20logo%20(3).png'}" class="w-32 h-32 rounded-full object-cover bg-black shadow-2xl border-2 border-amber-400/20">
                 <h2 class="text-2xl font-extrabold text-white tracking-wide">${peerName}</h2>
             </div>
         </div>
         <div id="videoStreamsBox" class="${mode === 'video' ? 'flex' : 'hidden'} absolute inset-0 w-full h-full bg-black z-0 overflow-hidden">
             <video id="callRemoteVideo" autoplay playsinline class="w-full h-full object-cover"></video>
-            <video id="callLocalVideo" autoplay muted playsinline class="w-28 h-36 object-cover rounded-2xl absolute bottom-24 right-4 bg-gray-900 cursor-pointer transition-all z-20"></video>
+            <video id="callLocalVideo" autoplay muted playsinline class="w-28 h-36 object-cover rounded-2xl absolute bottom-24 right-4 bg-gray-900 cursor-pointer transition-all z-20 shadow-2xl border border-white/10"></video>
         </div>
         <audio id="callRemoteAudio" autoplay></audio>
         <div class="w-full flex justify-center items-center z-30 pb-8 pointer-events-auto">
-            <div id="callControlButtons" class="flex items-center space-x-8">
+            <div id="callControlButtons" class="flex items-center space-x-6">
                 ${isIncoming ? `
-                    <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 text-white flex items-center justify-center cursor-pointer"><i class="fa-solid fa-phone-slash text-xl"></i></button>
-                    <button type="button" onclick="acceptWhatsAppCall()" class="w-16 h-16 rounded-full bg-green-600 text-white flex items-center justify-center cursor-pointer animate-bounce"><i class="fa-solid fa-phone text-xl"></i></button>
+                    <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center cursor-pointer shadow-lg transition"><i class="fa-solid fa-phone-slash text-xl"></i></button>
+                    <button type="button" onclick="acceptWhatsAppCall()" class="w-16 h-16 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center cursor-pointer shadow-lg animate-bounce transition"><i class="fa-solid fa-phone text-xl"></i></button>
                 ` : `
-                    <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-12 h-12 rounded-full text-white flex items-center justify-center cursor-pointer"><i class="fa-solid fa-microphone text-xl"></i></button>
-                    <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 text-white flex items-center justify-center cursor-pointer"><i class="fa-solid fa-phone-slash text-xl"></i></button>
+                    <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition"><i class="fa-solid fa-microphone text-lg"></i></button>
+                    <button type="button" id="speakerBtn" onclick="toggleSpeaker()" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition"><i class="fa-solid fa-volume-high text-lg"></i></button>
+                    <button type="button" onclick="switchCallMode()" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition" title="Switch Audio/Video"><i class="fa-solid fa-video text-lg"></i></button>
+                    <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center cursor-pointer shadow-lg transition"><i class="fa-solid fa-phone-slash text-xl"></i></button>
                 `}
             </div>
         </div>
@@ -234,13 +280,16 @@ function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     document.body.appendChild(modal);
     applyVideoStreamsToDom();
 }
+
 function updateInCallButtons() {
     const box = document.getElementById('callControlButtons');
     const infoBox = document.getElementById('callerInfoBox');
     if (infoBox && currentCallType === 'video') infoBox.classList.add('hidden');
     if (!box) return;
     box.innerHTML = `
-        <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-12 h-12 rounded-full text-white flex items-center justify-center cursor-pointer"><i class="fa-solid fa-microphone text-xl"></i></button>
-        <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 text-white flex items-center justify-center cursor-pointer"><i class="fa-solid fa-phone-slash text-xl"></i></button>
+        <button type="button" id="muteMicBtn" onclick="toggleMicMute()" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition"><i class="fa-solid fa-microphone text-lg"></i></button>
+        <button type="button" id="speakerBtn" onclick="toggleSpeaker()" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition"><i class="fa-solid fa-volume-high text-lg"></i></button>
+        <button type="button" onclick="switchCallMode()" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition" title="Switch Audio/Video"><i class="fa-solid fa-video text-lg"></i></button>
+        <button type="button" onclick="endWhatsAppCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center cursor-pointer shadow-lg transition"><i class="fa-solid fa-phone-slash text-xl"></i></button>
     `;
 }
