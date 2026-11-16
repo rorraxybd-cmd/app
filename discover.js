@@ -1,4 +1,4 @@
-// discover.js - Global Directory & Contacts Sync Module (100% English & Modern Soft UI)
+// discover.js - Global Directory & Contacts Sync Module (100% English & Duplicate-Free)
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -62,6 +62,8 @@ const GLOBAL_CONTINENTS_DATA = [
 ];
 
 let selectedDiscoverCountry = null;
+
+function normPhone(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
 
 function openChat(phone, name, avatar = '') {
     const recipient = { phone, name, avatar };
@@ -210,7 +212,7 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
         </div>
     ` : matchedUsers.map(c => {
         const isOnline = c.isOnline === true || c.isOnline === 1;
-        const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
+        const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-transparent';
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text shrink-0">${c.name.charAt(0)}</div>`;
         const safeName = c.name.replace(/'/g, "\\'");
         return `
@@ -218,14 +220,14 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
             <div class="flex items-center space-x-3 flex-1 min-w-0">
                 <div class="relative shrink-0">
                     ${avatarImg}
-                    <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${statusColor}"></span>
+                    ${isOnline ? `<span class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${statusColor}"></span>` : ''}
                 </div>
                 <div class="min-w-0 flex-1 pr-2">
                     <p class="text-xs font-semibold gold-gradient-text truncate flex items-center space-x-1.5">
                         <span>${c.name}</span>
                         <span class="text-sm">${countryObj.flag}</span>
                     </p>
-                    <p class="text-[10px] text-gray-400">${isOnline ? 'Online' : 'Offline'}</p>
+                    <p class="text-[10px] text-gray-400">@${c.username || 'user'} • ${c.phone}</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2 shrink-0 pl-1">
@@ -263,7 +265,6 @@ function renderContactsView(searchQuery = '') {
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const q = searchQuery.toLowerCase().trim();
     
-    // Search by name, mobile number, or username
     const filteredContacts = localContacts.filter(c => 
         c.name.toLowerCase().includes(q) || 
         String(c.phone || '').includes(q) || 
@@ -277,7 +278,7 @@ function renderContactsView(searchQuery = '') {
         </div>
     ` : filteredContacts.map(c => {
         const isOnline = c.isOnline === true || c.isOnline === 1;
-        const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-[#ff4757]';
+        const statusColor = isOnline ? 'bg-[#2ed573]' : 'bg-transparent';
         const countryInfo = typeof getCountryInfo === 'function' ? getCountryInfo(c.phone) : { flag: '🌐' };
         const avatarImg = c.avatar ? `<img src="${c.avatar}" class="w-10 h-10 rounded-full object-cover bg-black shrink-0">` : `<div class="w-10 h-10 rounded-full theme-input flex items-center justify-center text-xs font-bold gold-gradient-text shrink-0">${c.name.charAt(0)}</div>`;
         const safeName = c.name.replace(/'/g, "\\'");
@@ -286,7 +287,7 @@ function renderContactsView(searchQuery = '') {
             <div class="flex items-center space-x-3 flex-1 min-w-0">
                 <div class="relative shrink-0">
                     ${avatarImg}
-                    <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${statusColor}"></span>
+                    ${isOnline ? `<span class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${statusColor}"></span>` : ''}
                 </div>
                 <div class="min-w-0 flex-1 pr-2">
                     <p class="text-xs font-semibold gold-gradient-text truncate flex items-center space-x-1.5">
@@ -299,7 +300,7 @@ function renderContactsView(searchQuery = '') {
             <div class="flex items-center space-x-2 shrink-0">
                 <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}')" class="p-2 text-amber-300 hover:text-white cursor-pointer"><i class="fa-solid fa-message text-xs"></i></button>
                 <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('audio')" class="p-2 text-amber-300 hover:text-white cursor-pointer"><i class="fa-solid fa-phone text-xs"></i></button>
-                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:text-video cursor-pointer"><i class="fa-solid fa-video text-xs"></i></button>
+                <button onclick="event.stopPropagation(); openChat('${c.phone}', '${safeName}', '${c.avatar || ''}'); startWhatsAppCall('video')" class="p-2 text-amber-300 hover:text-white cursor-pointer"><i class="fa-solid fa-video text-xs"></i></button>
             </div>
         </div>`;
     }).join('');
@@ -318,7 +319,6 @@ function renderContactsView(searchQuery = '') {
     `;
 }
 
-// Profile View with editable Avatar, Name, Username, Secret Mobile Number & Native/Web Share Button
 function renderProfileView(isEditing = false) {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
