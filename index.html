@@ -148,18 +148,15 @@
             </button>
         </div>
     </nav>
-
     <!-- Toast Banner -->
     <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 theme-card text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden items-center space-x-2 border border-amber-400/20">
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
-
     <!-- Scripts -->
     <script src="/discover.js?v=26.0"></script>
     <script src="/verify.js?v=26.0"></script>
     <script src="/call.js?v=26.0"></script>
     <script src="/message.js?v=26.0"></script>
-    
     <script>
         function backToSidebarMobile() {
             const workspace = document.getElementById('workspaceSection');
@@ -167,7 +164,6 @@
             document.getElementById('sidebarSection')?.classList.remove('hidden');
             document.getElementById('bottomNavBar')?.classList.remove('hidden');
         }
-
         function setupChatInputUI() {
             const chatHeader = document.getElementById('activeChatHeader');
             if (chatHeader && !document.getElementById('headerCallActions')) {
@@ -198,7 +194,6 @@
                 `;
             }
         }
-
         async function fetchCloudContacts() {
             try {
                 const res = await fetch('/api/chat?action=get_global_users');
@@ -242,7 +237,6 @@
 
             const sidebarList = document.getElementById('sidebarContentList');
             if (sidebarList) sidebarList.innerHTML = '';
-
             if (tabName === 'profile') {
                 if (typeof renderProfileView === 'function') renderProfileView(false);
             } else if (tabName === 'discover') {
@@ -257,7 +251,6 @@
                 if (typeof renderCallsHistoryView === 'function') renderCallsHistoryView();
             }
         }
-
         function showToast(text, isError = false) {
             const banner = document.getElementById('toastBanner');
             const toastText = document.getElementById('toastText');
@@ -277,7 +270,6 @@
             if (typeof startIncomingCallPolling === 'function') startIncomingCallPolling();
             fetchCloudContacts().then(() => { switchTab('contact'); });
         }
-
         window.addEventListener('DOMContentLoaded', () => {
             setupChatInputUI();
             const overlay = document.getElementById('verifyOverlay');
