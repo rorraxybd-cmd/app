@@ -1,4 +1,4 @@
-// functions/api/chat.js - Cloudflare Pages Backend API (No-Cache Real-Time Sync)
+// functions/api/chat.js - Cloudflare Pages Centralized Backend API
 export async function onRequest(context) {
     const { request, env } = context;
     const url = new URL(request.url);
@@ -33,7 +33,7 @@ export async function onRequest(context) {
                         uniqueMap.set(p, {
                             phone_number: p,
                             display_name: u.display_name || 'User',
-                            username: u.username || ('user_' + p.slice(-4)),
+                            username: u.username || ('user_' + p),
                             avatar_url: u.avatar_url || '',
                             is_online: u.is_online || 1,
                             is_live: u.is_live || 0
@@ -66,12 +66,13 @@ export async function onRequest(context) {
 
                 if (!phone) return jsonResponse({ success: false, error: 'Phone required' }, corsHeaders, 400);
 
+                // পুরনো অ্যাকাউন্ট যে ফরম্যাটেই থাকুক না কেন আগে খুঁজে বের করা হবে
                 const existing = await env.chat.prepare(
                     "SELECT id, display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
                 ).bind(phone, '+' + phone, '880' + phone.replace(/^880/, '')).first();
 
-                const userId = existing ? existing.id : ('user_' + phone);
-                const finalUsername = existing?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
+                const userId = existing ? existing.id : ('phone_' + phone);
+                const finalUsername = existing?.username || ('user_' + phone);
                 const finalName = (existing?.display_name && existing.display_name !== 'User') ? existing.display_name : (inputName || 'User');
                 const finalAvatar = existing?.avatar_url || '';
 
@@ -113,17 +114,17 @@ export async function onRequest(context) {
                     "SELECT id, display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
                 ).bind(phone, '+' + phone, '880' + phone.replace(/^880/, '')).first();
 
-                const userId = existing ? existing.id : ('user_' + phone);
+                const userId = existing ? existing.id : ('phone_' + phone);
                 const isProfileEdit = body.is_edit === true;
                 const incomingName = (body.name || body.display_name || '').trim();
                 const finalName = isProfileEdit
                     ? (incomingName || existing?.display_name || 'User')
-                    : (existing?.display_name || incomingName || 'User');
+                    : ((existing?.display_name && existing.display_name !== 'User') ? existing.display_name : (incomingName || 'User'));
 
                 const incomingUsername = (body.username || '').trim().replace(/^@+/, '');
                 const finalUsername = isProfileEdit
-                    ? (incomingUsername || existing?.username || ('user_' + Math.floor(1000 + Math.random() * 9000)))
-                    : (existing?.username || incomingUsername || ('user_' + Math.floor(1000 + Math.random() * 9000)));
+                    ? (incomingUsername || existing?.username || ('user_' + phone))
+                    : (existing?.username || incomingUsername || ('user_' + phone));
 
                 const finalAvatar = (body.avatar !== undefined && body.avatar !== '')
                     ? body.avatar
