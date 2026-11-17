@@ -1,4 +1,4 @@
-// discover.js - Global Directory & Contacts Sync Module (Auto Cloud Sync & Unified Header)
+// discover.js - Global Directory & Contacts Sync Module
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -449,7 +449,7 @@ function renderProfileView(isEditing = false) {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
-    let profile = getActiveProfile();
+    let profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
     const displayName = profile.name || 'User';
     const username = profile.username || 'user_' + Math.floor(1000 + Math.random() * 9000);
     const avatarUrl = profile.avatar || '';
