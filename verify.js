@@ -305,7 +305,6 @@ function updatePhoneValidation() {
     phoneInput.placeholder = selectedCountryData.code === '880' ? "1700000000" : "Enter phone number";
 }
 
-// ধাপ ১: নাম ও মোবাইল নাম্বার সাবমিট করে পরের স্টেপে যাওয়া
 window.submitVerifyStep1 = async function() {
     const nameInput = document.getElementById('vFullName');
     const phoneInput = document.getElementById('vPhoneInput');
@@ -386,7 +385,6 @@ window.submitVerifyStep1 = async function() {
     }
 };
 
-// ধাপ ২: কোড ভেরিফাই করে সরাসরি ড্যাশবোর্ডে প্রবেশ করা (নন-ব্লকিং)
 window.submitVerifyStep2 = async function() {
     const otpEl = document.getElementById('vOtpInput');
     const entered = otpEl ? otpEl.value.trim() : '';
@@ -448,7 +446,6 @@ window.submitVerifyStep2 = async function() {
     }
     localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
 
-    // ব্যাকগ্রাউন্ডে ক্লাউডফ্লেয়ার ডাটাবেজে সিঙ্ক করা (কোড আটকে থাকবে না)
     fetch('/api/chat?action=register_or_update_user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -461,14 +458,12 @@ window.submitVerifyStep2 = async function() {
         })
     }).catch(() => {});
 
-    // ওভারলে স্ক্রিন তাৎক্ষণিকভাবে ডিলিট করা
     const overlay = document.getElementById('verifyOverlay');
     if (overlay) {
         overlay.style.display = 'none';
         overlay.remove();
     }
 
-    // সরাসরি ড্যাশবোর্ডে প্রবেশ
     if (typeof initAppAfterVerification === 'function') {
         initAppAfterVerification();
     } else if (typeof switchTab === 'function') {
