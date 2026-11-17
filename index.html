@@ -157,13 +157,14 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <script src="/discover.js?v=42.0"></script>
-    <script src="/verify.js?v=42.0"></script>
-    <script src="/call.js?v=42.0"></script>
-    <script src="/message.js?v=42.0"></script>
+    <script src="/discover.js?v=45.0"></script>
+    <script src="/verify.js?v=45.0"></script>
+    <script src="/call.js?v=45.0"></script>
+    <script src="/message.js?v=45.0"></script>
     <script>
         let activeTabName = 'contact';
         let contactSyncTimer = null;
+        window.GLOBAL_CLOUD_USERS = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
 
         function normPhoneNum(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
 
@@ -198,7 +199,6 @@
 
         async function fetchCloudContacts() {
             try {
-                // ক্যাশ এড়াতে টাইমস্ট্যাম্প যুক্ত করা হয়েছে যাতে রিয়েল-টাইমে সব ইউজার আসে
                 const res = await fetch('/api/chat?action=get_global_users&_t=' + Date.now(), { cache: 'no-store' });
                 if (res.ok) {
                     const data = await res.json();
@@ -222,17 +222,15 @@
                             syncedContacts.push({
                                 name: u.display_name || 'User',
                                 phone: phone,
-                                username: u.username || ('user_' + phone.slice(-4)),
+                                username: u.username || ('user_' + phone),
                                 avatar: u.avatar_url || '',
                                 isOnline: u.is_online === 1,
                                 appUser: true
                             });
                         });
 
-                        // ক্লাউডফ্লেয়ারের লেটেস্ট লিস্ট দিয়ে লোকাল কন্টাক্ট সম্পূর্ণ আপডেট করা হলো
-                        if (syncedContacts.length > 0) {
-                            localStorage.setItem('message_contacts_v18', JSON.stringify(syncedContacts));
-                        }
+                        window.GLOBAL_CLOUD_USERS = syncedContacts;
+                        localStorage.setItem('message_contacts_v18', JSON.stringify(syncedContacts));
 
                         if (activeTabName === 'contact') {
                             if (typeof renderContactsView === 'function') renderContactsView(document.getElementById('contactSearchInput')?.value || '');
@@ -301,8 +299,7 @@
         function handleDirectUsernameRoute() {
             const pathUser = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
             if (!pathUser || pathUser === 'index.html') return;
-            let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
-            const target = localContacts.find(c => String(c.username || '').toLowerCase() === pathUser);
+            const target = window.GLOBAL_CLOUD_USERS.find(c => String(c.username || '').toLowerCase() === pathUser);
             if (target && typeof openChat === 'function') {
                 openChat(target.phone, target.name, target.avatar || '');
             }
@@ -337,7 +334,6 @@
             switchTab('contact');
             handleDirectUsernameRoute();
 
-            // প্রতি ৫ সেকেন্ডে রিয়েল-টাইমে নতুন ইউজার সিঙ্ক হবে
             if (contactSyncTimer) clearInterval(contactSyncTimer);
             contactSyncTimer = setInterval(fetchCloudContacts, 5000);
         }
