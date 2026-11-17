@@ -238,7 +238,6 @@ async function createPeerConnection(peerPhone) {
         }
     };
 
-    // রিমোট অডিও স্ট্রিম এবং সাউন্ড রিসিভ করার মূল হ্যান্ডলার
     peerConnection.ontrack = (event) => {
         let remoteAud = document.getElementById('callRemoteAudio');
         if (!remoteAud) {
@@ -251,7 +250,7 @@ async function createPeerConnection(peerPhone) {
             remoteStream = event.streams[0];
             remoteAud.srcObject = remoteStream;
             remoteAud.muted = false;
-            remoteAud.play().catch(err => console.log("Audio play allowed after interaction:", err));
+            remoteAud.play().catch(err => console.log("Audio play allowed:", err));
             applyVideoStreamsToDom();
         }
     };
@@ -508,7 +507,7 @@ function renderCallsHistoryView() {
                 : `<div class="w-10 h-10 rounded-full gold-btn flex items-center justify-center font-extrabold text-[#030305] shrink-0">${initial}</div>`;
 
             return `
-            <div class="flex justify-between items-center px-4 py-3 my-1.5 theme-card rounded-2xl cursor-pointer hover:bg-white/5" onclick="openChat('${l.phone}', '${safeName}', '${avatarUrl}')">
+            <button type="button" onclick="openChat('${l.phone}', '${safeName}', '${avatarUrl}')" class="w-full flex justify-between items-center px-4 py-3 my-1.5 theme-card rounded-2xl cursor-pointer hover:bg-white/5 text-left">
                 <div class="flex items-center space-x-3 min-w-0 flex-1">
                     ${avatarEl}
                     <div class="min-w-0 flex-1">
@@ -516,10 +515,10 @@ function renderCallsHistoryView() {
                         <p class="text-[10px] text-gray-400 truncate">${l.direction} • ${l.type.toUpperCase()} • ${timeStr}</p>
                     </div>
                 </div>
-                <button onclick="event.stopPropagation(); openChat('${l.phone}', '${safeName}', '${avatarUrl}'); startWhatsAppCall('${l.type}')" class="w-9 h-9 rounded-full bg-white/5 text-amber-300 flex items-center justify-center cursor-pointer shrink-0 ml-2">
+                <span onclick="event.stopPropagation(); openChat('${l.phone}', '${safeName}', '${avatarUrl}'); startWhatsAppCall('${l.type}')" class="w-9 h-9 rounded-full bg-white/5 text-amber-300 flex items-center justify-center cursor-pointer shrink-0 ml-2">
                     <i class="fa-solid ${l.type === 'video' ? 'fa-video' : 'fa-phone'} text-xs"></i>
-                </button>
-            </div>`;
+                </span>
+            </button>`;
         }).join('');
 
     listContainer.innerHTML = `<div class="p-3 space-y-3 pb-20"><h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Recent Chats & Calls</h3>${html}</div>`;
