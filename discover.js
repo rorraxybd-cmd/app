@@ -1,4 +1,4 @@
-// discover.js - Global Directory & Contacts Sync Module
+// discover.js - Global Directory, Contacts & Compressed Profile Sync Module
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -143,7 +143,7 @@ function normPhone(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
 function renderAvatarBadge(name, avatarUrl, sizeClass = "w-10 h-10 text-sm") {
     const initial = (name || 'U').trim().charAt(0).toUpperCase();
     if (avatarUrl && avatarUrl.trim() !== '') {
-        return `<img src="${avatarUrl}" class="${sizeClass} rounded-full object-cover bg-black shrink-0">`;
+        return `<img src="${avatarUrl}" class="${sizeClass} rounded-full object-cover bg-black shrink-0 border border-amber-400/20">`;
     }
     return `<div class="${sizeClass} rounded-full gold-btn flex items-center justify-center font-extrabold text-[#030305] shrink-0 shadow-md">${initial}</div>`;
 }
@@ -232,7 +232,7 @@ function renderDiscoverDirectory(searchQuery = '') {
             </div>
             <div class="p-4 rounded-2xl text-center theme-card">
                 <h2 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Global Network Directory</h2>
-                <p class="text-[10px] text-gray-400 mt-1">Select any country to connect across borders</p>
+                <p class="text-[10px] text-gray-400 mt-1">Total Active Global Members: <span class="text-amber-300 font-bold">${allUsers.length}</span></p>
             </div>
     `;
 
@@ -408,41 +408,74 @@ function renderContactsView(searchQuery = '') {
     `;
 }
 
-function handleProfileLogoUpload(input) {
+// ছবিকে ছোট সাইজে কম্প্রেস করার ফাংশন যাতে Cloudflare D1 ডাটাবেজে সহজেই সেভ ও সিঙ্ক হয়
+function compressAvatarImage(file, maxSize = 180, quality = 0.72) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxSize) {
+                        height *= maxSize / width;
+                        width = maxSize;
+                    }
+                } else {
+                    if (height > maxSize) {
+                        width *= maxSize / height;
+                        height = maxSize;
+                    }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = reject;
+            img.src = event.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+async function handleProfileLogoUpload(input) {
     const file = input.files && input.files[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-        if (typeof showToast === 'function') showToast("Image must be under 5MB", true);
-        return;
-    }
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        const base64Img = e.target.result;
+
+    try {
+        const compressedBase64 = await compressAvatarImage(file, 180, 0.72);
         let profiles = JSON.parse(localStorage.getItem('message_profiles_v18') || '[{}]');
-        profiles[0].avatar = base64Img;
+        profiles[0].avatar = compressedBase64;
         localStorage.setItem('message_profiles_v18', JSON.stringify(profiles));
-        if (typeof savedProfiles !== 'undefined') savedProfiles[0].avatar = base64Img;
+        if (typeof savedProfiles !== 'undefined') savedProfiles[0].avatar = compressedBase64;
 
         let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
         const myPhone = normPhone(profiles[0].phone);
         const idx = localContacts.findIndex(c => normPhone(c.phone) === myPhone);
         if (idx !== -1) {
-            localContacts[idx].avatar = base64Img;
+            localContacts[idx].avatar = compressedBase64;
             localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
         }
 
-        if (typeof showToast === 'function') showToast("Profile logo updated!");
         renderProfileView(false);
 
-        try {
-            await fetch('/api/chat?action=register_or_update_user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...profiles[0], is_edit: true })
-            });
-        } catch (err) {}
-    };
-    reader.readAsDataURL(file);
+        const res = await fetch('/api/chat?action=register_or_update_user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...profiles[0], avatar: compressedBase64, is_edit: true })
+        });
+        if (res.ok && typeof showToast === 'function') {
+            showToast("Profile photo synced to cloud!");
+        }
+    } catch (err) {
+        if (typeof showToast === 'function') showToast("Failed to upload photo", true);
+    }
 }
 
 function renderProfileView(isEditing = false) {
@@ -542,15 +575,17 @@ async function saveProfileChanges() {
         localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
     }
 
-    if (typeof showToast === 'function') showToast("Profile updated successfully!");
     renderProfileView(false);
 
     try {
-        await fetch('/api/chat?action=register_or_update_user', {
+        const res = await fetch('/api/chat?action=register_or_update_user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...profiles[0], is_edit: true })
         });
+        if (res.ok && typeof showToast === 'function') {
+            showToast("Profile updated & synced globally!");
+        }
     } catch (e) {}
 }
 
