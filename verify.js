@@ -153,7 +153,7 @@ function normPhone(p) {
     return String(p || '').replace(/[\s\-\(\)\+]/g, '');
 }
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 4000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 4500) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -351,7 +351,7 @@ window.submitVerifyStep1 = async function() {
                 magic_code: generatedOtpCode,
                 ip: userDeviceIp
             })
-        }, 4500);
+        }, 5000);
 
         if (res.ok) {
             const data = await res.json();
@@ -413,14 +413,22 @@ window.submitVerifyStep2 = async function() {
     }
 
     const cleanVerifyPhone = normPhone(tempVerifyPhone);
-    let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
-    const existingLocal = localContacts.find(c => normPhone(c.phone) === cleanVerifyPhone);
 
-    // ক্লাউডে পুরনো অ্যাকাউন্ট থাকলে সেটিই অগ্রাধিকার পাবে (Single Account Per Number)
+    // যদি step 1-এ নেটওয়ার্কের কারণে ক্লাউড ডাটা না এসে থাকে, এখানে আবার চেক করে রিস্টোর করা হবে
+    if (!existingCloudAccount) {
+        try {
+            const checkRes = await fetchWithTimeout(`/api/chat?action=get_user_profile&phone=${cleanVerifyPhone}&_t=${Date.now()}`, {}, 3500);
+            if (checkRes.ok) {
+                const checkData = await checkRes.json();
+                if (checkData.user) existingCloudAccount = checkData.user;
+            }
+        } catch (e) {}
+    }
+
     const cloudUser = existingCloudAccount;
-    const finalName = cloudUser?.display_name || existingLocal?.name || tempVerifyName || "User";
-    const finalUsername = cloudUser?.username || existingLocal?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
-    const finalAvatar = cloudUser?.avatar_url || existingLocal?.avatar || "";
+    const finalName = (cloudUser?.display_name && cloudUser.display_name !== 'User') ? cloudUser.display_name : (tempVerifyName || "User");
+    const finalUsername = cloudUser?.username || ('user_' + cleanVerifyPhone);
+    const finalAvatar = cloudUser?.avatar_url || "";
 
     localStorage.setItem('message_verified_v18', 'true');
 
@@ -433,23 +441,6 @@ window.submitVerifyStep2 = async function() {
     };
     saveProfiles();
 
-    const idx = localContacts.findIndex(c => normPhone(c.phone) === cleanVerifyPhone);
-    const updatedContactEntry = {
-        name: finalName,
-        phone: cleanVerifyPhone,
-        username: finalUsername,
-        avatar: finalAvatar,
-        isOnline: true,
-        appUser: true
-    };
-
-    if (idx === -1) {
-        localContacts.push(updatedContactEntry);
-    } else {
-        localContacts[idx] = { ...localContacts[idx], ...updatedContactEntry };
-    }
-    localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
-
     try {
         await fetchWithTimeout('/api/chat?action=register_or_update_user', {
             method: 'POST',
@@ -461,7 +452,7 @@ window.submitVerifyStep2 = async function() {
                 avatar: finalAvatar,
                 is_edit: false
             })
-        }, 3500);
+        }, 4000);
     } catch (e) {}
 
     const overlay = document.getElementById('verifyOverlay');
