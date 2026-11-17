@@ -1,4 +1,4 @@
-// verify.js - Strict Single-Account Per Phone Number + Non-Blocking Fast Verify
+// verify.js - Strict Single-Account Per Phone Number + Instant Non-Blocking Dashboard Redirect
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
 let selectedCountryData = { flag: "🇧🇩", name: "Bangladesh", code: "880" };
@@ -153,8 +153,7 @@ function normPhone(p) {
     return String(p || '').replace(/[\s\-\(\)\+]/g, '');
 }
 
-// টাইমআউটসহ সেফ ফেচ হেল্পার (সার্ভার স্লো হলেও বাটন আটকাবে না)
-async function fetchWithTimeout(url, options = {}, timeoutMs = 3000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 2500) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -171,7 +170,6 @@ async function populateVerifyCountryDropdown() {
     const container = document.getElementById('vCountrySelectContainer');
     if (!container) return;
 
-    // প্রথমেই ডিফল্ট কান্ট্রি রেন্ডার করে দিন যাতে ইউজারকে অপেক্ষা করতে না হয়
     renderCountrySelectorUI();
 
     try {
@@ -339,6 +337,12 @@ window.submitVerifyStep1 = async function() {
     generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
     existingCloudAccount = null;
 
+    // সেশন স্টোরেজে ব্যাকআপ রাখা যাতে কখনো মুছে না যায়
+    try {
+        sessionStorage.setItem('temp_verify_name', tempVerifyName);
+        sessionStorage.setItem('temp_verify_phone', tempVerifyPhone);
+    } catch (e) {}
+
     try {
         const res = await fetchWithTimeout('/api/chat?action=send_magic_link', {
             method: 'POST',
@@ -349,7 +353,7 @@ window.submitVerifyStep1 = async function() {
                 magic_code: generatedOtpCode,
                 ip: userDeviceIp
             })
-        }, 3000);
+        }, 2500);
 
         if (res.ok) {
             const data = await res.json();
@@ -358,16 +362,13 @@ window.submitVerifyStep1 = async function() {
                 if (typeof showToast === 'function') showToast("Existing account found! Restoring your profile...");
             }
         }
-    } catch (e) {
-        console.warn("Proceeding offline/fast-mode:", e);
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.style.opacity = '1';
-        }
+    } catch (e) {}
+
+    if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
     }
 
-    // নিশ্চিতভাবে Step 1 হাইড করে Step 2 ওপেন করা
     const step1El = document.getElementById('verifyStep1');
     const step2El = document.getElementById('verifyStep2');
 
@@ -403,10 +404,17 @@ window.submitVerifyStep2 = async function() {
         btn.style.opacity = '0.7';
     }
 
-    // যদি কোনো কারণে tempVerifyPhone খালি থাকে তবে ইনপুট থেকে পুনরায় নেওয়া
+    // সব উৎস থেকে নাম ও ফোন নাম্বার নিশ্চিত করা
+    if (!tempVerifyPhone) {
+        tempVerifyPhone = sessionStorage.getItem('temp_verify_phone') || '';
+    }
     if (!tempVerifyPhone) {
         const rawPhone = (document.getElementById('vPhoneInput')?.value || '').trim().replace(/^0+/, '');
         tempVerifyPhone = normPhone(selectedCountryData.code + (rawPhone || "1700000000"));
+    }
+
+    if (!tempVerifyName) {
+        tempVerifyName = sessionStorage.getItem('temp_verify_name') || '';
     }
     if (!tempVerifyName) {
         tempVerifyName = (document.getElementById('vFullName')?.value || '').trim() || "User";
@@ -416,24 +424,25 @@ window.submitVerifyStep2 = async function() {
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const existingLocal = localContacts.find(c => normPhone(c.phone) === cleanVerifyPhone);
 
-    if (!existingCloudAccount) {
+    let cloudAcc = existingCloudAccount || null;
+    if (!cloudAcc) {
         try {
-            const checkRes = await fetchWithTimeout(`/api/chat?action=get_user_profile&phone=${cleanVerifyPhone}`, {}, 2500);
+            const checkRes = await fetchWithTimeout(`/api/chat?action=get_user_profile&phone=${cleanVerifyPhone}`, {}, 2000);
             if (checkRes.ok) {
                 const checkData = await checkRes.json();
                 if (checkData.success && checkData.user) {
-                    existingCloudAccount = checkData.user;
+                    cloudAcc = checkData.user;
                 }
             }
         } catch (e) {}
     }
 
-    const finalName = (existingCloudAccount?.display_name && existingCloudAccount.display_name !== 'User')
-        ? existingCloudAccount.display_name
+    const finalName = (cloudAcc?.display_name && cloudAcc.display_name !== 'User')
+        ? cloudAcc.display_name
         : (tempVerifyName || existingLocal?.name || "User");
 
-    const finalUsername = existingCloudAccount?.username || existingLocal?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
-    const finalAvatar = existingCloudAccount?.avatar_url || existingLocal?.avatar || "";
+    const finalUsername = cloudAcc?.username || existingLocal?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
+    const finalAvatar = cloudAcc?.avatar_url || existingLocal?.avatar || "";
 
     isVerifiedSession = true;
     localStorage.setItem('message_verified_v18', 'true');
@@ -466,7 +475,7 @@ window.submitVerifyStep2 = async function() {
     }
     localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
 
-    // ব্যাকগ্রাউন্ডে ক্লাউড ডাটাবেজে সেভ করা (ড্যাশবোর্ডে যাওয়া আটকাবে না)
+    // ব্যাকগ্রাউন্ডে ক্লাউড সিঙ্ক
     fetch('/api/chat?action=register_or_update_user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -475,7 +484,7 @@ window.submitVerifyStep2 = async function() {
             name: finalName,
             username: finalUsername,
             avatar: finalAvatar,
-            is_edit: true
+            is_edit: false
         })
     }).catch(() => {});
 
@@ -483,25 +492,24 @@ window.submitVerifyStep2 = async function() {
         try { confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } }); } catch (e) {}
     }
 
-    // ওভারলে সম্পূর্ণ বন্ধ করে মেইন ড্যাশবোর্ড চালু করা
+    // ওভারলে সম্পূর্ণ বন্ধ ও রিমুভ করা যাতে কোনোভাবেই স্ক্রিনে আটকে না থাকে
     const overlay = document.getElementById('verifyOverlay');
     if (overlay) {
         overlay.style.display = 'none';
         overlay.classList.add('hidden');
+        overlay.remove();
     }
 
+    // সরাসরি ড্যাশবোর্ডে প্রবেশ
     if (typeof initAppAfterVerification === 'function') {
         initAppAfterVerification();
     } else if (typeof switchTab === 'function') {
         switchTab('contact');
+    } else {
+        window.location.reload();
     }
 
     if (typeof showToast === 'function') {
-        showToast("Verified & connected to dashboard!");
-    }
-
-    if (btn) {
-        btn.disabled = false;
-        btn.style.opacity = '1';
+        showToast("Connected & synced globally!");
     }
 };
