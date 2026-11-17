@@ -43,13 +43,13 @@ export async function onRequest(context) {
                 if (!phone) return jsonResponse({ success: false, user: null }, corsHeaders);
 
                 const user = await env.chat.prepare(
-                    "SELECT phone_number, display_name, username, avatar_url, is_live, is_verified FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ?)"
-                ).bind(phone, '+' + phone).first();
+                    "SELECT phone_number, display_name, username, avatar_url, is_live, is_verified FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ? OR phone_number = ?)"
+                ).bind(phone, '+' + phone, '880' + phone.replace(/^880/, '')).first();
 
                 return jsonResponse({ success: true, user: user || null }, corsHeaders);
             }
 
-            // ৩. ওটিপি কোড পাঠানো ও ডাটাবেজে একক অ্যাকাউন্ট লক রাখা
+            // ৩. ওটিপি কোড পাঠানো ও ডাটাবেজে পুরনো অ্যাকাউন্ট পাকাপোক্তভাবে রিস্টোর রাখা
             case 'send_magic_link': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
@@ -60,11 +60,13 @@ export async function onRequest(context) {
 
                 if (!phone) return jsonResponse({ success: false, error: 'Phone required' }, corsHeaders, 400);
 
+                // সব ফরম্যাটে চেক করা যাতে আগের অ্যাকাউন্ট থাকলে হুবহু সেটিই পাওয়া যায়
                 const existing = await env.chat.prepare(
-                    "SELECT id, display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ?) LIMIT 1"
-                ).bind(phone, '+' + phone).first();
+                    "SELECT id, display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
+                ).bind(phone, '+' + phone, '880' + phone.replace(/^880/, '')).first();
 
-                const userId = 'user_' + phone;
+                // যদি আগের অ্যাকাউন্ট থাকে তবে তার পুরনো ID ব্যবহার হবে, নতুন আইডি তৈরি হবে না
+                const userId = existing ? existing.id : ('user_' + phone);
                 const finalUsername = existing?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
                 const finalName = existing?.display_name || inputName || 'User';
                 const finalAvatar = existing?.avatar_url || '';
@@ -103,11 +105,11 @@ export async function onRequest(context) {
                 const phone = cleanPhone(body.phone || body.phone_number);
                 if (!phone) return jsonResponse({ success: false, error: 'Phone required' }, corsHeaders, 400);
 
-                const userId = 'user_' + phone;
                 const existing = await env.chat.prepare(
-                    "SELECT display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (id = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
-                ).bind(userId, phone, '+' + phone).first();
+                    "SELECT id, display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
+                ).bind(phone, '+' + phone, '880' + phone.replace(/^880/, '')).first();
 
+                const userId = existing ? existing.id : ('user_' + phone);
                 const isProfileEdit = body.is_edit === true;
                 const incomingName = (body.name || body.display_name || '').trim();
                 const finalName = isProfileEdit
