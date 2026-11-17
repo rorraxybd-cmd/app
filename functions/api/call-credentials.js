@@ -1,3 +1,4 @@
+// functions/api/call-credentials.js
 export async function onRequest(context) {
     const { request, env } = context;
     const corsHeaders = {
