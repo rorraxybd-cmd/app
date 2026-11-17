@@ -1,4 +1,4 @@
-// call.js - Full-Duplex WebRTC Audio & Video Call (Zero-Drop ICE Queue, Camera Flip & Tap-to-Swap PiP)
+// call.js - Updated Full-Duplex WebRTC & Ringing Fix
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
 let callRingInterval = null, activeAudioCtx = null, callPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
@@ -71,10 +71,10 @@ function stopCallDurationTimer() {
     if (callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval = null; }
 }
 
-// ক্লাউড থেকে ইনকামিং কল, আনসার ও ICE সিগন্যাল রিয়েল-টাইম পোলিং
+// ইনকামিং কল পোলিং স্পিড ১ সেকেন্ডে নামিয়ে আনা হলো যেন রিং মিস না হয়
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
-    callPollInterval = setInterval(checkIncomingCallSignals, 1500);
+    callPollInterval = setInterval(checkIncomingCallSignals, 1000);
 }
 
 async function checkIncomingCallSignals() {
@@ -138,7 +138,6 @@ async function checkIncomingCallSignals() {
                     pendingIceCandidates = [];
                 }
             } else if (sig.status === 'ice') {
-                // কল রিসিভ করার আগে আসা ICE ক্যান্ডিডেটগুলো নিরাপদে জমা রাখা
                 handledSignalIds.add(sigId);
                 const cand = typeof sig.rtc_data === 'string' ? JSON.parse(sig.rtc_data) : sig.rtc_data;
                 if (cand) {
@@ -171,7 +170,6 @@ async function setupLocalMedia(mode) {
     }
 }
 
-// বড় এবং ছোট স্ক্রিনে ভিডিও স্ট্রিম বসানো ও ক্লিক করলে সোয়াপ (WhatsApp Style)
 function applyVideoStreamsToDom() {
     const mainVid = document.getElementById('callMainVideo');
     const pipVid = document.getElementById('callPipVideo');
@@ -198,7 +196,6 @@ function toggleSwapVideoScreens() {
     applyVideoStreamsToDom();
 }
 
-// সামনের ও পেছনের ক্যামেরা পরিবর্তন (Flip Camera)
 async function flipVideoCamera() {
     if (currentCallType !== 'video') {
         await switchCallMode();
@@ -249,8 +246,8 @@ async function createPeerConnection(peerPhone) {
             applyVideoStreamsToDom();
             if (remoteAud) {
                 remoteAud.srcObject = remoteStream;
-                remoteAud.muted = !isSpeakerOn;
-                remoteAud.play().catch(() => {});
+                remoteAud.muted = false;
+                remoteAud.play().catch(err => console.log("Audio play blocked:", err));
             }
         }
     };
@@ -416,12 +413,11 @@ async function switchCallMode() {
     }
 }
 
-// পরিচ্ছন্ন কল ইন্টারফেস (উপরে শুধু Calling স্ট্যাটাস, মাঝে লোগো ও নাম, ফুলস্ক্রিন ভিডিও ও সমান সাইজের বাটন)
 function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     document.getElementById('whatsAppCallModal')?.remove();
     const initial = (peerName || 'U').trim().charAt(0).toUpperCase();
     const avatarHtml = avatarUrl
-        ? `<img src="${avatarUrl}" class="w-28 h-28 rounded-full object-cover bg-black shadow-2xl border-2 border-amber-400/30">`
+        ? `<img src="${avatarUrl}" class="w-28 h-28 rounded-full object-cover bg-black shadow-2xl">`
         : `<div class="w-28 h-28 rounded-full gold-btn flex items-center justify-center text-4xl font-extrabold text-[#030305] shadow-2xl">${initial}</div>`;
 
     const modal = document.createElement('div');
@@ -429,32 +425,24 @@ function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     modal.className = 'fixed inset-0 z-50 bg-[#030305] flex flex-col justify-between overflow-hidden select-none';
 
     modal.innerHTML = `
-        <!-- Top Status Only -->
         <div class="w-full flex justify-center items-center z-30 pt-6 px-4 pointer-events-none">
             <span id="callStatusLabel" class="px-4 py-1.5 rounded-full bg-black/50 backdrop-blur-md text-xs font-semibold gold-gradient-text tracking-wider">${statusText}</span>
         </div>
-
-        <!-- Center Profile Logo & Name (Shown in Audio Call) -->
         <div class="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none px-4">
             <div id="callerInfoBox" class="${mode === 'video' ? 'hidden' : 'flex'} flex-col items-center space-y-4 pointer-events-auto text-center">
                 ${avatarHtml}
                 <h2 class="text-xl font-bold text-white tracking-wide">${peerName}</h2>
             </div>
         </div>
-
-        <!-- Fullscreen Video Container + Tap-to-Swap PiP Window -->
         <div id="videoStreamsBox" class="${mode === 'video' ? 'block' : 'hidden'} fixed inset-0 w-full h-full bg-black z-0 overflow-hidden">
             <video id="callMainVideo" autoplay playsinline class="w-full h-full object-cover"></video>
-            <div onclick="toggleSwapVideoScreens()" class="w-28 h-40 rounded-2xl absolute bottom-28 right-4 bg-gray-900 cursor-pointer overflow-hidden z-20 shadow-2xl border border-amber-400/40" title="Tap to switch view">
+            <div onclick="toggleSwapVideoScreens()" class="w-28 h-40 rounded-2xl absolute bottom-28 right-4 bg-gray-900 cursor-pointer overflow-hidden z-20 shadow-2xl" title="Tap to switch view">
                 <video id="callPipVideo" autoplay muted playsinline class="w-full h-full object-cover"></video>
             </div>
         </div>
-
         <audio id="callRemoteAudio" autoplay></audio>
-
-        <!-- Bottom Uniform Control Dock (All buttons exact same 52px size) -->
         <div class="w-full flex justify-center items-center z-30 pb-8 px-4 pointer-events-auto">
-            <div id="callControlButtons" class="flex items-center justify-center space-x-4 bg-black/60 backdrop-blur-md px-5 py-3.5 rounded-full border border-white/10 shadow-2xl">
+            <div id="callControlButtons" class="flex items-center justify-center space-x-4 bg-black/60 backdrop-blur-md px-5 py-3.5 rounded-full shadow-2xl">
                 ${isIncoming ? `
                     <button type="button" onclick="endWhatsAppCall()" class="w-[52px] h-[52px] rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center cursor-pointer shadow-lg transition"><i class="fa-solid fa-phone-slash text-lg"></i></button>
                     <button type="button" onclick="acceptWhatsAppCall()" class="w-[52px] h-[52px] rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center cursor-pointer shadow-lg animate-bounce transition"><i class="fa-solid fa-phone text-lg"></i></button>
@@ -484,7 +472,6 @@ function updateInCallButtons() {
     `;
 }
 
-// কল হিস্ট্রি সেভ ও রেন্ডার
 function saveCallHistoryLog(name, phone, type, direction) {
     let logs = JSON.parse(localStorage.getItem('salaam_call_logs_v18') || '[]');
     logs.unshift({ name, phone, type, direction, time: Date.now() });
