@@ -1,4 +1,4 @@
-// verify.js - Strict Single-Account Per Phone Number + Cloud Auto-Sync (Final)
+// verify.js - Strict Single-Account Per Phone Number + Cloud Auto-Sync (Final Fixed for PC & Mobile)
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
 let selectedCountryData = { flag: "🇧🇩", name: "Bangladesh", code: "880" };
@@ -288,6 +288,7 @@ function updatePhoneValidation() {
 
 let existingCloudAccount = null;
 
+// কম্পিউটারের মাউস ক্লিক এবং এপিআই ব্লকিং সমস্যা সমাধানের জন্য নিরাপদ অ্যাসিনক্রোনাস ফাংশন
 async function submitVerifyStep1() {
     const nameInput = document.getElementById('vFullName');
     const phoneInput = document.getElementById('vPhoneInput');
@@ -297,10 +298,12 @@ async function submitVerifyStep1() {
 
     if (!name) {
         if (typeof showToast === 'function') showToast("Please enter your full name", true);
+        else alert("Please enter your full name");
         return;
     }
     if (!rawPhone || rawPhone.length < 6) {
         if (typeof showToast === 'function') showToast("Please enter a valid phone number", true);
+        else alert("Please enter a valid phone number");
         return;
     }
 
@@ -327,12 +330,22 @@ async function submitVerifyStep1() {
                 if (typeof showToast === 'function') showToast("Existing account found! Restoring your profile...");
             }
         }
-    } catch (e) {}
+    } catch (e) {
+        console.error("Network or fetch warning:", e);
+    }
 
+    // স্টেপ পরিবর্তন নিশ্চিত করার অংশ (কম্পিউটার ও মোবাইলের জন্য ফুল প্রটেক্টেড)
     const step1El = document.getElementById('verifyStep1');
     const step2El = document.getElementById('verifyStep2');
-    if (step1El) step1El.style.display = 'none';
-    if (step2El) step2El.style.display = 'block';
+    
+    if (step1El) {
+        step1El.style.display = 'none';
+        step1El.classList.add('hidden');
+    }
+    if (step2El) {
+        step2El.style.display = 'block';
+        step2El.classList.remove('hidden');
+    }
 
     const otpInput = document.getElementById('vOtpInput');
     if (otpInput) otpInput.value = generatedOtpCode;
@@ -344,6 +357,7 @@ async function submitVerifyStep2() {
 
     if (entered !== generatedOtpCode) {
         if (typeof showToast === 'function') showToast("Invalid verification code", true);
+        else alert("Invalid verification code");
         return;
     }
 
@@ -351,7 +365,6 @@ async function submitVerifyStep2() {
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const existingLocal = localContacts.find(c => normPhone(c.phone) === cleanVerifyPhone);
 
-    // লোকাল স্টোরেজ মুছে ফেললেও যেন ক্লাউড থেকে পুরনো অ্যাকাউন্ট নিশ্চিতভাবে ফিরে আসে তার জন্য ডাবল-চেক
     if (!existingCloudAccount) {
         try {
             const checkRes = await fetch(`/api/chat?action=get_user_profile&phone=${cleanVerifyPhone}`);
@@ -364,7 +377,6 @@ async function submitVerifyStep2() {
         } catch (e) {}
     }
 
-    // একবার অ্যাকাউন্ট তৈরি থাকলে ক্লাউডের পুরনো তথ্যই প্রাধান্য পাবে (দ্বিতীয় বা নতুন স্টাইলের অ্যাকাউন্ট হবে না)
     const finalName = existingCloudAccount?.display_name || existingLocal?.name || tempVerifyName;
     const finalUsername = existingCloudAccount?.username || existingLocal?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
     const finalAvatar = existingCloudAccount?.avatar_url || existingLocal?.avatar || "";
@@ -381,7 +393,6 @@ async function submitVerifyStep2() {
     };
     saveProfiles();
 
-    // কন্টাক্ট লিস্টে নিজের অ্যাকাউন্ট নিশ্চিতভাবে যোগ ও আপডেট করা (ডুপ্লিকেট মুক্ত)
     const idx = localContacts.findIndex(c => normPhone(c.phone) === cleanVerifyPhone);
     if (idx === -1) {
         localContacts.push({
@@ -401,7 +412,6 @@ async function submitVerifyStep2() {
     }
     localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
 
-    // ক্লাউডফ্লেয়ারে চূড়ান্ত সিঙ্ক
     try {
         await fetch('/api/chat?action=register_or_update_user', {
             method: 'POST',
