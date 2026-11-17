@@ -1,4 +1,4 @@
-// message.js - Real-Time Sync, Fast Polling, Clean Media & Profile Avatars
+// message.js - Real-Time Sync, Fast Polling, Clean Media & Profile Avatars (Optimized)
 let chatPollInterval = null;
 let globalMsgSyncInterval = null;
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
@@ -118,13 +118,13 @@ async function fetchMessagesFromCloud() {
 function startChatPolling() {
     if (chatPollInterval) clearInterval(chatPollInterval);
     fetchMessagesFromCloud();
-    chatPollInterval = setInterval(fetchMessagesFromCloud, 800);
+    chatPollInterval = setInterval(fetchMessagesFromCloud, 2000); // পোলিং ইন্টারভাল অপ্টিমাইজড (লিমিট সুরক্ষার জন্য)
 }
 
 function startGlobalMessageSync() {
     if (globalMsgSyncInterval) clearInterval(globalMsgSyncInterval);
     fetchMessagesFromCloud();
-    globalMsgSyncInterval = setInterval(fetchMessagesFromCloud, 1500);
+    globalMsgSyncInterval = setInterval(fetchMessagesFromCloud, 4000); // গ্লোবাল সিঙ্ক ইন্টারভাল অপ্টিমাইজড
 }
 
 async function sendTextMessage() {
