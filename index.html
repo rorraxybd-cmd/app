@@ -50,7 +50,6 @@
 </head>
 <body class="h-[100dvh] w-full flex flex-col overflow-hidden fixed inset-0">
 
-    <!-- Direct Verification & Profile Overlay -->
     <div id="verifyOverlay" style="display: flex;" class="z-50 absolute inset-0 bg-[#030305] items-center justify-center p-4">
         <div class="verify-card space-y-5 text-center">
             <div id="verifyStep1" class="space-y-4 text-left">
@@ -89,7 +88,6 @@
         </div>
     </div>
 
-    <!-- Header Bar -->
     <header class="theme-surface px-4 py-3 flex justify-between items-center shrink-0 z-30 border-b border-white/5">
         <div class="flex items-center space-x-3">
             <img src="https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg" alt="Logo" class="header-logo-clean">
@@ -103,7 +101,6 @@
         </div>
     </header>
 
-    <!-- Main Workspace -->
     <div class="flex flex-1 overflow-hidden relative min-h-0 w-full">
         <div id="sidebarSection" class="w-full md:w-[360px] theme-surface flex flex-col justify-between shrink-0 z-20 h-full min-h-0 pb-16">
             <div class="flex flex-col flex-1 overflow-hidden min-h-0">
@@ -112,7 +109,6 @@
         </div>
 
         <div id="workspaceSection" class="hidden md:flex flex-col flex-1 overflow-hidden h-full min-h-0 z-10 relative w-full" style="background-color: var(--bg-main);">
-            <!-- Active Chat Header -->
             <div id="activeChatHeader" class="theme-surface px-3 py-2.5 hidden items-center justify-between shrink-0 z-20 border-b border-white/5 w-full">
                 <div class="flex items-center space-x-2.5 min-w-0 flex-1">
                     <button type="button" onclick="backToSidebarMobile()" class="md:hidden w-8 h-8 rounded-full theme-card flex items-center justify-center shrink-0 cursor-pointer">
@@ -126,15 +122,12 @@
                 </div>
             </div>
 
-            <!-- Messages Scroll Area -->
             <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto p-3 space-y-2.5 flex flex-col justify-start w-full"></div>
 
-            <!-- Mobile-Fitted Unified Input Bar -->
             <div id="chatInputBar" class="theme-surface px-2.5 py-2 pb-safe hidden items-center shrink-0 z-20 border-t border-white/5 w-full"></div>
         </div>
     </div>
 
-    <!-- Bottom Navigation Bar (5 Tabs) -->
     <nav id="bottomNavBar" class="fixed bottom-0 left-0 right-0 md:w-[360px] theme-surface flex justify-center items-center py-2.5 shrink-0 z-40 border-t border-white/5">
         <div class="flex items-center justify-around w-full px-3">
             <button type="button" onclick="switchTab('profile')" id="tabProfile" class="flex flex-col items-center justify-center space-y-1 py-0.5 px-1.5 cursor-pointer focus:outline-none transition-transform hover:scale-110">
@@ -160,16 +153,14 @@
         </div>
     </nav>
 
-    <!-- Toast Banner -->
     <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 theme-card border border-amber-400/20 text-white text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden items-center space-x-2">
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- Scripts (Updated to v=40.0 to force fresh load) -->
-    <script src="/discover.js?v=40.0"></script>
-    <script src="/verify.js?v=40.0"></script>
-    <script src="/call.js?v=40.0"></script>
-    <script src="/message.js?v=40.0"></script>
+    <script src="/discover.js?v=41.0"></script>
+    <script src="/verify.js?v=41.0"></script>
+    <script src="/call.js?v=41.0"></script>
+    <script src="/message.js?v=41.0"></script>
     <script>
         let activeTabName = 'contact';
         let contactSyncTimer = null;
@@ -247,8 +238,14 @@
                         });
                         localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
 
-                        if (activeTabName === 'contact' && !document.getElementById('contactSearchInput')?.value) {
-                            if (typeof renderContactsView === 'function') renderContactsView();
+                        if (activeTabName === 'contact') {
+                            if (typeof renderContactsView === 'function') renderContactsView(document.getElementById('contactSearchInput')?.value || '');
+                        } else if (activeTabName === 'discover') {
+                            if (typeof selectedDiscoverCountry !== 'undefined' && selectedDiscoverCountry) {
+                                renderCountryContactsView(selectedDiscoverCountry);
+                            } else if (typeof renderDiscoverDirectory === 'function') {
+                                renderDiscoverDirectory();
+                            }
                         }
                     }
                 }
@@ -323,7 +320,7 @@
             }
         }
 
-        function initAppAfterVerification() {
+        async function initAppAfterVerification() {
             const overlay = document.getElementById('verifyOverlay');
             if (overlay) {
                 overlay.style.display = 'none';
@@ -336,9 +333,9 @@
             if (typeof startIncomingCallPolling === 'function') startIncomingCallPolling();
             if (typeof startGlobalMessageSync === 'function') startGlobalMessageSync();
 
+            await fetchCloudContacts();
             switchTab('contact');
             handleDirectUsernameRoute();
-            fetchCloudContacts();
 
             if (contactSyncTimer) clearInterval(contactSyncTimer);
             contactSyncTimer = setInterval(fetchCloudContacts, 10000);
