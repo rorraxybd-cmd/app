@@ -161,10 +161,11 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <script src="/discover.js?v=47.0"></script>
-    <script src="/verify.js?v=47.0"></script>
-    <script src="/call.js?v=47.0"></script>
-    <script src="/message.js?v=47.0"></script>
+    <!-- ফাইলের লেটেস্ট ভার্সন ট্র্যাক করার জন্য ক্যোয়ারী স্ট্রিং যুক্ত করা হয়েছে -->
+    <script src="/discover.js?v=48.0"></script>
+    <script src="/verify.js?v=48.0"></script>
+    <script src="/call.js?v=48.0"></script>
+    <script src="/message.js?v=48.0"></script>
     <script>
         let activeTabName = 'contact';
         let contactSyncTimer = null;
@@ -318,7 +319,19 @@
 
         function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js').catch(() => {});
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    // ব্রাউজারে কোডিং বা আপডেট চেঞ্জ হলে তা অটো-ডিটেক্ট করে পেজ রিলোড করবে
+                    reg.onupdatefound = () => {
+                        const installingWorker = reg.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    window.location.reload();
+                                }
+                            }
+                        };
+                    };
+                }).catch(() => {});
             }
         }
 
