@@ -337,7 +337,6 @@ window.submitVerifyStep1 = async function() {
     generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
     existingCloudAccount = null;
 
-    // সেশন স্টোরেজে ব্যাকআপ রাখা যাতে কখনো মুছে না যায়
     try {
         sessionStorage.setItem('temp_verify_name', tempVerifyName);
         sessionStorage.setItem('temp_verify_phone', tempVerifyPhone);
@@ -387,10 +386,9 @@ window.submitVerifyStep1 = async function() {
     }
 };
 
-// ধাপ ২: কোড ভেরিফাই করে সরাসরি মেইন ড্যাশবোর্ডে প্রবেশ করা
+// ধাপ ২: কোড ভেরিফাই করে সরাসরি ড্যাশবোর্ডে প্রবেশ করা (নন-ব্লকিং)
 window.submitVerifyStep2 = async function() {
     const otpEl = document.getElementById('vOtpInput');
-    const btn = document.getElementById('btnStep2Verify') || document.querySelector('#verifyStep2 button');
     const entered = otpEl ? otpEl.value.trim() : '';
 
     if (!entered || entered.length < 4) {
@@ -399,12 +397,6 @@ window.submitVerifyStep2 = async function() {
         return;
     }
 
-    if (btn) {
-        btn.disabled = true;
-        btn.style.opacity = '0.7';
-    }
-
-    // সব উৎস থেকে নাম ও ফোন নাম্বার নিশ্চিত করা
     if (!tempVerifyPhone) {
         tempVerifyPhone = sessionStorage.getItem('temp_verify_phone') || '';
     }
@@ -424,27 +416,10 @@ window.submitVerifyStep2 = async function() {
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const existingLocal = localContacts.find(c => normPhone(c.phone) === cleanVerifyPhone);
 
-    let cloudAcc = existingCloudAccount || null;
-    if (!cloudAcc) {
-        try {
-            const checkRes = await fetchWithTimeout(`/api/chat?action=get_user_profile&phone=${cleanVerifyPhone}`, {}, 2000);
-            if (checkRes.ok) {
-                const checkData = await checkRes.json();
-                if (checkData.success && checkData.user) {
-                    cloudAcc = checkData.user;
-                }
-            }
-        } catch (e) {}
-    }
+    const finalName = tempVerifyName || existingLocal?.name || "User";
+    const finalUsername = existingLocal?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
+    const finalAvatar = existingLocal?.avatar || "";
 
-    const finalName = (cloudAcc?.display_name && cloudAcc.display_name !== 'User')
-        ? cloudAcc.display_name
-        : (tempVerifyName || existingLocal?.name || "User");
-
-    const finalUsername = cloudAcc?.username || existingLocal?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
-    const finalAvatar = cloudAcc?.avatar_url || existingLocal?.avatar || "";
-
-    isVerifiedSession = true;
     localStorage.setItem('message_verified_v18', 'true');
 
     savedProfiles[0] = {
@@ -469,13 +444,11 @@ window.submitVerifyStep2 = async function() {
     } else {
         localContacts[idx].name = finalName;
         localContacts[idx].username = finalUsername;
-        localContacts[idx].avatar = finalAvatar;
-        localContacts[idx].isOnline = true;
         localContacts[idx].appUser = true;
     }
     localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
 
-    // ব্যাকগ্রাউন্ডে ক্লাউড সিঙ্ক
+    // ব্যাকগ্রাউন্ডে ক্লাউডফ্লেয়ার ডাটাবেজে সিঙ্ক করা (কোড আটকে থাকবে না)
     fetch('/api/chat?action=register_or_update_user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -488,15 +461,10 @@ window.submitVerifyStep2 = async function() {
         })
     }).catch(() => {});
 
-    if (typeof confetti === 'function') {
-        try { confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } }); } catch (e) {}
-    }
-
-    // ওভারলে সম্পূর্ণ বন্ধ ও রিমুভ করা যাতে কোনোভাবেই স্ক্রিনে আটকে না থাকে
+    // ওভারলে স্ক্রিন তাৎক্ষণিকভাবে ডিলিট করা
     const overlay = document.getElementById('verifyOverlay');
     if (overlay) {
         overlay.style.display = 'none';
-        overlay.classList.add('hidden');
         overlay.remove();
     }
 
@@ -507,9 +475,5 @@ window.submitVerifyStep2 = async function() {
         switchTab('contact');
     } else {
         window.location.reload();
-    }
-
-    if (typeof showToast === 'function') {
-        showToast("Connected & synced globally!");
     }
 };
