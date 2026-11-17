@@ -1,4 +1,4 @@
-// message.js - Real-Time Sync, Delivery Ticks, Smart Compression, Voice Timer & Cloud Delete
+// message.js - Real-Time Sync, Delivery Ticks, Smart Compression, Voice Timer & Cloud Delete (Optimized)
 let chatPollInterval = null;
 let globalMsgSyncInterval = null;
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
@@ -46,7 +46,7 @@ function triggerPushAlert(title, body) {
     } catch (e) {}
 }
 
-// ক্লাউড থেকে রিয়েল-টাইম মেসেজ আনা (Sender <-> Receiver Sync)
+// ক্লাউড থেকে রিয়েল-টাইম মেসেজ সিঙ্ক
 async function fetchMessagesFromCloud() {
     const me = normPhone(getActiveProfile().phone);
     if (!me) return;
@@ -107,7 +107,7 @@ async function fetchMessagesFromCloud() {
                 loadMessages();
             }
             const activeTabChat = document.getElementById('labelChat');
-            if (activeTabChat && activeTabChat.classList.contains('pink-gradient-text')) {
+            if (activeTabChat && activeTabChat.classList.contains('gold-gradient-text')) {
                 renderChatHistoryList();
             }
         }
@@ -169,7 +169,7 @@ async function sendTextMessage() {
     } catch (e) {}
 }
 
-// সরাসরি ভয়েস মেসেজ রেকর্ড ও সেন্ড (লাইভ রেকর্ডিং টাইমার সহ)
+// ভয়েস মেসেজ রেকর্ড ও সেন্ড
 async function toggleVoiceRecording() {
     if (!window.currentActiveRecipient) {
         if (typeof showToast === 'function') showToast("Select a contact first!", true);
@@ -264,7 +264,7 @@ async function toggleVoiceRecording() {
     }
 }
 
-// স্মার্ট ভিডিও কম্প্রেশন (সর্বোচ্চ ৩৫ সেকেন্ড, কোয়ালিটি ঠিক রেখে কম KB-তে রূপান্তর)
+// ভিডিও কম্প্রেশন
 function compressVideoToCompactKB(file) {
     return new Promise((resolve, reject) => {
         const video = document.createElement('video');
@@ -335,7 +335,7 @@ function compressVideoToCompactKB(file) {
     });
 }
 
-// ইমেজ কম্প্রেশন (কোয়ালিটি ঠিক রেখে কম KB তে রূপান্তর)
+// ইমেজ কম্প্রেশন
 function compressImageToCompactKB(file) {
     return new Promise((resolve) => {
         const img = new Image();
@@ -354,7 +354,7 @@ function compressImageToCompactKB(file) {
     });
 }
 
-// ফাইল আপলোড হ্যান্ডলার (Image, Video, Audio, PDF)
+// ফাইল আপলোড হ্যান্ডলার
 async function handleUniversalFileUpload(fileInputElem) {
     const files = fileInputElem.files;
     if (!files || files.length === 0 || !window.currentActiveRecipient) return;
@@ -374,7 +374,6 @@ async function handleUniversalFileUpload(fileInputElem) {
             } else if (fileType === 'image') {
                 finalDataUrl = await compressImageToCompactKB(file);
             } else {
-                // D1 ডাটাবেজের নিরাপদ সাইজ লিমিট (850KB)
                 if (file.size > 850 * 1024) {
                     if (typeof showToast === 'function') showToast("Document/Audio must be under 850KB", true);
                     continue;
@@ -429,7 +428,7 @@ async function handleUniversalFileUpload(fileInputElem) {
     fileInputElem.value = '';
 }
 
-// বড় স্ক্রিনে ফাইল/ইমেজ/ভিডিও/PDF প্রিভিউ এবং শেয়ার ও ডাউনলোড মডাল
+// মিডিয়া লাইটবক্স প্রিভিউ
 function openMediaLightbox(msgId) {
     if (!window.currentActiveRecipient) return;
     const key = normPhone(window.currentActiveRecipient.phone);
@@ -443,9 +442,9 @@ function openMediaLightbox(msgId) {
 
     let viewerContent = '';
     if (msg.type === 'image') {
-        viewerContent = `<img src="${msg.media_url}" class="max-w-full max-h-[78vh] rounded-2xl object-contain mx-auto shadow-2xl">`;
+        viewerContent = `<img src="${msg.media_url}" class="max-w-full max-h-[78vh] rounded-2xl object-contain mx-auto">`;
     } else if (msg.type === 'video') {
-        viewerContent = `<video src="${msg.media_url}" controls autoplay playsinline class="max-w-full max-h-[78vh] rounded-2xl mx-auto shadow-2xl"></video>`;
+        viewerContent = `<video src="${msg.media_url}" controls autoplay playsinline class="max-w-full max-h-[78vh] rounded-2xl mx-auto"></video>`;
     } else if (msg.type === 'pdf') {
         viewerContent = `<iframe src="${msg.media_url}" class="w-full h-[78vh] rounded-2xl bg-white"></iframe>`;
     } else {
@@ -497,7 +496,7 @@ async function shareMediaItem(msgId) {
     }
 }
 
-// মেসেজে চেপে ধরলে (Long Press) সিঙ্গেল ডিলিট বাটন দেখানো
+// মেসেজ ডিলিট (Long Press)
 let longPressTimer = null;
 function handleMsgTouchStart(msgId) {
     longPressTimer = setTimeout(() => {
@@ -514,7 +513,7 @@ function showSingleDeleteAction(msgId) {
     modal.id = 'singleDeleteModal';
     modal.className = 'fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4';
     modal.innerHTML = `
-        <div class="theme-card border border-amber-400/20 rounded-3xl p-5 w-full max-w-xs text-center space-y-4 shadow-2xl">
+        <div class="theme-card rounded-3xl p-5 w-full max-w-xs text-center space-y-4">
             <p class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Message Options</p>
             <button onclick="deleteSingleMessage('${msgId}')" class="w-full py-3 rounded-2xl bg-red-600 text-white text-xs font-bold flex items-center justify-center space-x-2 cursor-pointer">
                 <i class="fa-solid fa-trash"></i> <span>Delete For Everyone</span>
@@ -527,7 +526,6 @@ function showSingleDeleteAction(msgId) {
     document.body.appendChild(modal);
 }
 
-// লোকাল + সার্ভার উভয় জায়গা থেকে সিঙ্গেল মেসেজ ডিলিট
 async function deleteSingleMessage(msgId) {
     document.getElementById('singleDeleteModal')?.remove();
     if (!window.currentActiveRecipient) return;
@@ -552,7 +550,7 @@ async function deleteSingleMessage(msgId) {
     } catch (e) {}
 }
 
-// সমস্ত মেসেজ ডিলিট (All Delete Button)
+// সমস্ত মেসেজ ডিলিট
 function deleteAllChatMessages() {
     if (!window.currentActiveRecipient) return;
     const key = normPhone(window.currentActiveRecipient.phone);
@@ -567,7 +565,7 @@ function deleteAllChatMessages() {
     modal.id = 'allDeleteConfirmModal';
     modal.className = 'fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4';
     modal.innerHTML = `
-        <div class="theme-card border border-amber-400/20 rounded-3xl p-5 w-full max-w-xs text-center space-y-4 shadow-2xl">
+        <div class="theme-card rounded-3xl p-5 w-full max-w-xs text-center space-y-4">
             <i class="fa-solid fa-trash-can text-2xl text-red-500"></i>
             <h4 class="text-sm font-bold text-white">Delete All Messages?</h4>
             <p class="text-[11px] text-gray-400">All texts, videos, audios and PDFs in this chat will be removed from server & device.</p>
@@ -710,7 +708,7 @@ function loadMessages() {
         <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1 px-1 select-none"
              ontouchstart="handleMsgTouchStart('${m.id}')" ontouchend="handleMsgTouchEnd()"
              onmousedown="handleMsgTouchStart('${m.id}')" onmouseup="handleMsgTouchEnd()" onmouseleave="handleMsgTouchEnd()">
-            <div class="max-w-[82%] px-3.5 py-2.5 rounded-2xl ${isMe ? 'chat-bubble-me' : 'chat-bubble-them'} shadow-lg relative group">
+            <div class="max-w-[82%] px-3.5 py-2.5 rounded-2xl ${isMe ? 'chat-bubble-me' : 'chat-bubble-them'} relative group">
                 ${contentHtml}
                 <div class="flex items-center justify-end space-x-1.5 mt-1">
                     <button onclick="deleteSingleMessage('${m.id}')" class="text-[9px] text-gray-500 hover:text-red-400 cursor-pointer mr-1" title="Delete"><i class="fa-solid fa-trash"></i></button>
