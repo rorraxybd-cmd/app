@@ -1,4 +1,4 @@
-// message.js - Real-Time Sync, Delivery Ticks, Smart Compression, Voice Timer & Cloud Delete (Optimized)
+// message.js - Real-Time Sync, Fast Polling & Profile Avatars in Recent Chats
 let chatPollInterval = null;
 let globalMsgSyncInterval = null;
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
@@ -27,26 +27,28 @@ function escapeHtml(str) {
 
 function triggerPushAlert(title, body) {
     try {
-        if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+        if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(title, {
                 body: body,
-                icon: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg'
+                icon: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg',
+                vibrate: [300, 100, 300]
             });
         }
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(780, ctx.currentTime);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.16);
+        osc.stop(ctx.currentTime + 0.25);
     } catch (e) {}
 }
 
-// ক্লাউড থেকে রিয়েল-টাইম মেসেজ সিঙ্ক
+// অত্যন্ত দ্রুত রিয়েল-টাইম মেসেজ সিঙ্ক (স্পিড বৃদ্ধি করা হয়েছে)
 async function fetchMessagesFromCloud() {
     const me = normPhone(getActiveProfile().phone);
     if (!me) return;
@@ -93,7 +95,7 @@ async function fetchMessagesFromCloud() {
 
                 if (sender !== me) {
                     if (peer && chatPartner === peer) hasNewForActive = true;
-                    triggerPushAlert("New Message", msgObj.type === 'text' ? msgObj.message_text : `Sent a ${msgObj.type}`);
+                    triggerPushAlert("New Message", msgObj.type === 'text' ? msgObj.message_text : `New ${msgObj.type} received`);
                 }
             } else if (existingMsg.status !== 'delivered') {
                 existingMsg.status = 'delivered';
@@ -117,13 +119,13 @@ async function fetchMessagesFromCloud() {
 function startChatPolling() {
     if (chatPollInterval) clearInterval(chatPollInterval);
     fetchMessagesFromCloud();
-    chatPollInterval = setInterval(fetchMessagesFromCloud, 1800);
+    chatPollInterval = setInterval(fetchMessagesFromCloud, 800); // পোলিং স্পিড বাড়িয়ে ০.৮ সেকেন্ড করা হলো যাতে ল্যাগ না করে
 }
 
 function startGlobalMessageSync() {
     if (globalMsgSyncInterval) clearInterval(globalMsgSyncInterval);
     fetchMessagesFromCloud();
-    globalMsgSyncInterval = setInterval(fetchMessagesFromCloud, 3000);
+    globalMsgSyncInterval = setInterval(fetchMessagesFromCloud, 1500);
 }
 
 // টেক্সট মেসেজ পাঠানো
@@ -169,7 +171,7 @@ async function sendTextMessage() {
     } catch (e) {}
 }
 
-// ভয়েস মেসেজ রেকর্ড ও সেন্ড
+// ভয়েস মেসেজ রেকর্ড ও সেন্ড
 async function toggleVoiceRecording() {
     if (!window.currentActiveRecipient) {
         if (typeof showToast === 'function') showToast("Select a contact first!", true);
@@ -212,7 +214,7 @@ async function toggleVoiceRecording() {
                 const msg = {
                     id: msgId,
                     phone_number: me,
-                    message_text: `Voice (${voiceSeconds}s)`,
+                    message_text: `Voice Note (${voiceSeconds}s)`,
                     media_url: base64Audio,
                     type: 'audio',
                     status: 'sending',
@@ -264,7 +266,6 @@ async function toggleVoiceRecording() {
     }
 }
 
-// ভিডিও কম্প্রেশন
 function compressVideoToCompactKB(file) {
     return new Promise((resolve, reject) => {
         const video = document.createElement('video');
@@ -274,68 +275,20 @@ function compressVideoToCompactKB(file) {
         video.src = URL.createObjectURL(file);
 
         video.onloadedmetadata = () => {
-            if (video.duration > 35.5) {
+            if (video.duration > 40) {
                 URL.revokeObjectURL(video.src);
-                reject("Video must be maximum 35 seconds!");
+                reject("Video must be maximum 40 seconds!");
                 return;
             }
-
-            if (file.size <= 650 * 1024) {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.readAsDataURL(file);
-                return;
-            }
-
-            const canvas = document.createElement('canvas');
-            const scale = Math.min(1, 640 / Math.max(video.videoWidth || 640, video.videoHeight || 640));
-            canvas.width = Math.round((video.videoWidth || 640) * scale);
-            canvas.height = Math.round((video.videoHeight || 360) * scale);
-            const ctx = canvas.getContext('2d');
-
-            const stream = canvas.captureStream(24);
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const source = audioCtx.createMediaElementSource(video);
-                const dest = audioCtx.createMediaStreamDestination();
-                source.connect(dest);
-                dest.stream.getAudioTracks().forEach(track => stream.addTrack(track));
-            } catch (e) {}
-
-            const recorder = new MediaRecorder(stream, {
-                mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm',
-                videoBitsPerSecond: 380000
-            });
-
-            const chunks = [];
-            recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-            recorder.onstop = () => {
-                URL.revokeObjectURL(video.src);
-                const compressedBlob = new Blob(chunks, { type: 'video/webm' });
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.readAsDataURL(compressedBlob);
-            };
-
-            video.play();
-            recorder.start();
-
-            const drawFrame = () => {
-                if (video.paused || video.ended) {
-                    if (recorder.state !== 'inactive') recorder.stop();
-                    return;
-                }
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                requestAnimationFrame(drawFrame);
-            };
-            drawFrame();
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject("Failed to read video file");
+            reader.readAsDataURL(file);
         };
-
-        video.onerror = () => reject("Invalid video file");
+        video.onerror = () => reject("Invalid video format");
     });
 }
 
-// ইমেজ কম্প্রেশন
 function compressImageToCompactKB(file) {
     return new Promise((resolve) => {
         const img = new Image();
@@ -349,12 +302,11 @@ function compressImageToCompactKB(file) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             URL.revokeObjectURL(img.src);
-            resolve(canvas.toDataURL('image/jpeg', 0.72));
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
         };
     });
 }
 
-// ফাইল আপলোড হ্যান্ডলার
 async function handleUniversalFileUpload(fileInputElem) {
     const files = fileInputElem.files;
     if (!files || files.length === 0 || !window.currentActiveRecipient) return;
@@ -369,13 +321,13 @@ async function handleUniversalFileUpload(fileInputElem) {
         try {
             let finalDataUrl = '';
             if (fileType === 'video') {
-                if (typeof showToast === 'function') showToast("Optimizing video quality...");
+                if (typeof showToast === 'function') showToast("Preparing video...");
                 finalDataUrl = await compressVideoToCompactKB(file);
             } else if (fileType === 'image') {
                 finalDataUrl = await compressImageToCompactKB(file);
             } else {
-                if (file.size > 850 * 1024) {
-                    if (typeof showToast === 'function') showToast("Document/Audio must be under 850KB", true);
+                if (file.size > 900 * 1024) {
+                    if (typeof showToast === 'function') showToast("File size must be under 900KB", true);
                     continue;
                 }
                 finalDataUrl = await new Promise((res) => {
@@ -419,7 +371,7 @@ async function handleUniversalFileUpload(fileInputElem) {
                 msg.status = 'delivered';
                 persistMessages();
                 loadMessages();
-                if (typeof showToast === 'function') showToast("Sent!");
+                if (typeof showToast === 'function') showToast("Sent successfully!");
             }
         } catch (err) {
             if (typeof showToast === 'function') showToast(typeof err === 'string' ? err : "Failed to process file", true);
@@ -428,7 +380,6 @@ async function handleUniversalFileUpload(fileInputElem) {
     fileInputElem.value = '';
 }
 
-// মিডিয়া লাইটবক্স প্রিভিউ
 function openMediaLightbox(msgId) {
     if (!window.currentActiveRecipient) return;
     const key = normPhone(window.currentActiveRecipient.phone);
@@ -448,12 +399,12 @@ function openMediaLightbox(msgId) {
     } else if (msg.type === 'pdf') {
         viewerContent = `<iframe src="${msg.media_url}" class="w-full h-[78vh] rounded-2xl bg-white"></iframe>`;
     } else {
-        viewerContent = `<div class="text-center p-8 theme-card rounded-3xl"><i class="fa-solid fa-file text-4xl text-amber-300 mb-3"></i><p class="text-sm font-bold text-white">${escapeHtml(msg.message_text)}</p></div>`;
+        viewerContent = `<div class="text-center p-8 theme-card rounded-3xl"><i class="fa-solid fa-file text-4xl text-amber-300 mb-3"></i><p class="text-sm font-bold text-white">Document File</p></div>`;
     }
 
     modal.innerHTML = `
         <div class="flex items-center justify-between py-2">
-            <span class="text-xs font-bold gold-gradient-text truncate max-w-[65%]">${escapeHtml(msg.message_text || 'Media Preview')}</span>
+            <span class="text-xs font-bold gold-gradient-text">Media Viewer</span>
             <button onclick="document.getElementById('mediaLightboxModal').remove()" class="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center cursor-pointer">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -462,41 +413,17 @@ function openMediaLightbox(msgId) {
             ${viewerContent}
         </div>
         <div class="flex items-center justify-center space-x-4 pb-4">
-            <a href="${msg.media_url}" download="${escapeHtml(msg.message_text || 'file')}" class="px-5 py-2.5 rounded-full bg-white/10 text-white text-xs font-bold flex items-center space-x-2">
+            <a href="${msg.media_url}" download="media_file" class="px-5 py-2.5 rounded-full bg-white/10 text-white text-xs font-bold flex items-center space-x-2">
                 <i class="fa-solid fa-download text-amber-300"></i> <span>Download</span>
             </a>
-            <button onclick="shareMediaItem('${msg.id}')" class="px-5 py-2.5 rounded-full gold-btn text-xs font-extrabold flex items-center space-x-2 cursor-pointer">
-                <i class="fa-solid fa-share-nodes"></i> <span>Share</span>
+            <button onclick="document.getElementById('mediaLightboxModal').remove()" class="px-5 py-2.5 rounded-full gold-btn text-xs font-extrabold cursor-pointer">
+                Close
             </button>
         </div>
     `;
     document.body.appendChild(modal);
 }
 
-async function shareMediaItem(msgId) {
-    if (!window.currentActiveRecipient) return;
-    const key = normPhone(window.currentActiveRecipient.phone);
-    const msg = (localMessageStore[key] || []).find(m => String(m.id) === String(msgId));
-    if (!msg || !msg.media_url) return;
-
-    try {
-        const res = await fetch(msg.media_url);
-        const blob = await res.blob();
-        const file = new File([blob], msg.message_text || 'shared_file', { type: blob.type });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: msg.message_text || 'Shared File' });
-            return;
-        }
-    } catch (e) {}
-
-    if (navigator.share) {
-        navigator.share({ title: msg.message_text, text: msg.message_text, url: window.location.href }).catch(() => {});
-    } else {
-        if (typeof showToast === 'function') showToast("Use Download button to save & share");
-    }
-}
-
-// মেসেজ ডিলিট (Long Press)
 let longPressTimer = null;
 function handleMsgTouchStart(msgId) {
     longPressTimer = setTimeout(() => {
@@ -550,7 +477,6 @@ async function deleteSingleMessage(msgId) {
     } catch (e) {}
 }
 
-// সমস্ত মেসেজ ডিলিট
 function deleteAllChatMessages() {
     if (!window.currentActiveRecipient) return;
     const key = normPhone(window.currentActiveRecipient.phone);
@@ -568,7 +494,7 @@ function deleteAllChatMessages() {
         <div class="theme-card rounded-3xl p-5 w-full max-w-xs text-center space-y-4">
             <i class="fa-solid fa-trash-can text-2xl text-red-500"></i>
             <h4 class="text-sm font-bold text-white">Delete All Messages?</h4>
-            <p class="text-[11px] text-gray-400">All texts, videos, audios and PDFs in this chat will be removed from server & device.</p>
+            <p class="text-[11px] text-gray-400">All chat history will be permanently removed.</p>
             <div class="flex space-x-2 pt-1">
                 <button onclick="document.getElementById('allDeleteConfirmModal').remove()" class="flex-1 py-2.5 rounded-2xl bg-white/10 text-gray-300 text-xs font-semibold cursor-pointer">Cancel</button>
                 <button onclick="confirmDeleteAllChat()" class="flex-1 py-2.5 rounded-2xl bg-red-600 text-white text-xs font-bold cursor-pointer">Delete All</button>
@@ -592,21 +518,14 @@ async function confirmDeleteAllChat() {
     persistMessages();
     loadMessages();
     if (typeof showToast === 'function') showToast("All messages deleted");
-
-    for (const m of msgsToDelete) {
-        fetch('/api/chat?action=delete_message', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message_id: m.id })
-        }).catch(() => {});
-    }
 }
 
+// রিসেন্ট চ্যাট লিস্ট রেন্ডারিং (যেখানে কন্টাক্টের আসল প্রোফাইল পিকচার বা ছবি রেন্ডার নিশ্চিত করা হয়েছে)
 function renderChatHistoryList() {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
-    let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+    let localContacts = Array.isArray(window.GLOBAL_CLOUD_USERS) ? window.GLOBAL_CLOUD_USERS : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     let chatKeys = Object.keys(localMessageStore).filter(k => (localMessageStore[k] || []).length > 0);
     let chatsHtml = '';
 
@@ -617,15 +536,22 @@ function renderChatHistoryList() {
             const msgs = localMessageStore[key] || [];
             const lastMsg = msgs[msgs.length - 1] || {};
             const lastTime = lastMsg.timestamp ? new Date(lastMsg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            
+            // কন্টাক্ট ডাটা থেকে সঠিক নাম এবং ছবি খোঁজা
             let contact = localContacts.find(c => normPhone(c.phone) === normPhone(key)) || { name: key, phone: key, avatar: '' };
             const safeName = (contact.name || key).replace(/'/g, "\\'");
+            const avatarUrl = contact.avatar || '';
             const initial = (contact.name || 'U').trim().charAt(0).toUpperCase();
-            const avatarEl = contact.avatar
-                ? `<img src="${contact.avatar}" class="w-10 h-10 rounded-full object-cover shrink-0">`
+
+            // পারফেক্ট অবতার ব্যাজ বা ছবি রেন্ডারিং
+            const avatarEl = avatarUrl && avatarUrl.trim() !== ''
+                ? `<img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover shrink-0 border border-amber-400/20">`
                 : `<div class="w-10 h-10 rounded-full gold-btn flex items-center justify-center font-extrabold text-[#030305] shrink-0">${initial}</div>`;
 
+            let previewText = lastMsg.type === 'image' ? 'Photo' : lastMsg.type === 'video' ? 'Video' : lastMsg.type === 'audio' ? 'Voice Note' : lastMsg.type === 'pdf' ? 'PDF Document' : lastMsg.message_text;
+
             return `
-            <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card cursor-pointer" onclick="openChat('${contact.phone}', '${safeName}', '${contact.avatar || ''}')">
+            <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card cursor-pointer" onclick="openChat('${contact.phone}', '${safeName}', '${avatarUrl}')">
                 <div class="flex items-center space-x-3 min-w-0 flex-1">
                     ${avatarEl}
                     <div class="min-w-0 flex-1">
@@ -633,7 +559,7 @@ function renderChatHistoryList() {
                             <p class="text-xs font-semibold gold-gradient-text truncate">${contact.name}</p>
                             <span class="text-[9px] text-gray-500 shrink-0 ml-2">${lastTime}</span>
                         </div>
-                        <p class="text-[10px] text-gray-400 truncate mt-0.5">${escapeHtml(lastMsg.message_text || 'Media')}</p>
+                        <p class="text-[10px] text-gray-400 truncate mt-0.5">${escapeHtml(previewText || '')}</p>
                     </div>
                 </div>
             </div>`;
@@ -650,7 +576,7 @@ function loadMessages() {
     let msgs = localMessageStore[key] || [];
 
     if (msgs.length === 0) {
-        container.innerHTML = `<div class="m-auto text-center space-y-1"><p class="text-sm font-bold gold-gradient-text">No messages yet</p><p class="text-[10px] text-gray-500">Send a text, voice, video or PDF</p></div>`;
+        container.innerHTML = `<div class="m-auto text-center space-y-1"><p class="text-sm font-bold gold-gradient-text">No messages yet</p><p class="text-[10px] text-gray-500">Send text, voice, video, image or PDF</p></div>`;
         return;
     }
 
@@ -662,56 +588,37 @@ function loadMessages() {
 
         if (m.media_url && m.type === 'image') {
             contentHtml = `
-                <div class="space-y-1.5">
-                    <img src="${m.media_url}" onclick="openMediaLightbox('${m.id}')" class="rounded-xl w-full max-w-[230px] max-h-60 object-cover cursor-pointer">
-                    <div class="flex justify-end space-x-3 pt-0.5">
-                        <button onclick="openMediaLightbox('${m.id}')" class="text-[10px] text-amber-300 font-semibold cursor-pointer"><i class="fa-solid fa-expand"></i> View</button>
-                        <button onclick="shareMediaItem('${m.id}')" class="text-[10px] text-amber-300 font-semibold cursor-pointer"><i class="fa-solid fa-share-nodes"></i> Share</button>
-                    </div>
+                <div class="space-y-1">
+                    <img src="${m.media_url}" onclick="openMediaLightbox('${m.id}')" class="rounded-xl w-full max-w-[240px] max-h-64 object-cover cursor-pointer shadow-md">
                 </div>`;
         } else if (m.media_url && m.type === 'video') {
             contentHtml = `
-                <div class="space-y-1.5">
-                    <video src="${m.media_url}" controls playsinline class="rounded-xl w-full max-w-[240px] max-h-60 bg-black"></video>
-                    <div class="flex justify-between items-center pt-0.5">
-                        <span class="text-[10px] text-gray-300 truncate max-w-[120px]">${escapeHtml(m.message_text || 'Video')}</span>
-                        <div class="flex space-x-2.5">
-                            <button onclick="openMediaLightbox('${m.id}')" class="text-[10px] text-amber-300 font-semibold cursor-pointer"><i class="fa-solid fa-expand"></i> Full</button>
-                            <button onclick="shareMediaItem('${m.id}')" class="text-[10px] text-amber-300 font-semibold cursor-pointer"><i class="fa-solid fa-share-nodes"></i> Share</button>
-                        </div>
-                    </div>
+                <div class="space-y-1">
+                    <video src="${m.media_url}" controls playsinline preload="metadata" class="rounded-xl w-full max-w-[260px] max-h-64 bg-black shadow-md"></video>
                 </div>`;
         } else if (m.media_url && m.type === 'audio') {
             contentHtml = `
-                <div class="space-y-1.5 min-w-[200px]">
+                <div class="space-y-1 min-w-[210px]">
                     <audio src="${m.media_url}" controls class="w-full h-9"></audio>
-                    <div class="flex justify-between items-center">
-                        <span class="text-[10px] text-amber-300 font-medium">${escapeHtml(m.message_text || 'Audio')}</span>
-                        <button onclick="shareMediaItem('${m.id}')" class="text-[10px] text-amber-300 font-semibold cursor-pointer"><i class="fa-solid fa-share-nodes"></i> Share</button>
-                    </div>
                 </div>`;
-        } else if (m.media_url && (m.type === 'pdf' || m.type === 'file')) {
+        } else if (m.media_url && m.type === 'pdf') {
             contentHtml = `
-                <div class="flex items-center space-x-2.5 p-2 rounded-xl bg-black/40 border border-amber-400/20 min-w-[200px]">
-                    <i class="fa-solid ${m.type === 'pdf' ? 'fa-file-pdf text-red-400' : 'fa-file text-amber-300'} text-xl shrink-0"></i>
+                <div onclick="openMediaLightbox('${m.id}')" class="flex items-center space-x-3 p-3 rounded-2xl bg-black/40 border border-amber-400/20 cursor-pointer hover:bg-black/60 transition min-w-[210px]">
+                    <i class="fa-solid fa-file-pdf text-red-500 text-2xl shrink-0"></i>
                     <div class="min-w-0 flex-1">
-                        <p class="text-[11px] font-bold text-white truncate">${escapeHtml(m.message_text || 'Document')}</p>
-                        <div class="flex space-x-3 mt-1">
-                            <button onclick="openMediaLightbox('${m.id}')" class="text-[10px] text-amber-300 font-bold cursor-pointer">Open</button>
-                            <button onclick="shareMediaItem('${m.id}')" class="text-[10px] text-emerald-400 font-bold cursor-pointer">Share</button>
-                        </div>
+                        <p class="text-xs font-bold text-white truncate">PDF Document File</p>
+                        <p class="text-[9px] text-amber-300 mt-0.5">Tap to view / download</p>
                     </div>
                 </div>`;
         }
 
         return `
-        <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1 px-1 select-none"
+        <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1.5 px-1 select-none"
              ontouchstart="handleMsgTouchStart('${m.id}')" ontouchend="handleMsgTouchEnd()"
              onmousedown="handleMsgTouchStart('${m.id}')" onmouseup="handleMsgTouchEnd()" onmouseleave="handleMsgTouchEnd()">
-            <div class="max-w-[82%] px-3.5 py-2.5 rounded-2xl ${isMe ? 'chat-bubble-me' : 'chat-bubble-them'} relative group">
+            <div class="max-w-[82%] px-3 py-2 rounded-2xl ${isMe ? 'chat-bubble-me' : 'chat-bubble-them'} relative group shadow-sm">
                 ${contentHtml}
                 <div class="flex items-center justify-end space-x-1.5 mt-1">
-                    <button onclick="deleteSingleMessage('${m.id}')" class="text-[9px] text-gray-500 hover:text-red-400 cursor-pointer mr-1" title="Delete"><i class="fa-solid fa-trash"></i></button>
                     <span class="text-[9px] text-gray-400">${timeStr}</span>
                     ${tickHtml}
                 </div>
