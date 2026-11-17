@@ -99,6 +99,11 @@
                 <a href="https://rorraxy.com" target="_blank" class="text-[11px] text-white/75 hover:text-amber-300 transition block tracking-wider mt-0.5">rorraxy.com</a>
             </div>
         </div>
+        <!-- PWA Manual Install Button (Hidden by default, shown when install is ready) -->
+        <button id="pwaInstallBtn" onclick="triggerPwaInstall()" class="hidden px-3 py-1.5 rounded-xl gold-btn text-[10px] font-extrabold flex items-center space-x-1.5 cursor-pointer shadow-md">
+            <i class="fa-solid fa-download text-xs"></i>
+            <span>INSTALL APP</span>
+        </button>
     </header>
 
     <div class="flex flex-1 overflow-hidden relative min-h-0 w-full">
@@ -164,6 +169,7 @@
     <script>
         let activeTabName = 'contact';
         let contactSyncTimer = null;
+        let deferredPwaPrompt = null; // PWA ইন্সটলের ইভেন্ট স্টোর করার জন্য
         window.GLOBAL_CLOUD_USERS = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
 
         function normPhoneNum(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
@@ -314,6 +320,44 @@
         function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/sw.js').catch(() => {});
+            }
+        }
+
+        // ব্রাউজারের অটো ইনস্টল প্রম্পট হ্যান্ডলার
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPwaPrompt = e;
+            const installBtn = document.getElementById('pwaInstallBtn');
+            if (installBtn) {
+                installBtn.classList.remove('hidden');
+                installBtn.style.display = 'flex';
+            }
+            // অ্যাপ লোড হওয়ার সাথে সাথে অটোমেটিক ব্রাউজারের নিজস্ব ইনস্টল প্রম্পট ট্রিগার করার চেষ্টা
+            setTimeout(() => {
+                if (deferredPwaPrompt) {
+                    deferredPwaPrompt.prompt();
+                    deferredPwaPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            if (installBtn) installBtn.style.display = 'none';
+                        }
+                        deferredPwaPrompt = null;
+                    });
+                }
+            }, 1200);
+        });
+
+        // ম্যানুয়াল ইনস্টল বাটন ক্লিক হ্যান্ডলার
+        async function triggerPwaInstall() {
+            if (deferredPwaPrompt) {
+                deferredPwaPrompt.prompt();
+                const choiceResult = await deferredPwaPrompt.userChoice;
+                if (choiceResult.outcome === 'accepted') {
+                    const installBtn = document.getElementById('pwaInstallBtn');
+                    if (installBtn) installBtn.style.display = 'none';
+                }
+                deferredPwaPrompt = null;
+            } else {
+                showToast("App is already installed or check browser menu.");
             }
         }
 
