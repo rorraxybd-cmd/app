@@ -1,4 +1,4 @@
-// message.js - Real-Time Sync, Fast Polling & Profile Avatars in Recent Chats
+// message.js - Real-Time Sync, Fast Polling, Clean Media & Profile Avatars
 let chatPollInterval = null;
 let globalMsgSyncInterval = null;
 let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
@@ -48,7 +48,6 @@ function triggerPushAlert(title, body) {
     } catch (e) {}
 }
 
-// অত্যন্ত দ্রুত রিয়েল-টাইম মেসেজ সিঙ্ক (স্পিড বৃদ্ধি করা হয়েছে)
 async function fetchMessagesFromCloud() {
     const me = normPhone(getActiveProfile().phone);
     if (!me) return;
@@ -119,7 +118,7 @@ async function fetchMessagesFromCloud() {
 function startChatPolling() {
     if (chatPollInterval) clearInterval(chatPollInterval);
     fetchMessagesFromCloud();
-    chatPollInterval = setInterval(fetchMessagesFromCloud, 800); // পোলিং স্পিড বাড়িয়ে ০.৮ সেকেন্ড করা হলো যাতে ল্যাগ না করে
+    chatPollInterval = setInterval(fetchMessagesFromCloud, 800);
 }
 
 function startGlobalMessageSync() {
@@ -128,7 +127,6 @@ function startGlobalMessageSync() {
     globalMsgSyncInterval = setInterval(fetchMessagesFromCloud, 1500);
 }
 
-// টেক্সট মেসেজ পাঠানো
 async function sendTextMessage() {
     if (!window.currentActiveRecipient) {
         if (typeof showToast === 'function') showToast("Select a contact first!", true);
@@ -171,7 +169,6 @@ async function sendTextMessage() {
     } catch (e) {}
 }
 
-// ভয়েস মেসেজ রেকর্ড ও সেন্ড
 async function toggleVoiceRecording() {
     if (!window.currentActiveRecipient) {
         if (typeof showToast === 'function') showToast("Select a contact first!", true);
@@ -520,7 +517,6 @@ async function confirmDeleteAllChat() {
     if (typeof showToast === 'function') showToast("All messages deleted");
 }
 
-// রিসেন্ট চ্যাট লিস্ট রেন্ডারিং (যেখানে কন্টাক্টের আসল প্রোফাইল পিকচার বা ছবি রেন্ডার নিশ্চিত করা হয়েছে)
 function renderChatHistoryList() {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
@@ -537,13 +533,11 @@ function renderChatHistoryList() {
             const lastMsg = msgs[msgs.length - 1] || {};
             const lastTime = lastMsg.timestamp ? new Date(lastMsg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
             
-            // কন্টাক্ট ডাটা থেকে সঠিক নাম এবং ছবি খোঁজা
             let contact = localContacts.find(c => normPhone(c.phone) === normPhone(key)) || { name: key, phone: key, avatar: '' };
             const safeName = (contact.name || key).replace(/'/g, "\\'");
             const avatarUrl = contact.avatar || '';
             const initial = (contact.name || 'U').trim().charAt(0).toUpperCase();
 
-            // পারফেক্ট অবতার ব্যাজ বা ছবি রেন্ডারিং
             const avatarEl = avatarUrl && avatarUrl.trim() !== ''
                 ? `<img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover shrink-0 border border-amber-400/20">`
                 : `<div class="w-10 h-10 rounded-full gold-btn flex items-center justify-center font-extrabold text-[#030305] shrink-0">${initial}</div>`;
