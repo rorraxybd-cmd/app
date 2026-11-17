@@ -1,4 +1,4 @@
-// discover.js - Global Directory, Contacts & Compressed Profile Sync Module
+// discover.js - Global Directory, Contacts & Compressed Profile Sync Module (Optimized)
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -143,9 +143,9 @@ function normPhone(p) { return String(p || '').replace(/[\s\-\(\)\+]/g, ''); }
 function renderAvatarBadge(name, avatarUrl, sizeClass = "w-10 h-10 text-sm") {
     const initial = (name || 'U').trim().charAt(0).toUpperCase();
     if (avatarUrl && avatarUrl.trim() !== '') {
-        return `<img src="${avatarUrl}" class="${sizeClass} rounded-full object-cover bg-black shrink-0 border border-amber-400/20">`;
+        return `<img src="${avatarUrl}" class="${sizeClass} rounded-full object-cover bg-black shrink-0">`;
     }
-    return `<div class="${sizeClass} rounded-full gold-btn flex items-center justify-center font-extrabold text-[#030305] shrink-0 shadow-md">${initial}</div>`;
+    return `<div class="${sizeClass} rounded-full gold-btn flex items-center justify-center font-extrabold text-[#030305] shrink-0">${initial}</div>`;
 }
 
 function openChat(phone, name, avatar = '') {
@@ -491,7 +491,7 @@ function renderProfileView(isEditing = false) {
                 <div class="theme-card p-6 rounded-3xl text-center space-y-4">
                     <div class="relative w-24 h-24 mx-auto">
                         ${avatarHtml}
-                        <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full gold-btn flex items-center justify-center cursor-pointer shadow-lg border-2 border-[#030305]" title="Upload Photo">
+                        <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full gold-btn flex items-center justify-center cursor-pointer shadow-md" title="Upload Photo">
                             <i class="fa-solid fa-camera text-xs text-[#030305]"></i>
                             <input type="file" accept="image/*" class="hidden" onchange="handleProfileLogoUpload(this)">
                         </label>
@@ -501,7 +501,7 @@ function renderProfileView(isEditing = false) {
                         <p class="text-xs text-gray-400 mt-0.5">@${username}</p>
                         <p class="text-[10px] text-amber-300/70 mt-1">+${normPhone(profile.phone)}</p>
                     </div>
-                    <button onclick="shareMyProfile('${username}')" class="w-full py-3.5 rounded-2xl gold-btn text-xs font-extrabold cursor-pointer flex items-center justify-center space-x-2 mt-2 shadow-lg">
+                    <button onclick="shareMyProfile('${username}')" class="w-full py-3.5 rounded-2xl gold-btn text-xs font-extrabold cursor-pointer flex items-center justify-center space-x-2 mt-2">
                         <i class="fa-solid fa-share-nodes text-xs"></i> <span>Share Profile</span>
                     </button>
                 </div>
@@ -517,7 +517,7 @@ function renderProfileView(isEditing = false) {
                 <div class="theme-card p-5 rounded-3xl space-y-4">
                     <div class="relative w-24 h-24 mx-auto">
                         ${avatarHtml}
-                        <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full gold-btn flex items-center justify-center cursor-pointer shadow-lg border-2 border-[#030305]" title="Upload Photo">
+                        <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full gold-btn flex items-center justify-center cursor-pointer shadow-md" title="Upload Photo">
                             <i class="fa-solid fa-camera text-xs text-[#030305]"></i>
                             <input type="file" accept="image/*" class="hidden" onchange="handleProfileLogoUpload(this)">
                         </label>
@@ -530,7 +530,7 @@ function renderProfileView(isEditing = false) {
                         <label class="text-[10px] font-bold text-amber-300 uppercase">Username</label>
                         <input type="text" id="editUsernameInput" value="${username}" class="w-full theme-input text-xs px-3.5 py-3 rounded-2xl text-white focus:outline-none">
                     </div>
-                    <button onclick="saveProfileChanges()" class="w-full py-3.5 gold-btn text-xs font-extrabold rounded-2xl cursor-pointer shadow-lg uppercase tracking-wider mt-2">
+                    <button onclick="saveProfileChanges()" class="w-full py-3.5 gold-btn text-xs font-extrabold rounded-2xl cursor-pointer uppercase tracking-wider mt-2">
                         Save Changes
                     </button>
                 </div>
