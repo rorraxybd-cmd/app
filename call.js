@@ -1,4 +1,4 @@
-// call.js - Updated Full-Duplex WebRTC & Ringing Fix (Fast Polling & Avatars)
+// call.js - Updated Full-Duplex WebRTC, Fast Polling & Call Log Avatars
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
 let callRingInterval = null, activeAudioCtx = null, callPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
@@ -71,7 +71,6 @@ function stopCallDurationTimer() {
     if (callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval = null; }
 }
 
-// ইনকামিং কল পোলিং স্পিড আরও ফাস্ট (০.৮ সেকেন্ড) করা হলো যাতে রিং মিস না হয়
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
     callPollInterval = setInterval(checkIncomingCallSignals, 800);
@@ -413,7 +412,6 @@ async function switchCallMode() {
     }
 }
 
-// কল স্ক্রিনে প্রপার কন্টাক্ট লোগো বা ছবি রেন্ডারিং নিশ্চিত করা হলো
 function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     document.getElementById('whatsAppCallModal')?.remove();
     const initial = (peerName || 'U').trim().charAt(0).toUpperCase();
@@ -483,20 +481,34 @@ function saveCallHistoryLog(name, phone, type, direction) {
 function renderCallsHistoryView() {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
-    const logs = JSON.parse(localStorage.getItem('salaam_call_logs_v18') || '[]');
+
+    let logs = JSON.parse(localStorage.getItem('salaam_call_logs_v18') || '[]');
+    let localContacts = Array.isArray(window.GLOBAL_CLOUD_USERS) ? window.GLOBAL_CLOUD_USERS : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
 
     const html = logs.length === 0
         ? `<div class="p-8 text-center theme-card rounded-2xl mt-4"><p class="text-xs font-bold gold-gradient-text">No call logs yet</p></div>`
         : logs.map(l => {
             const timeStr = new Date(l.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const safeName = (l.name || l.phone).replace(/'/g, "\\'");
+            
+            const matchedContact = localContacts.find(c => normPhone(c.phone) === normPhone(l.phone));
+            const avatarUrl = matchedContact?.avatar || '';
+            const initial = (l.name || 'U').trim().charAt(0).toUpperCase();
+
+            const avatarEl = avatarUrl && avatarUrl.trim() !== ''
+                ? `<img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover shrink-0 border border-amber-400/20">`
+                : `<div class="w-10 h-10 rounded-full gold-btn flex items-center justify-center font-extrabold text-[#030305] shrink-0">${initial}</div>`;
+
             return `
-            <div class="flex justify-between items-center px-4 py-3 my-1.5 theme-card rounded-2xl cursor-pointer hover:bg-white/5" onclick="openChat('${l.phone}', '${safeName}', '')">
-                <div>
-                    <p class="text-xs font-bold gold-gradient-text">${l.name}</p>
-                    <p class="text-[10px] text-gray-400">${l.direction} • ${l.type.toUpperCase()} • ${timeStr}</p>
+            <div class="flex justify-between items-center px-4 py-3 my-1.5 theme-card rounded-2xl cursor-pointer hover:bg-white/5" onclick="openChat('${l.phone}', '${safeName}', '${avatarUrl}')">
+                <div class="flex items-center space-x-3 min-w-0 flex-1">
+                    ${avatarEl}
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-bold gold-gradient-text truncate">${l.name}</p>
+                        <p class="text-[10px] text-gray-400 truncate">${l.direction} • ${l.type.toUpperCase()} • ${timeStr}</p>
+                    </div>
                 </div>
-                <button onclick="event.stopPropagation(); openChat('${l.phone}', '${safeName}', ''); startWhatsAppCall('${l.type}')" class="w-9 h-9 rounded-full bg-white/5 text-amber-300 flex items-center justify-center cursor-pointer">
+                <button onclick="event.stopPropagation(); openChat('${l.phone}', '${safeName}', '${avatarUrl}'); startWhatsAppCall('${l.type}')" class="w-9 h-9 rounded-full bg-white/5 text-amber-300 flex items-center justify-center cursor-pointer shrink-0 ml-2">
                     <i class="fa-solid ${l.type === 'video' ? 'fa-video' : 'fa-phone'} text-xs"></i>
                 </button>
             </div>`;
