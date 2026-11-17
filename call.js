@@ -77,7 +77,6 @@ function startIncomingCallPolling() {
 }
 
 async function checkIncomingCallSignals() {
-    // ট্যাব ব্যাকগ্রাউন্ডে থাকলে ইনকামিং কল সিগন্যাল চেক করা পজ থাকবে
     if (document.hidden) return;
 
     const myPhone = normPhone(getActiveProfile().phone);
@@ -157,7 +156,6 @@ async function checkIncomingCallSignals() {
     } catch (e) {}
 }
 
-// কলিংয়ের ক্ষেত্রেও ট্যাব ফোকাস ফিরে আসলে সিগন্যাল চেক করার লজিক
 document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
         checkIncomingCallSignals();
@@ -489,17 +487,17 @@ function updateInCallButtons() {
 }
 
 function saveCallHistoryLog(name, phone, type, direction) {
-    let logs = JSON.parse(localStorage.getItem('salaam_call_logs_v18') || '[]');
+    let logs = JSON.parse(localStorage.getItem('message_call_logs_v18') || '[]');
     logs.unshift({ name, phone, type, direction, time: Date.now() });
     if (logs.length > 50) logs = logs.slice(0, 50);
-    localStorage.setItem('salaam_call_logs_v18', JSON.stringify(logs));
+    localStorage.setItem('message_call_logs_v18', JSON.stringify(logs));
 }
 
 function renderCallsHistoryView() {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
-    let logs = JSON.parse(localStorage.getItem('salaam_call_logs_v18') || '[]');
+    let logs = JSON.parse(localStorage.getItem('message_call_logs_v18') || '[]');
     let localContacts = Array.isArray(window.GLOBAL_CLOUD_USERS) ? window.GLOBAL_CLOUD_USERS : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
 
     const html = logs.length === 0
