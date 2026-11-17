@@ -1,4 +1,4 @@
-// verify.js - Strict Phone-Number Centric Single Account Verification (Complete Code)
+// verify.js - Strict Phone-Number Centric Single Account Verification (Optimized)
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
 let selectedCountryData = { flag: "🇧🇩", name: "Bangladesh", code: "880" };
@@ -202,7 +202,7 @@ function renderCountrySelectorUI() {
     wrapper.className = 'relative w-full';
 
     wrapper.innerHTML = `
-        <div id="countryDropdownBtn" onclick="toggleCountryDropdownModal()" class="w-full theme-input text-xs px-4 py-3.5 rounded-xl text-amber-300 font-bold flex items-center justify-between cursor-pointer border border-amber-400/20">
+        <div id="countryDropdownBtn" onclick="toggleCountryDropdownModal()" class="w-full theme-input text-xs px-4 py-3.5 rounded-2xl text-amber-300 font-bold flex items-center justify-between cursor-pointer">
             <div class="flex items-center space-x-2.5">
                 <span class="text-lg emoji-flag">${selectedCountryData.flag}</span>
                 <span class="text-white">${selectedCountryData.name} (+${selectedCountryData.code})</span>
@@ -210,11 +210,11 @@ function renderCountrySelectorUI() {
             <i class="fa-solid fa-chevron-down text-amber-300 text-xs"></i>
         </div>
 
-        <div id="countryDropdownModal" class="hidden absolute top-full left-0 right-0 mt-2 theme-card border border-amber-400/30 rounded-2xl shadow-2xl z-50 overflow-hidden max-h-72 flex flex-col">
-            <div class="p-2.5 border-b border-white/10 bg-black/50 sticky top-0 z-10">
-                <input type="text" id="countrySearchBox" placeholder="Search country" oninput="filterCountryList(this.value)" class="w-full theme-input text-xs px-3 py-2 rounded-xl text-white focus:outline-none border border-amber-400/20">
+        <div id="countryDropdownModal" class="hidden absolute top-full left-0 right-0 mt-2 theme-card rounded-2xl shadow-xl z-50 overflow-hidden max-h-72 flex flex-col">
+            <div class="p-2.5 bg-black/50 sticky top-0 z-10">
+                <input type="text" id="countrySearchBox" placeholder="Search country" oninput="filterCountryList(this.value)" class="w-full theme-input text-xs px-3 py-2 rounded-xl text-white focus:outline-none">
             </div>
-            <div id="countryListScrollArea" class="overflow-y-auto p-1.5 space-y-2 flex-1 max-h-60">
+            <div id="countryListScrollArea" class="overflow-y-auto p-1.5 space-y-1 flex-1 max-h-60">
                 ${generateCountryListHtml()}
             </div>
         </div>
