@@ -1,3 +1,4 @@
+// sw.js
 const CACHE_NAME = 'message-chat-v34';
 const RUNTIME_CACHE = 'message-runtime-v34';
 
