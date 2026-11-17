@@ -1,4 +1,4 @@
-// call.js - Updated Full-Duplex WebRTC & Ringing Fix
+// call.js - Updated Full-Duplex WebRTC & Ringing Fix (Fast Polling & Avatars)
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
 let callRingInterval = null, activeAudioCtx = null, callPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
@@ -39,16 +39,16 @@ function startContinuousRinging() {
             osc.type = 'sine';
             osc.frequency.setValueAtTime(520, activeAudioCtx.currentTime);
             osc.frequency.setValueAtTime(660, activeAudioCtx.currentTime + 0.25);
-            gain.gain.setValueAtTime(0.14, activeAudioCtx.currentTime);
+            gain.gain.setValueAtTime(0.18, activeAudioCtx.currentTime);
             osc.connect(gain);
             gain.connect(activeAudioCtx.destination);
             osc.start();
             osc.stop(activeAudioCtx.currentTime + 0.55);
-            if (navigator.vibrate) navigator.vibrate([300, 200, 300]);
+            if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
         } catch (e) {}
     };
     playTone();
-    callRingInterval = setInterval(playTone, 2000);
+    callRingInterval = setInterval(playTone, 1800);
 }
 
 function stopContinuousRinging() {
@@ -71,10 +71,10 @@ function stopCallDurationTimer() {
     if (callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval = null; }
 }
 
-// ইনকামিং কল পোলিং স্পিড ১ সেকেন্ডে নামিয়ে আনা হলো যেন রিং মিস না হয়
+// ইনকামিং কল পোলিং স্পিড আরও ফাস্ট (০.৮ সেকেন্ড) করা হলো যাতে রিং মিস না হয়
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
-    callPollInterval = setInterval(checkIncomingCallSignals, 1000);
+    callPollInterval = setInterval(checkIncomingCallSignals, 800);
 }
 
 async function checkIncomingCallSignals() {
@@ -103,7 +103,7 @@ async function checkIncomingCallSignals() {
 
             if (sig.status === 'ringing' && !isCallActive) {
                 handledSignalIds.add(sigId);
-                let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+                let localContacts = Array.isArray(window.GLOBAL_CLOUD_USERS) ? window.GLOBAL_CLOUD_USERS : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
                 const found = localContacts.find(c => normPhone(c.phone) === callerPhone);
                 activeCallPeer = {
                     phone: callerPhone,
@@ -413,11 +413,12 @@ async function switchCallMode() {
     }
 }
 
+// কল স্ক্রিনে প্রপার কন্টাক্ট লোগো বা ছবি রেন্ডারিং নিশ্চিত করা হলো
 function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     document.getElementById('whatsAppCallModal')?.remove();
     const initial = (peerName || 'U').trim().charAt(0).toUpperCase();
-    const avatarHtml = avatarUrl
-        ? `<img src="${avatarUrl}" class="w-28 h-28 rounded-full object-cover bg-black shadow-2xl">`
+    const avatarHtml = avatarUrl && avatarUrl.trim() !== ''
+        ? `<img src="${avatarUrl}" class="w-28 h-28 rounded-full object-cover bg-black shadow-2xl border-2 border-amber-400/30">`
         : `<div class="w-28 h-28 rounded-full gold-btn flex items-center justify-center text-4xl font-extrabold text-[#030305] shadow-2xl">${initial}</div>`;
 
     const modal = document.createElement('div');
@@ -501,5 +502,5 @@ function renderCallsHistoryView() {
             </div>`;
         }).join('');
 
-    listContainer.innerHTML = `<div class="p-3 space-y-3 pb-20"><h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Recent Calls</h3>${html}</div>`;
+    listContainer.innerHTML = `<div class="p-3 space-y-3 pb-20"><h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Recent Chats & Calls</h3>${html}</div>`;
 }
