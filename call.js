@@ -1,4 +1,4 @@
-// call.js - Fixed Full-Duplex WebRTC Audio/Video Streaming & Sound Delivery
+// call.js - Fixed Full-Duplex WebRTC Audio/Video Streaming & Sound Delivery (Optimized)
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
 let callRingInterval = null, activeAudioCtx = null, callPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
@@ -73,7 +73,7 @@ function stopCallDurationTimer() {
 
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
-    callPollInterval = setInterval(checkIncomingCallSignals, 800);
+    callPollInterval = setInterval(checkIncomingCallSignals, 1500); // পোলিং ইন্টারভাল অপ্টিমাইজড
 }
 
 async function checkIncomingCallSignals() {
