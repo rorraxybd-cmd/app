@@ -1,4 +1,4 @@
-// chat.js - Cloudflare Worker Backend Router
+// functions/api/chat.js - Cloudflare Pages Backend API (No-Cache Real-Time Sync)
 export async function onRequest(context) {
     const { request, env } = context;
     const url = new URL(request.url);
@@ -8,6 +8,7 @@ export async function onRequest(context) {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Content-Type': 'application/json'
     };
 
@@ -22,14 +23,21 @@ export async function onRequest(context) {
             case 'get_global_users': {
                 if (request.method !== 'GET') break;
                 const { results } = await env.chat.prepare(
-                    "SELECT phone_number, display_name, username, avatar_url, is_online, is_live FROM chat_master_system WHERE record_type = 'user' ORDER BY updated_at DESC LIMIT 1000"
+                    "SELECT phone_number, display_name, username, avatar_url, is_online, is_live FROM chat_master_system WHERE record_type = 'user' ORDER BY updated_at DESC LIMIT 2000"
                 ).all();
 
                 const uniqueMap = new Map();
                 (results || []).forEach(u => {
                     const p = cleanPhone(u.phone_number);
                     if (p && !uniqueMap.has(p)) {
-                        uniqueMap.set(p, { ...u, phone_number: p });
+                        uniqueMap.set(p, {
+                            phone_number: p,
+                            display_name: u.display_name || 'User',
+                            username: u.username || ('user_' + p.slice(-4)),
+                            avatar_url: u.avatar_url || '',
+                            is_online: u.is_online || 1,
+                            is_live: u.is_live || 0
+                        });
                     }
                 });
 
@@ -42,7 +50,7 @@ export async function onRequest(context) {
                 if (!phone) return jsonResponse({ success: false, user: null }, corsHeaders);
 
                 const user = await env.chat.prepare(
-                    "SELECT phone_number, display_name, username, avatar_url, is_live, is_verified FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ? OR phone_number = ?)"
+                    "SELECT phone_number, display_name, username, avatar_url, is_live, is_verified FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
                 ).bind(phone, '+' + phone, '880' + phone.replace(/^880/, '')).first();
 
                 return jsonResponse({ success: true, user: user || null }, corsHeaders);
@@ -64,7 +72,7 @@ export async function onRequest(context) {
 
                 const userId = existing ? existing.id : ('user_' + phone);
                 const finalUsername = existing?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
-                const finalName = existing?.display_name || inputName || 'User';
+                const finalName = (existing?.display_name && existing.display_name !== 'User') ? existing.display_name : (inputName || 'User');
                 const finalAvatar = existing?.avatar_url || '';
 
                 await env.chat.prepare(
@@ -75,8 +83,9 @@ export async function onRequest(context) {
                         magic_code = excluded.magic_code,
                         ip_address = excluded.ip_address,
                         display_name = COALESCE(NULLIF(chat_master_system.display_name, ''), excluded.display_name, 'User'),
-                        username = COALESCE(chat_master_system.username, excluded.username),
+                        username = COALESCE(NULLIF(chat_master_system.username, ''), excluded.username),
                         avatar_url = COALESCE(NULLIF(chat_master_system.avatar_url, ''), excluded.avatar_url),
+                        is_verified = 1,
                         is_online = 1,
                         updated_at = CURRENT_TIMESTAMP`
                 ).bind(userId, phone, finalName, finalUsername, finalAvatar, magic_code, clientIp).run();
@@ -111,7 +120,7 @@ export async function onRequest(context) {
                     ? (incomingName || existing?.display_name || 'User')
                     : (existing?.display_name || incomingName || 'User');
 
-                const incomingUsername = (body.username || '').trim();
+                const incomingUsername = (body.username || '').trim().replace(/^@+/, '');
                 const finalUsername = isProfileEdit
                     ? (incomingUsername || existing?.username || ('user_' + Math.floor(1000 + Math.random() * 9000)))
                     : (existing?.username || incomingUsername || ('user_' + Math.floor(1000 + Math.random() * 9000)));
