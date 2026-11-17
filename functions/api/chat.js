@@ -22,8 +22,9 @@ export async function onRequest(context) {
         switch (action) {
             case 'get_global_users': {
                 if (request.method !== 'GET') break;
+                // লিমিট অপ্টিমাইজড করা হয়েছে যাতে একসাথে হিউজ রো রিড না হয়
                 const { results } = await env.chat.prepare(
-                    "SELECT phone_number, display_name, username, avatar_url, is_online, is_live FROM chat_master_system WHERE record_type = 'user' ORDER BY updated_at DESC LIMIT 2000"
+                    "SELECT phone_number, display_name, username, avatar_url, is_online, is_live FROM chat_master_system WHERE record_type = 'user' ORDER BY updated_at DESC LIMIT 500"
                 ).all();
 
                 const uniqueMap = new Map();
@@ -160,7 +161,7 @@ export async function onRequest(context) {
                 const receiver_phone = cleanPhone(body.receiver_phone);
                 const { call_type, status, rtc_data, timestamp } = body;
 
-                const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+                const expiresAt = new Date(Date.now() + 3 * 60 * 1000).toISOString(); // ৩ মিনিট এক্সপায়ার টাইম (দ্রুত ক্লিনআপের জন্য)
                 const sigId = status === 'ice'
                     ? `call_ice_${receiver_phone}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
                     : `call_${receiver_phone}_${status}`;
@@ -192,7 +193,7 @@ export async function onRequest(context) {
                      WHERE record_type = 'call_signal' 
                      AND recipient_phone = ? 
                      AND datetime(expires_at) > datetime('now')
-                     ORDER BY updated_at ASC LIMIT 25`
+                     ORDER BY updated_at ASC LIMIT 10`
                 ).bind(receiverPhone).all();
 
                 const signals = (results || []).map(row => {
@@ -256,7 +257,7 @@ export async function onRequest(context) {
                          WHERE record_type = 'chat_msg' 
                          AND datetime(expires_at) > datetime('now') 
                          AND ((phone_number = ? AND recipient_phone = ?) OR (phone_number = ? AND recipient_phone = ?)) 
-                         ORDER BY updated_at ASC LIMIT 200`
+                         ORDER BY updated_at ASC LIMIT 100`
                     ).bind(userPhone, peerPhone, peerPhone, userPhone).all();
                 } else {
                     queryRes = await env.chat.prepare(
@@ -265,7 +266,7 @@ export async function onRequest(context) {
                          WHERE record_type = 'chat_msg' 
                          AND datetime(expires_at) > datetime('now') 
                          AND (phone_number = ? OR recipient_phone = ?) 
-                         ORDER BY updated_at ASC LIMIT 300`
+                         ORDER BY updated_at ASC LIMIT 150`
                     ).bind(userPhone, userPhone).all();
                 }
 
