@@ -1,4 +1,4 @@
-// functions/api/chat.js - Cloudflare Pages Centralized Backend API
+// functions/api/chat.js
 export async function onRequest(context) {
     const { request, env } = context;
     const url = new URL(request.url);
@@ -66,7 +66,6 @@ export async function onRequest(context) {
 
                 if (!phone) return jsonResponse({ success: false, error: 'Phone required' }, corsHeaders, 400);
 
-                // পুরনো অ্যাকাউন্ট যে ফরম্যাটেই থাকুক না কেন আগে খুঁজে বের করা হবে
                 const existing = await env.chat.prepare(
                     "SELECT id, display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
                 ).bind(phone, '+' + phone, '880' + phone.replace(/^880/, '')).first();
