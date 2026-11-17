@@ -1,4 +1,4 @@
-// verify.js - Strict Single-Account Per Phone Number + Cloud Auto-Sync
+// verify.js - Strict Single-Account Per Phone Number + Cloud Auto-Sync (Final)
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
 let selectedCountryData = { flag: "🇧🇩", name: "Bangladesh", code: "880" };
@@ -351,7 +351,20 @@ async function submitVerifyStep2() {
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const existingLocal = localContacts.find(c => normPhone(c.phone) === cleanVerifyPhone);
 
-    // একবার অ্যাকাউন্ট তৈরি থাকলে ক্লাউডের পুরনো তথ্যই প্রাধান্য পাবে (দ্বিতীয় অ্যাকাউন্ট হবে না)
+    // লোকাল স্টোরেজ মুছে ফেললেও যেন ক্লাউড থেকে পুরনো অ্যাকাউন্ট নিশ্চিতভাবে ফিরে আসে তার জন্য ডাবল-চেক
+    if (!existingCloudAccount) {
+        try {
+            const checkRes = await fetch(`/api/chat?action=get_user_profile&phone=${cleanVerifyPhone}`);
+            if (checkRes.ok) {
+                const checkData = await checkRes.json();
+                if (checkData.success && checkData.user) {
+                    existingCloudAccount = checkData.user;
+                }
+            }
+        } catch (e) {}
+    }
+
+    // একবার অ্যাকাউন্ট তৈরি থাকলে ক্লাউডের পুরনো তথ্যই প্রাধান্য পাবে (দ্বিতীয় বা নতুন স্টাইলের অ্যাকাউন্ট হবে না)
     const finalName = existingCloudAccount?.display_name || existingLocal?.name || tempVerifyName;
     const finalUsername = existingCloudAccount?.username || existingLocal?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
     const finalAvatar = existingCloudAccount?.avatar_url || existingLocal?.avatar || "";
@@ -368,7 +381,7 @@ async function submitVerifyStep2() {
     };
     saveProfiles();
 
-    // কন্টাক্ট লিস্টে নিজের অ্যাকাউন্ট নিশ্চিতভাবে যোগ করা (যাতে যে কেউ ভেরিফাই করলেই কন্টাক্টে আসে)
+    // কন্টাক্ট লিস্টে নিজের অ্যাকাউন্ট নিশ্চিতভাবে যোগ ও আপডেট করা (ডুপ্লিকেট মুক্ত)
     const idx = localContacts.findIndex(c => normPhone(c.phone) === cleanVerifyPhone);
     if (idx === -1) {
         localContacts.push({
