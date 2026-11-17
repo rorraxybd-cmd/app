@@ -1,3 +1,4 @@
+// chat.js - Cloudflare Worker Backend Router
 export async function onRequest(context) {
     const { request, env } = context;
     const url = new URL(request.url);
@@ -18,7 +19,6 @@ export async function onRequest(context) {
 
     try {
         switch (action) {
-            // ১. সব ইউজার কন্টাক্ট লিস্টে অটো-সিঙ্ক করার জন্য (ডুপ্লিকেট মুক্ত)
             case 'get_global_users': {
                 if (request.method !== 'GET') break;
                 const { results } = await env.chat.prepare(
@@ -36,7 +36,6 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true, users: Array.from(uniqueMap.values()) }, corsHeaders);
             }
 
-            // ২. নির্দিষ্ট ফোন নাম্বারে আগে থেকে অ্যাকাউন্ট আছে কি না তা চেক করা
             case 'get_user_profile': {
                 if (request.method !== 'GET') break;
                 const phone = cleanPhone(url.searchParams.get('phone'));
@@ -49,7 +48,6 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true, user: user || null }, corsHeaders);
             }
 
-            // ৩. ওটিপি কোড পাঠানো ও ডাটাবেজে পুরনো অ্যাকাউন্ট পাকাপোক্তভাবে রিস্টোর রাখা
             case 'send_magic_link': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
@@ -60,12 +58,10 @@ export async function onRequest(context) {
 
                 if (!phone) return jsonResponse({ success: false, error: 'Phone required' }, corsHeaders, 400);
 
-                // সব ফরম্যাটে চেক করা যাতে আগের অ্যাকাউন্ট থাকলে হুবহু সেটিই পাওয়া যায়
                 const existing = await env.chat.prepare(
                     "SELECT id, display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
                 ).bind(phone, '+' + phone, '880' + phone.replace(/^880/, '')).first();
 
-                // যদি আগের অ্যাকাউন্ট থাকে তবে তার পুরনো ID ব্যবহার হবে, নতুন আইডি তৈরি হবে না
                 const userId = existing ? existing.id : ('user_' + phone);
                 const finalUsername = existing?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
                 const finalName = existing?.display_name || inputName || 'User';
@@ -97,7 +93,6 @@ export async function onRequest(context) {
                 }, corsHeaders);
             }
 
-            // ৪. ভেরিফাই বা প্রোফাইল আপডেট (এক নাম্বারে সবসময় একটিই অ্যাকাউন্ট থাকবে)
             case 'register_or_update_user':
             case 'update_profile': {
                 if (request.method !== 'POST') break;
@@ -149,7 +144,6 @@ export async function onRequest(context) {
                 }, corsHeaders);
             }
 
-            // ৫. রিয়েল-টাইম কল সিগন্যাল পাঠানো
             case 'send_call_signal': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
@@ -177,7 +171,6 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true }, corsHeaders);
             }
 
-            // ৬. রিসিভারের জন্য ইনকামিং কল সিগন্যাল চেক
             case 'get_call_signals':
             case 'check_call_signal': {
                 if (request.method !== 'GET') break;
@@ -211,7 +204,6 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true, signals, signal: signals[signals.length - 1] || null }, corsHeaders);
             }
 
-            // ৭. চ্যাট মেসেজ পাঠানো
             case 'send_chat_message': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
@@ -240,7 +232,6 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true, message_id: msgId }, corsHeaders);
             }
 
-            // ৮. রিয়েল-টাইম মেসেজ রিসিভ করা
             case 'get_chat_messages': {
                 if (request.method !== 'GET') break;
                 const userPhone = cleanPhone(url.searchParams.get('user_phone') || url.searchParams.get('my_phone'));
@@ -282,7 +273,6 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true, messages }, corsHeaders);
             }
 
-            // ৯. সিঙ্গেল মেসেজ ডিলিট
             case 'delete_message': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
