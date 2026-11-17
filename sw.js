@@ -1,6 +1,6 @@
 // sw.js - Auto Update Service Worker for PWA (rorraxy MESSAGE)
-const CACHE_NAME = 'message-cache-v48.0'; // কোড আপডেট করার সময় শুধু এই ভার্সন নম্বরটি বাড়িয়ে দেবেন (যেমন: v49.0)
-const RUNTIME_CACHE = 'message-runtime-v48.0';
+const CACHE_NAME = 'message-cache-v49.0'; // কোড আপডেট করার সময় শুধু এই ভার্সন নম্বরটি বাড়িয়ে দেবেন
+const RUNTIME_CACHE = 'message-runtime-v49.0';
 
 const ASSETS_TO_CACHE = [
   '/',
@@ -60,6 +60,7 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
 
+  // এপিআই বা ক্লাউডফ্লেয়ারের রিকোয়েস্টগুলো ক্যাশ করা থেকে বিরত রাখা
   if (
     url.pathname.includes('/api/') ||
     url.hostname.includes('cloudflare') ||
