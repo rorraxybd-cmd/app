@@ -165,11 +165,11 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- Scripts (Updated to v=39.0 to clear cache & ensure exact filename match) -->
-    <script src="/discover.js?v=39.0"></script>
-    <script src="/verify.js?v=39.0"></script>
-    <script src="/call.js?v=39.0"></script>
-    <script src="/message.js?v=39.0"></script>
+    <!-- Scripts (Updated to v=40.0 to force fresh load) -->
+    <script src="/discover.js?v=40.0"></script>
+    <script src="/verify.js?v=40.0"></script>
+    <script src="/call.js?v=40.0"></script>
+    <script src="/message.js?v=40.0"></script>
     <script>
         let activeTabName = 'contact';
         let contactSyncTimer = null;
@@ -328,6 +328,7 @@
             if (overlay) {
                 overlay.style.display = 'none';
                 overlay.classList.add('hidden');
+                overlay.remove();
             }
             setupChatInputUI();
             registerServiceWorker();
@@ -335,11 +336,8 @@
             if (typeof startIncomingCallPolling === 'function') startIncomingCallPolling();
             if (typeof startGlobalMessageSync === 'function') startGlobalMessageSync();
 
-            // প্রথমেই লোকাল ডেটা দিয়ে ড্যাশবোর্ড ওপেন করা যাতে এক সেকেন্ডও দেরি না হয়
             switchTab('contact');
             handleDirectUsernameRoute();
-
-            // ব্যাকগ্রাউন্ডে ক্লাউড কন্টাক্ট সিঙ্ক করা
             fetchCloudContacts();
 
             if (contactSyncTimer) clearInterval(contactSyncTimer);
