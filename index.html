@@ -157,10 +157,10 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <script src="/discover.js?v=41.0"></script>
-    <script src="/verify.js?v=41.0"></script>
-    <script src="/call.js?v=41.0"></script>
-    <script src="/message.js?v=41.0"></script>
+    <script src="/discover.js?v=42.0"></script>
+    <script src="/verify.js?v=42.0"></script>
+    <script src="/call.js?v=42.0"></script>
+    <script src="/message.js?v=42.0"></script>
     <script>
         let activeTabName = 'contact';
         let contactSyncTimer = null;
@@ -198,13 +198,14 @@
 
         async function fetchCloudContacts() {
             try {
-                const res = await fetch('/api/chat?action=get_global_users');
+                // ক্যাশ এড়াতে টাইমস্ট্যাম্প যুক্ত করা হয়েছে যাতে রিয়েল-টাইমে সব ইউজার আসে
+                const res = await fetch('/api/chat?action=get_global_users&_t=' + Date.now(), { cache: 'no-store' });
                 if (res.ok) {
                     const data = await res.json();
                     if (data.success && Array.isArray(data.users)) {
-                        let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
                         const myProfiles = JSON.parse(localStorage.getItem('message_profiles_v18') || '[{}]');
                         const myPhone = normPhoneNum(myProfiles[0]?.phone);
+                        const syncedContacts = [];
 
                         data.users.forEach(u => {
                             const phone = normPhoneNum(u.phone_number);
@@ -218,25 +219,20 @@
                                 if (typeof savedProfiles !== 'undefined') savedProfiles[0] = myProfiles[0];
                             }
 
-                            const existingIndex = localContacts.findIndex(c => normPhoneNum(c.phone) === phone);
-                            if (existingIndex === -1) {
-                                localContacts.push({
-                                    name: u.display_name || 'User',
-                                    phone: phone,
-                                    username: u.username || ('user_' + Math.floor(1000 + Math.random() * 9000)),
-                                    avatar: u.avatar_url || '',
-                                    isOnline: u.is_online === 1,
-                                    appUser: true
-                                });
-                            } else {
-                                localContacts[existingIndex].name = u.display_name || localContacts[existingIndex].name;
-                                localContacts[existingIndex].username = u.username || localContacts[existingIndex].username;
-                                if (u.avatar_url) localContacts[existingIndex].avatar = u.avatar_url;
-                                localContacts[existingIndex].isOnline = u.is_online === 1;
-                                localContacts[existingIndex].appUser = true;
-                            }
+                            syncedContacts.push({
+                                name: u.display_name || 'User',
+                                phone: phone,
+                                username: u.username || ('user_' + phone.slice(-4)),
+                                avatar: u.avatar_url || '',
+                                isOnline: u.is_online === 1,
+                                appUser: true
+                            });
                         });
-                        localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
+
+                        // ক্লাউডফ্লেয়ারের লেটেস্ট লিস্ট দিয়ে লোকাল কন্টাক্ট সম্পূর্ণ আপডেট করা হলো
+                        if (syncedContacts.length > 0) {
+                            localStorage.setItem('message_contacts_v18', JSON.stringify(syncedContacts));
+                        }
 
                         if (activeTabName === 'contact') {
                             if (typeof renderContactsView === 'function') renderContactsView(document.getElementById('contactSearchInput')?.value || '');
@@ -244,8 +240,11 @@
                             if (typeof selectedDiscoverCountry !== 'undefined' && selectedDiscoverCountry) {
                                 renderCountryContactsView(selectedDiscoverCountry);
                             } else if (typeof renderDiscoverDirectory === 'function') {
-                                renderDiscoverDirectory();
+                                renderDiscoverDirectory(document.getElementById('discoverCountrySearch')?.value || '');
                             }
+                        } else if (activeTabName === 'profile') {
+                            const isEditing = !!document.getElementById('editNameInput');
+                            if (!isEditing && typeof renderProfileView === 'function') renderProfileView(false);
                         }
                     }
                 }
@@ -272,6 +271,7 @@
             if (sidebarList) sidebarList.innerHTML = '';
             if (tabName === 'profile') {
                 if (typeof renderProfileView === 'function') renderProfileView(false);
+                fetchCloudContacts();
             } else if (tabName === 'discover') {
                 if (typeof selectedDiscoverCountry !== 'undefined') selectedDiscoverCountry = null;
                 if (typeof renderDiscoverDirectory === 'function') renderDiscoverDirectory();
@@ -337,8 +337,9 @@
             switchTab('contact');
             handleDirectUsernameRoute();
 
+            // প্রতি ৫ সেকেন্ডে রিয়েল-টাইমে নতুন ইউজার সিঙ্ক হবে
             if (contactSyncTimer) clearInterval(contactSyncTimer);
-            contactSyncTimer = setInterval(fetchCloudContacts, 10000);
+            contactSyncTimer = setInterval(fetchCloudContacts, 5000);
         }
 
         window.addEventListener('DOMContentLoaded', () => {
