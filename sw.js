@@ -1,6 +1,6 @@
 // sw.js - Auto Update Service Worker for PWA (rorraxy MESSAGE)
-const CACHE_NAME = 'message-cache-v47.0'; // কোড আপডেট করার সময় শুধু এই ভার্সন নম্বরটি বাড়িয়ে দেবেন (যেমন: v48.0)
-const RUNTIME_CACHE = 'message-runtime-v47.0';
+const CACHE_NAME = 'message-cache-v48.0'; // কোড আপডেট করার সময় শুধু এই ভার্সন নম্বরটি বাড়িয়ে দেবেন (যেমন: v49.0)
+const RUNTIME_CACHE = 'message-runtime-v48.0';
 
 const ASSETS_TO_CACHE = [
   '/',
