@@ -1,4 +1,4 @@
-// verify.js - Strict Single-Account Per Phone Number + Instant Non-Blocking Dashboard Redirect
+// verify.js - Strict Single-Account Per Phone Number + Cloud Profile Restore
 let generatedOtpCode = "", tempVerifyPhone = "", tempVerifyName = "", userDeviceIp = "Unknown";
 let isVerifiedSession = localStorage.getItem('message_verified_v18') === 'true';
 let selectedCountryData = { flag: "🇧🇩", name: "Bangladesh", code: "880" };
@@ -153,7 +153,7 @@ function normPhone(p) {
     return String(p || '').replace(/[\s\-\(\)\+]/g, '');
 }
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 2500) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 4000) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -351,13 +351,15 @@ window.submitVerifyStep1 = async function() {
                 magic_code: generatedOtpCode,
                 ip: userDeviceIp
             })
-        }, 2500);
+        }, 4500);
 
         if (res.ok) {
             const data = await res.json();
-            if (data.already_exists && data.user) {
+            if (data.user) {
                 existingCloudAccount = data.user;
-                if (typeof showToast === 'function') showToast("Existing account found! Restoring your profile...");
+                if (data.already_exists && typeof showToast === 'function') {
+                    showToast("Existing profile restored from cloud!");
+                }
             }
         }
     } catch (e) {}
@@ -414,9 +416,11 @@ window.submitVerifyStep2 = async function() {
     let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const existingLocal = localContacts.find(c => normPhone(c.phone) === cleanVerifyPhone);
 
-    const finalName = tempVerifyName || existingLocal?.name || "User";
-    const finalUsername = existingLocal?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
-    const finalAvatar = existingLocal?.avatar || "";
+    // ক্লাউডে পুরনো অ্যাকাউন্ট থাকলে সেটিই অগ্রাধিকার পাবে (Single Account Per Number)
+    const cloudUser = existingCloudAccount;
+    const finalName = cloudUser?.display_name || existingLocal?.name || tempVerifyName || "User";
+    const finalUsername = cloudUser?.username || existingLocal?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
+    const finalAvatar = cloudUser?.avatar_url || existingLocal?.avatar || "";
 
     localStorage.setItem('message_verified_v18', 'true');
 
@@ -430,33 +434,35 @@ window.submitVerifyStep2 = async function() {
     saveProfiles();
 
     const idx = localContacts.findIndex(c => normPhone(c.phone) === cleanVerifyPhone);
+    const updatedContactEntry = {
+        name: finalName,
+        phone: cleanVerifyPhone,
+        username: finalUsername,
+        avatar: finalAvatar,
+        isOnline: true,
+        appUser: true
+    };
+
     if (idx === -1) {
-        localContacts.push({
-            name: finalName,
-            phone: cleanVerifyPhone,
-            username: finalUsername,
-            avatar: finalAvatar,
-            isOnline: true,
-            appUser: true
-        });
+        localContacts.push(updatedContactEntry);
     } else {
-        localContacts[idx].name = finalName;
-        localContacts[idx].username = finalUsername;
-        localContacts[idx].appUser = true;
+        localContacts[idx] = { ...localContacts[idx], ...updatedContactEntry };
     }
     localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
 
-    fetch('/api/chat?action=register_or_update_user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            phone: cleanVerifyPhone,
-            name: finalName,
-            username: finalUsername,
-            avatar: finalAvatar,
-            is_edit: false
-        })
-    }).catch(() => {});
+    try {
+        await fetchWithTimeout('/api/chat?action=register_or_update_user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                phone: cleanVerifyPhone,
+                name: finalName,
+                username: finalUsername,
+                avatar: finalAvatar,
+                is_edit: false
+            })
+        }, 3500);
+    } catch (e) {}
 
     const overlay = document.getElementById('verifyOverlay');
     if (overlay) {
