@@ -1,4 +1,4 @@
-// call.js - Updated Full-Duplex WebRTC, Fast Polling & Call Log Avatars
+// call.js - Fixed Full-Duplex WebRTC Audio/Video Streaming & Sound Delivery
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
 let callRingInterval = null, activeAudioCtx = null, callPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
@@ -39,7 +39,7 @@ function startContinuousRinging() {
             osc.type = 'sine';
             osc.frequency.setValueAtTime(520, activeAudioCtx.currentTime);
             osc.frequency.setValueAtTime(660, activeAudioCtx.currentTime + 0.25);
-            gain.gain.setValueAtTime(0.18, activeAudioCtx.currentTime);
+            gain.gain.setValueAtTime(0.25, activeAudioCtx.currentTime);
             osc.connect(gain);
             gain.connect(activeAudioCtx.destination);
             osc.start();
@@ -238,16 +238,21 @@ async function createPeerConnection(peerPhone) {
         }
     };
 
+    // রিমোট অডিও স্ট্রিম এবং সাউন্ড রিসিভ করার মূল হ্যান্ডলার
     peerConnection.ontrack = (event) => {
-        const remoteAud = document.getElementById('callRemoteAudio');
+        let remoteAud = document.getElementById('callRemoteAudio');
+        if (!remoteAud) {
+            remoteAud = document.createElement('audio');
+            remoteAud.id = 'callRemoteAudio';
+            remoteAud.autoplay = true;
+            document.body.appendChild(remoteAud);
+        }
         if (event.streams && event.streams[0]) {
             remoteStream = event.streams[0];
+            remoteAud.srcObject = remoteStream;
+            remoteAud.muted = false;
+            remoteAud.play().catch(err => console.log("Audio play allowed after interaction:", err));
             applyVideoStreamsToDom();
-            if (remoteAud) {
-                remoteAud.srcObject = remoteStream;
-                remoteAud.muted = false;
-                remoteAud.play().catch(err => console.log("Audio play blocked:", err));
-            }
         }
     };
 
@@ -346,6 +351,7 @@ function cleanupCallLocalState(toastMsg) {
     if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
     if (peerConnection) { peerConnection.close(); peerConnection = null; }
     document.getElementById('whatsAppCallModal')?.remove();
+    document.getElementById('callRemoteAudio')?.remove();
     activeCallPeer = null;
     if (toastMsg && typeof showToast === 'function') showToast(toastMsg);
 }
@@ -414,6 +420,8 @@ async function switchCallMode() {
 
 function renderCallModal(peerName, avatarUrl, statusText, mode, isIncoming) {
     document.getElementById('whatsAppCallModal')?.remove();
+    document.getElementById('callRemoteAudio')?.remove();
+
     const initial = (peerName || 'U').trim().charAt(0).toUpperCase();
     const avatarHtml = avatarUrl && avatarUrl.trim() !== ''
         ? `<img src="${avatarUrl}" class="w-28 h-28 rounded-full object-cover bg-black shadow-2xl border-2 border-amber-400/30">`
