@@ -66,7 +66,7 @@ export async function onRequest(context) {
 
                 const userId = 'user_' + phone;
                 const finalUsername = existing?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
-                const finalName = inputName || existing?.display_name || 'User';
+                const finalName = existing?.display_name || inputName || 'User';
                 const finalAvatar = existing?.avatar_url || '';
 
                 await env.chat.prepare(
@@ -76,7 +76,7 @@ export async function onRequest(context) {
                         phone_number = excluded.phone_number,
                         magic_code = excluded.magic_code,
                         ip_address = excluded.ip_address,
-                        display_name = COALESCE(NULLIF(excluded.display_name, ''), chat_master_system.display_name, 'User'),
+                        display_name = COALESCE(NULLIF(chat_master_system.display_name, ''), excluded.display_name, 'User'),
                         username = COALESCE(chat_master_system.username, excluded.username),
                         avatar_url = COALESCE(NULLIF(chat_master_system.avatar_url, ''), excluded.avatar_url),
                         is_online = 1,
@@ -108,11 +108,16 @@ export async function onRequest(context) {
                     "SELECT display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (id = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
                 ).bind(userId, phone, '+' + phone).first();
 
+                const isProfileEdit = body.is_edit === true;
                 const incomingName = (body.name || body.display_name || '').trim();
-                const finalName = incomingName || existing?.display_name || 'User';
+                const finalName = isProfileEdit
+                    ? (incomingName || existing?.display_name || 'User')
+                    : (existing?.display_name || incomingName || 'User');
 
                 const incomingUsername = (body.username || '').trim();
-                const finalUsername = incomingUsername || existing?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
+                const finalUsername = isProfileEdit
+                    ? (incomingUsername || existing?.username || ('user_' + Math.floor(1000 + Math.random() * 9000)))
+                    : (existing?.username || incomingUsername || ('user_' + Math.floor(1000 + Math.random() * 9000)));
 
                 const finalAvatar = (body.avatar !== undefined && body.avatar !== '')
                     ? body.avatar
