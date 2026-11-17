@@ -221,8 +221,7 @@ function renderDiscoverDirectory(searchQuery = '') {
     }
 
     const q = searchQuery.toLowerCase().trim();
-    let deviceContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
-    const allUsers = deviceContacts.filter(c => !c.isOfficialSupport);
+    const allUsers = Array.isArray(window.GLOBAL_CLOUD_USERS) ? window.GLOBAL_CLOUD_USERS : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
 
     let html = `
         <div class="p-3 space-y-3">
@@ -285,8 +284,7 @@ function renderCountryContactsView(countryObj, searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
-    let deviceContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
-    const allUsers = deviceContacts.filter(c => !c.isOfficialSupport);
+    const allUsers = Array.isArray(window.GLOBAL_CLOUD_USERS) ? window.GLOBAL_CLOUD_USERS : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
 
     const matchedUsers = allUsers.filter(u => {
         const info = typeof getCountryInfo === 'function' ? getCountryInfo(u.phone) : { name: '' };
@@ -351,10 +349,10 @@ function renderContactsView(searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
-    let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+    const allUsers = Array.isArray(window.GLOBAL_CLOUD_USERS) ? window.GLOBAL_CLOUD_USERS : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const q = searchQuery.toLowerCase().trim();
 
-    const filteredContacts = localContacts.filter(c =>
+    const filteredContacts = allUsers.filter(c =>
         c.name.toLowerCase().includes(q) ||
         String(c.username || '').toLowerCase().includes(q) ||
         normPhone(c.phone).includes(q)
@@ -408,7 +406,6 @@ function renderContactsView(searchQuery = '') {
     `;
 }
 
-// ছবিকে ছোট সাইজে কম্প্রেস করার ফাংশন যাতে Cloudflare D1 ডাটাবেজে সহজেই সেভ ও সিঙ্ক হয়
 function compressAvatarImage(file, maxSize = 180, quality = 0.72) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -455,14 +452,6 @@ async function handleProfileLogoUpload(input) {
         localStorage.setItem('message_profiles_v18', JSON.stringify(profiles));
         if (typeof savedProfiles !== 'undefined') savedProfiles[0].avatar = compressedBase64;
 
-        let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
-        const myPhone = normPhone(profiles[0].phone);
-        const idx = localContacts.findIndex(c => normPhone(c.phone) === myPhone);
-        if (idx !== -1) {
-            localContacts[idx].avatar = compressedBase64;
-            localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
-        }
-
         renderProfileView(false);
 
         const res = await fetch('/api/chat?action=register_or_update_user', {
@@ -470,8 +459,9 @@ async function handleProfileLogoUpload(input) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...profiles[0], avatar: compressedBase64, is_edit: true })
         });
-        if (res.ok && typeof showToast === 'function') {
-            showToast("Profile photo synced to cloud!");
+        if (res.ok) {
+            if (typeof fetchCloudContacts === 'function') await fetchCloudContacts();
+            if (typeof showToast === 'function') showToast("Profile photo synced to cloud!");
         }
     } catch (err) {
         if (typeof showToast === 'function') showToast("Failed to upload photo", true);
@@ -482,9 +472,10 @@ function renderProfileView(isEditing = false) {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
-    let profile = typeof getActiveProfile === 'function' ? getActiveProfile() : {};
+    let profiles = JSON.parse(localStorage.getItem('message_profiles_v18') || '[{}]');
+    let profile = profiles[0] || {};
     const displayName = profile.name || 'User';
-    const username = profile.username || 'user_' + Math.floor(1000 + Math.random() * 9000);
+    const username = profile.username || ('user_' + normPhone(profile.phone));
     const avatarUrl = profile.avatar || '';
     const avatarHtml = renderAvatarBadge(displayName, avatarUrl, "w-24 h-24 text-3xl mx-auto");
 
@@ -566,15 +557,6 @@ async function saveProfileChanges() {
         savedProfiles[0].username = username;
     }
 
-    let localContacts = JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
-    const myPhone = normPhone(profiles[0].phone);
-    const idx = localContacts.findIndex(c => normPhone(c.phone) === myPhone);
-    if (idx !== -1) {
-        localContacts[idx].name = name;
-        localContacts[idx].username = username;
-        localStorage.setItem('message_contacts_v18', JSON.stringify(localContacts));
-    }
-
     renderProfileView(false);
 
     try {
@@ -583,8 +565,9 @@ async function saveProfileChanges() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...profiles[0], is_edit: true })
         });
-        if (res.ok && typeof showToast === 'function') {
-            showToast("Profile updated & synced globally!");
+        if (res.ok) {
+            if (typeof fetchCloudContacts === 'function') await fetchCloudContacts();
+            if (typeof showToast === 'function') showToast("Profile updated & synced globally!");
         }
     } catch (e) {}
 }
