@@ -1,8 +1,8 @@
-// message.js - Real-Time Sync, Fast Polling, Clean Media & Profile Avatars (Optimized)
+// message.js - Real-Time Sync with Smart Visibility API, Clean Media & Profile Avatars
 let chatPollInterval = null;
 let globalMsgSyncInterval = null;
-let localMessageStore = JSON.parse(localStorage.getItem('salaam_messages_v18') || '{}');
-let deletedMessageIds = JSON.parse(localStorage.getItem('salaam_deleted_ids_v18') || '[]');
+let localMessageStore = JSON.parse(localStorage.getItem('message_messages_v18') || '{}');
+let deletedMessageIds = JSON.parse(localStorage.getItem('message_deleted_ids_v18') || '[]');
 let mediaRecorder = null;
 let recordedAudioChunks = [];
 let isRecordingVoice = false;
@@ -10,7 +10,7 @@ let voiceRecordTimer = null;
 let voiceSeconds = 0;
 
 function persistMessages() {
-    try { localStorage.setItem('salaam_messages_v18', JSON.stringify(localMessageStore)); } catch (e) {}
+    try { localStorage.setItem('message_messages_v18', JSON.stringify(localMessageStore)); } catch (e) {}
 }
 
 function normPhone(p) {
@@ -49,6 +49,8 @@ function triggerPushAlert(title, body) {
 }
 
 async function fetchMessagesFromCloud() {
+    if (document.hidden) return;
+
     const me = normPhone(getActiveProfile().phone);
     if (!me) return;
 
@@ -118,14 +120,20 @@ async function fetchMessagesFromCloud() {
 function startChatPolling() {
     if (chatPollInterval) clearInterval(chatPollInterval);
     fetchMessagesFromCloud();
-    chatPollInterval = setInterval(fetchMessagesFromCloud, 2000); // পোলিং ইন্টারভাল অপ্টিমাইজড (লিমিট সুরক্ষার জন্য)
+    chatPollInterval = setInterval(fetchMessagesFromCloud, 2500);
 }
 
 function startGlobalMessageSync() {
     if (globalMsgSyncInterval) clearInterval(globalMsgSyncInterval);
     fetchMessagesFromCloud();
-    globalMsgSyncInterval = setInterval(fetchMessagesFromCloud, 4000); // গ্লোবাল সিঙ্ক ইন্টারভাল অপ্টিমাইজড
+    globalMsgSyncInterval = setInterval(fetchMessagesFromCloud, 5000);
 }
+
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+        fetchMessagesFromCloud();
+    }
+});
 
 async function sendTextMessage() {
     if (!window.currentActiveRecipient) {
@@ -456,7 +464,7 @@ async function deleteSingleMessage(msgId) {
     const key = normPhone(window.currentActiveRecipient.phone);
     if (!deletedMessageIds.includes(String(msgId))) {
         deletedMessageIds.push(String(msgId));
-        localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+        localStorage.setItem('message_deleted_ids_v18', JSON.stringify(deletedMessageIds));
     }
     if (localMessageStore[key]) {
         localMessageStore[key] = localMessageStore[key].filter(m => String(m.id) !== String(msgId));
@@ -510,7 +518,7 @@ async function confirmDeleteAllChat() {
     msgsToDelete.forEach(m => {
         if (!deletedMessageIds.includes(String(m.id))) deletedMessageIds.push(String(m.id));
     });
-    localStorage.setItem('salaam_deleted_ids_v18', JSON.stringify(deletedMessageIds));
+    localStorage.setItem('message_deleted_ids_v18', JSON.stringify(deletedMessageIds));
     localMessageStore[key] = [];
     persistMessages();
     loadMessages();
