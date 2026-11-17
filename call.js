@@ -1,4 +1,4 @@
-// call.js - Fixed Full-Duplex WebRTC Audio/Video Streaming & Sound Delivery (Optimized)
+// call.js - Fixed Full-Duplex WebRTC Audio/Video Streaming with Smart Visibility API
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
 let callRingInterval = null, activeAudioCtx = null, callPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
@@ -73,10 +73,13 @@ function stopCallDurationTimer() {
 
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
-    callPollInterval = setInterval(checkIncomingCallSignals, 1500); // পোলিং ইন্টারভাল অপ্টিমাইজড
+    callPollInterval = setInterval(checkIncomingCallSignals, 2000);
 }
 
 async function checkIncomingCallSignals() {
+    // ট্যাব ব্যাকগ্রাউন্ডে থাকলে ইনকামিং কল সিগন্যাল চেক করা পজ থাকবে
+    if (document.hidden) return;
+
     const myPhone = normPhone(getActiveProfile().phone);
     if (!myPhone) return;
 
@@ -153,6 +156,13 @@ async function checkIncomingCallSignals() {
         }
     } catch (e) {}
 }
+
+// কলিংয়ের ক্ষেত্রেও ট্যাব ফোকাস ফিরে আসলে সিগন্যাল চেক করার লজিক
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+        checkIncomingCallSignals();
+    }
+});
 
 async function setupLocalMedia(mode) {
     try {
