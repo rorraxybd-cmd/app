@@ -49,12 +49,12 @@ export async function onRequest(context) {
                 return jsonResponse({ success: true, user: user || null }, corsHeaders);
             }
 
-            // ৩. ওটিপি কোড পাঠানো ও ডাটাবেজে একক অ্যাকাউন্ট লক রাখা (ডুপ্লিকেট ও রিসেট রোধ)
+            // ৩. ওটিপি কোড পাঠানো ও ডাটাবেজে একক অ্যাকাউন্ট লক রাখা
             case 'send_magic_link': {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
                 const phone = cleanPhone(body.phone);
-                const display_name = (body.display_name || 'User').trim();
+                const inputName = (body.display_name || '').trim();
                 const magic_code = String(body.magic_code || '');
                 const clientIp = (body.ip && body.ip !== 'Unknown') ? body.ip : (request.headers.get('CF-Connecting-IP') || 'Unknown');
 
@@ -66,7 +66,7 @@ export async function onRequest(context) {
 
                 const userId = 'user_' + phone;
                 const finalUsername = existing?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
-                const finalName = existing?.display_name || display_name;
+                const finalName = inputName || existing?.display_name || 'User';
                 const finalAvatar = existing?.avatar_url || '';
 
                 await env.chat.prepare(
@@ -76,9 +76,9 @@ export async function onRequest(context) {
                         phone_number = excluded.phone_number,
                         magic_code = excluded.magic_code,
                         ip_address = excluded.ip_address,
-                        display_name = COALESCE(chat_master_system.display_name, excluded.display_name),
+                        display_name = COALESCE(NULLIF(excluded.display_name, ''), chat_master_system.display_name, 'User'),
                         username = COALESCE(chat_master_system.username, excluded.username),
-                        avatar_url = COALESCE(chat_master_system.avatar_url, excluded.avatar_url),
+                        avatar_url = COALESCE(NULLIF(chat_master_system.avatar_url, ''), excluded.avatar_url),
                         is_online = 1,
                         updated_at = CURRENT_TIMESTAMP`
                 ).bind(userId, phone, finalName, finalUsername, finalAvatar, magic_code, clientIp).run();
@@ -108,14 +108,11 @@ export async function onRequest(context) {
                     "SELECT display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (id = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
                 ).bind(userId, phone, '+' + phone).first();
 
-                const isProfileEdit = body.is_edit === true;
-                const finalName = isProfileEdit
-                    ? (body.name || body.display_name || existing?.display_name || 'User')
-                    : (existing?.display_name || body.name || body.display_name || 'User');
+                const incomingName = (body.name || body.display_name || '').trim();
+                const finalName = incomingName || existing?.display_name || 'User';
 
-                const finalUsername = isProfileEdit
-                    ? (body.username || existing?.username || ('user_' + Math.floor(1000 + Math.random() * 9000)))
-                    : (existing?.username || body.username || ('user_' + Math.floor(1000 + Math.random() * 9000)));
+                const incomingUsername = (body.username || '').trim();
+                const finalUsername = incomingUsername || existing?.username || ('user_' + Math.floor(1000 + Math.random() * 9000));
 
                 const finalAvatar = (body.avatar !== undefined && body.avatar !== '')
                     ? body.avatar
