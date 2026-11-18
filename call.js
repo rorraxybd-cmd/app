@@ -1,4 +1,4 @@
-// call.js - Fixed Full-Duplex WebRTC Audio/Video Streaming & Perfect Cleanup
+// call.js - Fixed Full-Duplex WebRTC Audio/Video Streaming & Multi-Call State Reset
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
 let callRingInterval = null, activeAudioCtx = null, callPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
@@ -73,7 +73,7 @@ function stopCallDurationTimer() {
 
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
-    callPollInterval = setInterval(checkIncomingCallSignals, 3000); // ইন্টারভাল ৩ সেকেন্ড করা হলো যাতে কোটা সুরক্ষিত থাকে
+    callPollInterval = setInterval(checkIncomingCallSignals, 3000);
 }
 
 async function checkIncomingCallSignals() {
@@ -83,7 +83,7 @@ async function checkIncomingCallSignals() {
     if (!myPhone) return;
 
     try {
-        const res = await fetch(`/api/chat?action=get_call_signals&receiver_phone=${myPhone}`);
+        const res = await fetch(`/api/chat?action=get_call_signals&receiver_phone=${myPhone}&_t=${Date.now()}`);
         if (!res.ok) return;
         const data = await res.json();
         const signals = data.signals || (data.signal ? [data.signal] : []);
@@ -102,8 +102,10 @@ async function checkIncomingCallSignals() {
                 continue;
             }
 
-            if (sig.status === 'ringing' && !isCallActive) {
+            if (sig.status === 'ringing') {
                 handledSignalIds.add(sigId);
+                if (isCallActive) continue; // যদি অলরেডি অন্য কলে থাকে তবে ইগনোর করবে
+
                 let localContacts = Array.isArray(window.GLOBAL_CLOUD_USERS) ? window.GLOBAL_CLOUD_USERS : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
                 const found = localContacts.find(c => normPhone(c.phone) === callerPhone);
                 activeCallPeer = {
@@ -141,9 +143,11 @@ async function checkIncomingCallSignals() {
                         pendingIceCandidates.push(cand);
                     }
                 }
-            } else if (sig.status === 'ended' && isCallActive) {
+            } else if (sig.status === 'ended') {
                 handledSignalIds.add(sigId);
-                cleanupCallLocalState("Call Ended");
+                if (isCallActive) {
+                    cleanupCallLocalState("Call Ended");
+                }
             }
         }
     } catch (e) {}
