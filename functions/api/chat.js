@@ -22,7 +22,6 @@ export async function onRequest(context) {
         switch (action) {
             case 'get_global_users': {
                 if (request.method !== 'GET') break;
-                // লিমিট অপ্টিমাইজড করা হয়েছে যাতে একসাথে হিউজ রো রিড না হয়
                 const { results } = await env.chat.prepare(
                     "SELECT phone_number, display_name, username, avatar_url, is_online, is_live FROM chat_master_system WHERE record_type = 'user' ORDER BY updated_at DESC LIMIT 500"
                 ).all();
@@ -67,25 +66,23 @@ export async function onRequest(context) {
 
                 if (!phone) return jsonResponse({ success: false, error: 'Phone required' }, corsHeaders, 400);
 
+                // এক নম্বর দিয়ে একটাই অ্যাকাউন্ট থাকতে পারবে—তাই আগে চেক করা হচ্ছে নম্বরটি অলরেডি রেজিস্টার্ড কি না
                 const existing = await env.chat.prepare(
                     "SELECT id, display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
                 ).bind(phone, '+' + phone, '880' + phone.replace(/^880/, '')).first();
 
                 const userId = existing ? existing.id : ('phone_' + phone);
                 const finalUsername = existing?.username || ('user_' + phone);
-                const finalName = (existing?.display_name && existing.display_name !== 'User') ? existing.display_name : (inputName || 'User');
+                const finalName = existing?.display_name && existing.display_name !== 'User' ? existing.display_name : (inputName || 'User');
                 const finalAvatar = existing?.avatar_url || '';
 
+                // যদি আগে না থাকে তবেই নতুন তৈরি হবে, থাকলে শুধু ওটিপি ও স্ট্যাটাস আপডেট হবে কিন্তু ডুপ্লিকেট হবে না
                 await env.chat.prepare(
                     `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, username, avatar_url, magic_code, ip_address, is_verified, is_online, updated_at) 
                      VALUES (?, 'user', ?, ?, ?, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)
                      ON CONFLICT(id) DO UPDATE SET 
-                        phone_number = excluded.phone_number,
                         magic_code = excluded.magic_code,
                         ip_address = excluded.ip_address,
-                        display_name = COALESCE(NULLIF(chat_master_system.display_name, ''), excluded.display_name, 'User'),
-                        username = COALESCE(NULLIF(chat_master_system.username, ''), excluded.username),
-                        avatar_url = COALESCE(NULLIF(chat_master_system.avatar_url, ''), excluded.avatar_url),
                         is_verified = 1,
                         is_online = 1,
                         updated_at = CURRENT_TIMESTAMP`
@@ -119,7 +116,7 @@ export async function onRequest(context) {
                 const incomingName = (body.name || body.display_name || '').trim();
                 const finalName = isProfileEdit
                     ? (incomingName || existing?.display_name || 'User')
-                    : ((existing?.display_name && existing.display_name !== 'User') ? existing.display_name : (incomingName || 'User'));
+                    : (existing?.display_name && existing.display_name !== 'User' ? existing.display_name : (incomingName || 'User'));
 
                 const incomingUsername = (body.username || '').trim().replace(/^@+/, '');
                 const finalUsername = isProfileEdit
@@ -134,7 +131,6 @@ export async function onRequest(context) {
                     `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, username, avatar_url, is_verified, is_online, updated_at) 
                      VALUES (?, 'user', ?, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)
                      ON CONFLICT(id) DO UPDATE SET 
-                        phone_number = excluded.phone_number,
                         display_name = excluded.display_name,
                         username = excluded.username,
                         avatar_url = excluded.avatar_url,
@@ -161,7 +157,7 @@ export async function onRequest(context) {
                 const receiver_phone = cleanPhone(body.receiver_phone);
                 const { call_type, status, rtc_data, timestamp } = body;
 
-                const expiresAt = new Date(Date.now() + 3 * 60 * 1000).toISOString(); // ৩ মিনিট এক্সপায়ার টাইম (দ্রুত ক্লিনআপের জন্য)
+                const expiresAt = new Date(Date.now() + 3 * 60 * 1000).toISOString();
                 const sigId = status === 'ice'
                     ? `call_ice_${receiver_phone}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
                     : `call_${receiver_phone}_${status}`;
