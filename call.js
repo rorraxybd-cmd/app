@@ -1,4 +1,4 @@
-// call.js - Fixed Full-Duplex WebRTC Audio/Video Streaming & Multi-Call State Reset
+// call.js - Fixed Full-Duplex WebRTC Audio/Video Streaming & Ringtone Fix
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
 let callRingInterval = null, activeAudioCtx = null, callPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
@@ -104,7 +104,7 @@ async function checkIncomingCallSignals() {
 
             if (sig.status === 'ringing') {
                 handledSignalIds.add(sigId);
-                if (isCallActive) continue; // যদি অলরেডি অন্য কলে থাকে তবে ইগনোর করবে
+                if (isCallActive) continue;
 
                 let localContacts = Array.isArray(window.GLOBAL_CLOUD_USERS) ? window.GLOBAL_CLOUD_USERS : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
                 const found = localContacts.find(c => normPhone(c.phone) === callerPhone);
@@ -123,7 +123,7 @@ async function checkIncomingCallSignals() {
                 saveCallHistoryLog(activeCallPeer.name, activeCallPeer.phone, currentCallType, 'Incoming');
             } else if (sig.status === 'answered' && isCallActive && peerConnection) {
                 handledSignalIds.add(sigId);
-                stopContinuousRinging();
+                stopContinuousRinging(); // নিশ্চিতভাবে রিংটোন বন্ধ করা হলো
                 startCallDurationTimer();
                 const ans = typeof sig.rtc_data === 'string' ? JSON.parse(sig.rtc_data) : sig.rtc_data;
                 if (ans && !peerConnection.currentRemoteDescription) {
@@ -316,7 +316,10 @@ async function startWhatsAppCall(mode) {
 
 async function acceptWhatsAppCall() {
     if (!activeCallPeer) return;
+    
+    // ফোন রিসিভ করার সাথে সাথে রিংটোন পুরোপুরি বন্ধ করা নিশ্চিত করা হলো
     stopContinuousRinging();
+    
     isCallActive = true;
     startCallDurationTimer();
 
