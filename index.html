@@ -161,11 +161,10 @@
         <span id="toastDot" class="w-2 h-2 rounded-full bg-[#2ed573]"></span><span id="toastText">Done</span>
     </div>
 
-    <!-- ফাইলের লেটেস্ট ভার্সন ট্র্যাক করার জন্য ক্যোয়ারী স্ট্রিং যুক্ত করা হয়েছে -->
-    <script src="/discover.js?v=48.1"></script>
-    <script src="/verify.js?v=48.1"></script>
-    <script src="/call.js?v=48.1"></script>
-    <script src="/message.js?v=48.1"></script>
+    <script src="/discover.js?v=49.0"></script>
+    <script src="/verify.js?v=49.0"></script>
+    <script src="/call.js?v=49.0"></script>
+    <script src="/message.js?v=49.0"></script>
     <script>
         let activeTabName = 'contact';
         let contactSyncTimer = null;
@@ -387,7 +386,6 @@
             handleDirectUsernameRoute();
 
             if (contactSyncTimer) clearInterval(contactSyncTimer);
-            // এখানে ৫ সেকেন্ডের পরিবর্তে ৬০ সেকেন্ড (১ মিনিট) করা হয়েছে এবং Visibility API যোগ করা হয়েছে
             contactSyncTimer = setInterval(() => {
                 if (!document.hidden) {
                     fetchCloudContacts();
