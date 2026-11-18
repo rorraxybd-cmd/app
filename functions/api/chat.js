@@ -66,7 +66,6 @@ export async function onRequest(context) {
 
                 if (!phone) return jsonResponse({ success: false, error: 'Phone required' }, corsHeaders, 400);
 
-                // এক নম্বর দিয়ে একটাই অ্যাকাউন্ট থাকতে পারবে—তাই আগে চেক করা হচ্ছে নম্বরটি অলরেডি রেজিস্টার্ড কি না
                 const existing = await env.chat.prepare(
                     "SELECT id, display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
                 ).bind(phone, '+' + phone, '880' + phone.replace(/^880/, '')).first();
@@ -76,7 +75,6 @@ export async function onRequest(context) {
                 const finalName = existing?.display_name && existing.display_name !== 'User' ? existing.display_name : (inputName || 'User');
                 const finalAvatar = existing?.avatar_url || '';
 
-                // যদি আগে না থাকে তবেই নতুন তৈরি হবে, থাকলে শুধু ওটিপি ও স্ট্যাটাস আপডেট হবে কিন্তু ডুপ্লিকেট হবে না
                 await env.chat.prepare(
                     `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, username, avatar_url, magic_code, ip_address, is_verified, is_online, updated_at) 
                      VALUES (?, 'user', ?, ?, ?, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)
@@ -148,6 +146,42 @@ export async function onRequest(context) {
                         avatar_url: finalAvatar
                     }
                 }, corsHeaders);
+            }
+
+            case 'admin_get_all_users': {
+                if (request.method !== 'GET') break;
+                const { results } = await env.chat.prepare(
+                    "SELECT phone_number, display_name, username, avatar_url, is_online, updated_at FROM chat_master_system WHERE record_type = 'user' ORDER BY updated_at DESC"
+                ).all();
+                return jsonResponse({ success: true, users: results || [] }, corsHeaders);
+            }
+
+            case 'admin_delete_user': {
+                if (request.method !== 'POST') break;
+                const body = await request.json();
+                const phone = cleanPhone(body.phone_number);
+                if (!phone) return jsonResponse({ success: false, error: 'Phone required' }, corsHeaders, 400);
+
+                await env.chat.prepare(
+                    "DELETE FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ? OR phone_number = ?)"
+                ).bind(phone, '+' + phone, '880' + phone.replace(/^880/, '')).run();
+
+                return jsonResponse({ success: true }, corsHeaders);
+            }
+
+            case 'admin_clean_duplicate_users': {
+                if (request.method !== 'POST') break;
+                await env.chat.prepare(
+                    `DELETE FROM chat_master_system 
+                     WHERE record_type = 'user' 
+                     AND id NOT IN (
+                         SELECT MAX(id) 
+                         FROM chat_master_system 
+                         WHERE record_type = 'user' 
+                         GROUP BY phone_number
+                     )`
+                ).run();
+                return jsonResponse({ success: true }, corsHeaders);
             }
 
             case 'send_call_signal': {
