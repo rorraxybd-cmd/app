@@ -66,6 +66,7 @@ export async function onRequest(context) {
 
                 if (!phone) return jsonResponse({ success: false, error: 'Phone required' }, corsHeaders, 400);
 
+                // ফোন নম্বর দিয়ে চেক করা হচ্ছে ইউজার আগে থেকেই আছে কি না
                 const existing = await env.chat.prepare(
                     "SELECT id, display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
                 ).bind(phone, '+' + phone, '880' + phone.replace(/^880/, '')).first();
@@ -75,10 +76,12 @@ export async function onRequest(context) {
                 const finalName = existing?.display_name && existing.display_name !== 'User' ? existing.display_name : (inputName || 'User');
                 const finalAvatar = existing?.avatar_url || '';
 
+                // যদি আইডি আগে থেকেই থাকে তবে ডুপ্লিকেট না বানিয়ে শুধুমাত্র ওই আইডিটিই আপডেট হবে
                 await env.chat.prepare(
                     `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, username, avatar_url, magic_code, ip_address, is_verified, is_online, updated_at) 
                      VALUES (?, 'user', ?, ?, ?, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)
                      ON CONFLICT(id) DO UPDATE SET 
+                        phone_number = excluded.phone_number,
                         magic_code = excluded.magic_code,
                         ip_address = excluded.ip_address,
                         is_verified = 1,
@@ -105,30 +108,28 @@ export async function onRequest(context) {
                 const phone = cleanPhone(body.phone || body.phone_number);
                 if (!phone) return jsonResponse({ success: false, error: 'Phone required' }, corsHeaders, 400);
 
+                // একই ফোন নম্বরের সঠিক রেকর্ড খুঁজে বের করা হচ্ছে যাতে ডুপ্লিকেট না হয়
                 const existing = await env.chat.prepare(
                     "SELECT id, display_name, username, avatar_url FROM chat_master_system WHERE record_type = 'user' AND (phone_number = ? OR phone_number = ? OR phone_number = ?) LIMIT 1"
                 ).bind(phone, '+' + phone, '880' + phone.replace(/^880/, '')).first();
 
                 const userId = existing ? existing.id : ('phone_' + phone);
-                const isProfileEdit = body.is_edit === true;
                 const incomingName = (body.name || body.display_name || '').trim();
-                const finalName = isProfileEdit
-                    ? (incomingName || existing?.display_name || 'User')
-                    : (existing?.display_name && existing.display_name !== 'User' ? existing.display_name : (incomingName || 'User'));
+                const finalName = incomingName || existing?.display_name || 'User';
 
                 const incomingUsername = (body.username || '').trim().replace(/^@+/, '');
-                const finalUsername = isProfileEdit
-                    ? (incomingUsername || existing?.username || ('user_' + phone))
-                    : (existing?.username || incomingUsername || ('user_' + phone));
+                const finalUsername = incomingUsername || existing?.username || ('user_' + phone);
 
                 const finalAvatar = (body.avatar !== undefined && body.avatar !== '')
                     ? body.avatar
                     : (body.avatar_url || existing?.avatar_url || '');
 
+                // ON CONFLICT(id) এর মাধ্যমে নির্দিষ্ট ইউজার আইডি ধরে আপডেট করা হবে, নতুন রো তৈরি হবে না
                 await env.chat.prepare(
                     `INSERT INTO chat_master_system (id, record_type, phone_number, display_name, username, avatar_url, is_verified, is_online, updated_at) 
                      VALUES (?, 'user', ?, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)
                      ON CONFLICT(id) DO UPDATE SET 
+                        phone_number = excluded.phone_number,
                         display_name = excluded.display_name,
                         username = excluded.username,
                         avatar_url = excluded.avatar_url,
@@ -317,7 +318,7 @@ export async function onRequest(context) {
                 if (request.method !== 'POST') break;
                 const body = await request.json();
                 const { message_id } = body;
-                if (!message_id) return jsonResponse({ success: false, error: 'Message ID is required' }, corsHeaders, 400);
+                if (!message_id) return jsonResponse({ success: false, error: 'Message ID is required' datas }, corsHeaders, 400);
 
                 await env.chat.prepare(
                     "DELETE FROM chat_master_system WHERE id = ? AND record_type = 'chat_msg'"
