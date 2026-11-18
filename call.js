@@ -1,4 +1,4 @@
-// call.js - Fixed Full-Duplex WebRTC Audio/Video Streaming with Smart Visibility API
+// call.js - Fixed Full-Duplex WebRTC Audio/Video Streaming & Perfect Cleanup
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
 let callRingInterval = null, activeAudioCtx = null, callPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
@@ -73,7 +73,7 @@ function stopCallDurationTimer() {
 
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
-    callPollInterval = setInterval(checkIncomingCallSignals, 2000);
+    callPollInterval = setInterval(checkIncomingCallSignals, 3000); // ইন্টারভাল ৩ সেকেন্ড করা হলো যাতে কোটা সুরক্ষিত থাকে
 }
 
 async function checkIncomingCallSignals() {
@@ -119,13 +119,6 @@ async function checkIncomingCallSignals() {
                 renderCallModal(activeCallPeer.name, activeCallPeer.avatar, 'Incoming Call...', currentCallType, true);
                 startContinuousRinging();
                 saveCallHistoryLog(activeCallPeer.name, activeCallPeer.phone, currentCallType, 'Incoming');
-
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification(`Incoming ${currentCallType} call`, {
-                        body: `${activeCallPeer.name} is calling you...`,
-                        icon: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg'
-                    });
-                }
             } else if (sig.status === 'answered' && isCallActive && peerConnection) {
                 handledSignalIds.add(sigId);
                 stopContinuousRinging();
@@ -164,7 +157,10 @@ document.addEventListener("visibilitychange", () => {
 
 async function setupLocalMedia(mode) {
     try {
-        if (localStream) localStream.getTracks().forEach(t => t.stop());
+        if (localStream) {
+            localStream.getTracks().forEach(t => t.stop());
+            localStream = null;
+        }
         localStream = await navigator.mediaDevices.getUserMedia({
             audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
             video: mode === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: currentFacingMode } : false
@@ -218,7 +214,12 @@ async function flipVideoCamera() {
 }
 
 async function createPeerConnection(peerPhone) {
-    if (peerConnection) peerConnection.close();
+    if (peerConnection) {
+        try {
+            peerConnection.close();
+        } catch (e) {}
+        peerConnection = null;
+    }
     const rtcConfig = await getDynamicRTCConfig();
     peerConnection = new RTCPeerConnection(rtcConfig);
 
@@ -258,7 +259,7 @@ async function createPeerConnection(peerPhone) {
             remoteStream = event.streams[0];
             remoteAud.srcObject = remoteStream;
             remoteAud.muted = false;
-            remoteAud.play().catch(err => console.log("Audio play allowed:", err));
+            remoteAud.play().catch(() => {});
             applyVideoStreamsToDom();
         }
     };
@@ -355,8 +356,20 @@ function cleanupCallLocalState(toastMsg) {
     window.pendingIncomingOffer = null;
     remoteStream = null;
     pendingIceCandidates = [];
-    if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-    if (peerConnection) { peerConnection.close(); peerConnection = null; }
+
+    if (localStream) {
+        localStream.getTracks().forEach(t => t.stop());
+        localStream = null;
+    }
+    if (peerConnection) {
+        try {
+            peerConnection.ontrack = null;
+            peerConnection.onicecandidate = null;
+            peerConnection.close();
+        } catch (e) {}
+        peerConnection = null;
+    }
+
     document.getElementById('whatsAppCallModal')?.remove();
     document.getElementById('callRemoteAudio')?.remove();
     activeCallPeer = null;
