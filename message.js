@@ -25,8 +25,14 @@ function escapeHtml(str) {
     return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
-function triggerPushAlert(title, body) {
+function triggerPushAlert(title, body, senderPhone) {
     try {
+        // যদি ইউজার বর্তমানে ঠিক ওই চ্যাট স্ক্রিনেই অ্যাক্টিভ থাকে, তবে বারবার নোটিফিকেশন বা সাউন্ড বাজবে না
+        const activePeer = window.currentActiveRecipient ? normPhone(window.currentActiveRecipient.phone) : '';
+        if (activePeer && activePeer === normPhone(senderPhone)) {
+            return; 
+        }
+
         if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(title, {
                 body: body,
@@ -49,6 +55,7 @@ function triggerPushAlert(title, body) {
 }
 
 async function fetchMessagesFromCloud() {
+    // ট্যাব ব্যাকগ্রাউন্ডে থাকলে রিকোয়েস্ট পাঠানো সম্পূর্ণ বন্ধ থাকবে (কোটা সুরক্ষা)
     if (document.hidden) return;
 
     const me = normPhone(getActiveProfile().phone);
@@ -96,7 +103,8 @@ async function fetchMessagesFromCloud() {
 
                 if (sender !== me) {
                     if (peer && chatPartner === peer) hasNewForActive = true;
-                    triggerPushAlert("New Message", msgObj.type === 'text' ? msgObj.message_text : `New ${msgObj.type} received`);
+                    // নোটিফিকেশন ফাংশনে সেন্ডারের ফোন নম্বর পাস করা হয়েছে যাতে নির্দিষ্ট চ্যাটে থাকলে পপআপ না হয়
+                    triggerPushAlert("New Message", msgObj.type === 'text' ? msgObj.message_text : `New ${msgObj.type} received`, sender);
                 }
             } else if (existingMsg.status !== 'delivered') {
                 existingMsg.status = 'delivered';
@@ -120,13 +128,13 @@ async function fetchMessagesFromCloud() {
 function startChatPolling() {
     if (chatPollInterval) clearInterval(chatPollInterval);
     fetchMessagesFromCloud();
-    chatPollInterval = setInterval(fetchMessagesFromCloud, 2500);
+    chatPollInterval = setInterval(fetchMessagesFromCloud, 4000); // কোটা সুরক্ষায় ইন্টারভাল ৪ সেকেন্ড করা হয়েছে
 }
 
 function startGlobalMessageSync() {
     if (globalMsgSyncInterval) clearInterval(globalMsgSyncInterval);
     fetchMessagesFromCloud();
-    globalMsgSyncInterval = setInterval(fetchMessagesFromCloud, 5000);
+    globalMsgSyncInterval = setInterval(fetchMessagesFromCloud, 6000); // কোটা সুরক্ষায় গ্লোবাল সিঙ্ক ৬ সেকেন্ড করা হয়েছে
 }
 
 document.addEventListener("visibilitychange", () => {
