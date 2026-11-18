@@ -1,4 +1,4 @@
-// discover.js - Global Directory, Contacts & Compressed Profile Sync Module (Optimized)
+// discover.js - Global Directory, Contacts & Smart Local Caching Module
 const GLOBAL_CONTINENTS_DATA = [
     {
         id: "asia",
@@ -221,6 +221,7 @@ function renderDiscoverDirectory(searchQuery = '') {
     }
 
     const q = searchQuery.toLowerCase().trim();
+    // লোকাল স্টোরেজ থেকে ক্যাশ করা কন্টাক্ট ডেটা ব্যবহার করা হচ্ছে (ফ্রি কোটা সুরক্ষিত রাখতে)
     const allUsers = Array.isArray(window.GLOBAL_CLOUD_USERS) ? window.GLOBAL_CLOUD_USERS : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
 
     let html = `
@@ -349,6 +350,7 @@ function renderContactsView(searchQuery = '') {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
+    // লোকাল স্টোরেজ থেকে ইনস্ট্যান্ট লোড হবে (নো রিকোয়েস্ট ল্যাগ)
     const allUsers = Array.isArray(window.GLOBAL_CLOUD_USERS) ? window.GLOBAL_CLOUD_USERS : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     const q = searchQuery.toLowerCase().trim();
 
