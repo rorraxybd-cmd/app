@@ -1,70 +1,170 @@
-// sw.js - Auto Update Service Worker for PWA (rorraxy MESSAGE)
-const CACHE_NAME = 'message-cache-v49.0'; // কোড আপডেট করার সময় শুধু এই ভার্সন নম্বরটি বাড়িয়ে দেবেন
-const RUNTIME_CACHE = 'message-runtime-v49.0';
+// sw.js - Service Worker for MESSAGE PWA (rorraxy.com)
+// Auto-update + Push Notification (Call & Message) + Offline fallback
+
+const CACHE_VERSION = 'v50.0';
+const CACHE_NAME = 'message-cache-' + CACHE_VERSION;
+const RUNTIME_CACHE = 'message-runtime-' + CACHE_VERSION;
 
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/call.js?v=50.0',
+  '/message.js?v=50.0',
+  '/discover.js?v=50.0',
+  '/verify.js?v=50.0'
 ];
 
-// ইনস্টল করার সময় নতুন ক্যাশ স্টোর করা
+// ─────────────────────────────────────────────────────────
+// INSTALL & ACTIVATE
+// ─────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE)).catch(() => {})
   );
   self.skipWaiting();
 });
 
-// এক্টিভেশনের সময় পুরোনো সমস্ত ক্যাশ স্বয়ংক্রিয়ভাবে মুছে ফেলা
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME && cache !== RUNTIME_CACHE) {
-            return caches.delete(cache);
-          }
+    caches.keys().then((names) =>
+      Promise.all(
+        names.map((name) => {
+          if (name !== CACHE_NAME && name !== RUNTIME_CACHE) return caches.delete(name);
         })
-      );
-    })
+      )
+    )
   );
   self.clients.claim();
 });
 
-// পুশ নোটিফিকেশন হ্যান্ডলার
-self.addEventListener('push', function(event) {
-    const data = event.data ? event.data.json() : {};
-    const title = data.title || 'New Message / Incoming Call';
-    const options = {
-        body: data.body || 'Tap to open rorraxy MESSAGE',
-        icon: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg',
-        badge: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg',
-        vibrate: [300, 100, 300, 100, 300],
-        tag: 'rorraxy-alert',
-        renotify: true
-    };
-    event.waitUntil(self.registration.showNotification(title, options));
+// ─────────────────────────────────────────────────────────
+// PUSH NOTIFICATION
+// ─────────────────────────────────────────────────────────
+self.addEventListener('push', function (event) {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) { data = {}; }
+
+  const isCall = data.type === 'incoming_call';
+  const isVideo = data.call_type === 'video';
+
+  const title = isCall
+    ? (data.caller_name || data.caller_phone || 'Unknown') + ' — ' + (isVideo ? 'Video Call' : 'Voice Call')
+    : (data.title || 'New Message');
+
+  const body = isCall
+    ? 'Incoming call · Tap Answer to talk'
+    : (data.body || 'Tap to open MESSAGE');
+
+  const tag = isCall
+    ? 'call-' + (data.call_id || data.caller_phone || Date.now())
+    : 'msg-' + (data.sender_phone || Date.now());
+
+  const options = {
+    body,
+    icon: data.avatar || 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg',
+    badge: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg',
+    vibrate: isCall ? [700, 300, 700, 300, 700] : [200, 100, 200],
+    tag,
+    renotify: true,
+    silent: false,
+    requireInteraction: isCall,
+    data,
+    actions: isCall
+      ? [
+          { action: 'accept', title: '✅ Answer' },
+          { action: 'decline', title: '❌ Decline' }
+        ]
+      : []
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
-// নোটিফিকেশন ক্লিক হ্যান্ডলার
-self.addEventListener('notificationclick', function(event) {
-    event.notification.close();
-    event.waitUntil(clients.openWindow('/'));
+// ─────────────────────────────────────────────────────────
+// NOTIFICATION CLICK
+// ─────────────────────────────────────────────────────────
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  const data = event.notification.data || {};
+
+  // ── DECLINE: caller-কে "ended" signal পাঠাও ──
+  if (event.action === 'decline') {
+    if (data.caller_phone && data.receiver_phone) {
+      event.waitUntil(
+        fetch('/api/chat?action=send_call_signal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            caller_phone: data.receiver_phone,
+            receiver_phone: data.caller_phone,
+            call_type: data.call_type || 'audio',
+            status: 'ended',
+            timestamp: Date.now()
+          })
+        }).catch(() => {})
+      );
+    }
+    return;
+  }
+
+  // ── ACCEPT / OPEN: window focus বা নতুন খোলো ──
+  const targetUrl = data.type === 'incoming_call'
+    ? '/?incoming_call=1' +
+      '&caller_phone=' + encodeURIComponent(data.caller_phone || '') +
+      '&call_type=' + encodeURIComponent(data.call_type || 'audio')
+    : '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          client.postMessage({
+            type: 'notification_action',
+            action: event.action || 'open',
+            payload: data
+          });
+          return client.focus();
+        }
+      }
+      return clients.openWindow(targetUrl);
+    })
+  );
 });
 
-// ফেচ ও নেটওয়ার্ক ফার্স্ট স্ট্র্যাটেজি (লেটেস্ট ডাটা নিশ্চিত করার জন্য)
+// ─────────────────────────────────────────────────────────
+// PUSH SUBSCRIPTION EXPIRED — auto refresh
+// ─────────────────────────────────────────────────────────
+self.addEventListener('pushsubscriptionchange', function (event) {
+  event.waitUntil((async () => {
+    try {
+      const oldSub = event.oldSubscription ||
+        await self.registration.pushManager.getSubscription();
+      if (!oldSub) return;
+      const newSub = await self.registration.pushManager.subscribe(oldSub.options);
+      // phone জানা নেই — active client-কে জানাও, সে API কল করবে
+      const clients = await self.clients.matchAll({ type: 'window' });
+      clients.forEach((c) => c.postMessage({
+        type: 'push_subscription_changed',
+        subscription: newSub.toJSON()
+      }));
+    } catch (e) {}
+  })());
+});
+
+// ─────────────────────────────────────────────────────────
+// FETCH — Network first, cache fallback
+// ─────────────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
 
-  // এপিআই বা ক্লাউডফ্লেয়ারের রিকোয়েস্টগুলো ক্যাশ করা থেকে বিরত রাখা
+  // API, R2, cross-origin — ক্যাশ করব না
   if (
-    url.pathname.includes('/api/') ||
+    url.pathname.startsWith('/api/') ||
     url.hostname.includes('cloudflare') ||
-    url.hostname.includes('r2.dev')
+    url.hostname.includes('r2.dev') ||
+    url.origin !== self.location.origin
   ) {
     return;
   }
@@ -73,11 +173,23 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request)
       .then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-          const responseToCache = networkResponse.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => cache.put(event.request, responseToCache));
+          const clone = networkResponse.clone();
+          caches.open(RUNTIME_CACHE).then((c) => c.put(event.request, clone)).catch(() => {});
         }
         return networkResponse;
       })
-      .catch(() => caches.match(event.request))
+      .catch(async () => {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+        if (event.request.mode === 'navigate') {
+          const idx = await caches.match('/index.html');
+          if (idx) return idx;
+        }
+        return new Response('Offline — please check your connection', {
+          status: 503,
+          statusText: 'Offline',
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
+      })
   );
 });
