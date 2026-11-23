@@ -1,6 +1,5 @@
-// message.js - Real-Time Sync with Smart Visibility API, Clean Media & Profile Avatars
+// message.js - Fixed: fetch all chats, shared AudioContext, server-side delete, long-press fix
 let chatPollInterval = null;
-let globalMsgSyncInterval = null;
 let localMessageStore = JSON.parse(localStorage.getItem('message_messages_v18') || '{}');
 let deletedMessageIds = JSON.parse(localStorage.getItem('message_deleted_ids_v18') || '[]');
 let mediaRecorder = null;
@@ -25,59 +24,67 @@ function escapeHtml(str) {
     return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
+// ───── Shared AudioContext (leak fix) ─────
+let _alertAudioCtx = null;
 function triggerPushAlert(title, body, senderPhone) {
     try {
-        // যদি ইউজার বর্তমানে ঠিক ওই চ্যাট স্ক্রিনেই অ্যাক্টিভ থাকে, তবে বারবার নোটিফিকেশন বা সাউন্ড বাজবে না
         const activePeer = window.currentActiveRecipient ? normPhone(window.currentActiveRecipient.phone) : '';
-        if (activePeer && activePeer === normPhone(senderPhone)) {
-            return; 
+        if (activePeer && activePeer === normPhone(senderPhone)) return;
+
+        // Native notification only when tab is hidden (avoid duplicates when in-app)
+        if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+            try {
+                new Notification(title, {
+                    body,
+                    icon: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg',
+                    vibrate: [200, 100, 200]
+                });
+            } catch (e) {}
         }
 
-        if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification(title, {
-                body: body,
-                icon: 'https://pub-508ef1e45bab487aadde85a1dba202c4.r2.dev/im1024.jpg',
-                vibrate: [300, 100, 300]
-            });
-        }
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        if (ctx.state === 'suspended') ctx.resume();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+        // Shared context — no more new AudioContext per alert
+        if (!_alertAudioCtx) _alertAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (_alertAudioCtx.state === 'suspended') _alertAudioCtx.resume().catch(() => {});
+        const t = _alertAudioCtx.currentTime;
+        const osc = _alertAudioCtx.createOscillator();
+        const gain = _alertAudioCtx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        osc.frequency.setValueAtTime(880, t);
+        gain.gain.setValueAtTime(0.12, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
         osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.25);
+        gain.connect(_alertAudioCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.32);
+
+        if (navigator.vibrate) { try { navigator.vibrate([200, 100, 200]); } catch (e) {} }
     } catch (e) {}
 }
 
+// ───── Fetch — always ALL messages, returns true if new ─────
 async function fetchMessagesFromCloud() {
-    // ট্যাব ব্যাকগ্রাউন্ডে থাকলে রিকোয়েস্ট পাঠানো সম্পূর্ণ বন্ধ থাকবে (কোটা সুরক্ষা)
-    if (document.hidden) return;
+    if (document.hidden) return false;
 
     const me = normPhone(getActiveProfile().phone);
-    if (!me) return;
+    if (!me) return false;
 
     try {
-        const peer = window.currentActiveRecipient ? normPhone(window.currentActiveRecipient.phone) : '';
-        const url = peer
-            ? `/api/chat?action=get_chat_messages&user_phone=${me}&peer_phone=${peer}`
-            : `/api/chat?action=get_chat_messages&user_phone=${me}`;
-
-        const res = await fetch(url);
-        if (!res.ok) return;
+        // Always fetch ALL chats (peer filter removed → other chats' notifications work)
+        const res = await fetch(`/api/chat?action=get_chat_messages&user_phone=${me}&_t=${Date.now()}`);
+        if (!res.ok) return false;
         const data = await res.json();
         const incomingList = data.messages || data.data || [];
-        if (!Array.isArray(incomingList)) return;
+        if (!Array.isArray(incomingList)) return false;
+
+        const activePeer = window.currentActiveRecipient
+            ? normPhone(window.currentActiveRecipient.phone) : '';
 
         let hasNew = false;
         let hasNewForActive = false;
 
         incomingList.forEach(item => {
-            const msgId = String(item.id || item.message_id || `${item.sender_phone}_${item.created_at || item.timestamp}`);
+            const msgId = String(item.id || item.message_id ||
+                `${item.sender_phone}_${item.created_at || item.timestamp}`);
             if (deletedMessageIds.includes(msgId)) return;
 
             const sender = normPhone(item.sender_phone || item.phone_number);
@@ -86,9 +93,9 @@ async function fetchMessagesFromCloud() {
             if (!chatPartner) return;
 
             if (!localMessageStore[chatPartner]) localMessageStore[chatPartner] = [];
-            const existingMsg = localMessageStore[chatPartner].find(m => String(m.id) === msgId);
+            const existing = localMessageStore[chatPartner].find(m => String(m.id) === msgId);
 
-            if (!existingMsg) {
+            if (!existing) {
                 const msgObj = {
                     id: msgId,
                     phone_number: sender,
@@ -96,53 +103,61 @@ async function fetchMessagesFromCloud() {
                     media_url: item.media_url || '',
                     type: item.message_type || item.type || 'text',
                     status: 'delivered',
-                    timestamp: item.timestamp ? Number(item.timestamp) : (item.created_at ? new Date(item.created_at).getTime() : Date.now())
+                    timestamp: item.timestamp ? Number(item.timestamp)
+                        : (item.created_at ? new Date(item.created_at).getTime() : Date.now())
                 };
                 localMessageStore[chatPartner].push(msgObj);
                 hasNew = true;
 
                 if (sender !== me) {
-                    if (peer && chatPartner === peer) hasNewForActive = true;
-                    // নোটিফিকেশন ফাংশনে সেন্ডারের ফোন নম্বর পাস করা হয়েছে যাতে নির্দিষ্ট চ্যাটে থাকলে পপআপ না হয়
-                    triggerPushAlert("New Message", msgObj.type === 'text' ? msgObj.message_text : `New ${msgObj.type} received`, sender);
+                    if (activePeer && chatPartner === activePeer) {
+                        hasNewForActive = true;
+                    } else {
+                        triggerPushAlert(
+                            'New Message',
+                            msgObj.type === 'text' ? msgObj.message_text : `New ${msgObj.type} received`,
+                            sender
+                        );
+                    }
                 }
-            } else if (existingMsg.status !== 'delivered') {
-                existingMsg.status = 'delivered';
+            } else if (existing.status !== 'delivered') {
+                existing.status = 'delivered';
                 hasNew = true;
+                if (activePeer && chatPartner === activePeer) hasNewForActive = true;
             }
         });
 
         if (hasNew) {
             persistMessages();
-            if (hasNewForActive || window.currentActiveRecipient) {
-                loadMessages();
-            }
-            const activeTabChat = document.getElementById('labelChat');
-            if (activeTabChat && activeTabChat.classList.contains('gold-gradient-text')) {
+            if (hasNewForActive) loadMessages();
+            // Refresh chat list only if Chat tab is currently active (pink, not gold)
+            const chatLabel = document.getElementById('labelChat');
+            if (chatLabel && chatLabel.classList.contains('pink-gradient-text')) {
                 renderChatHistoryList();
             }
         }
-    } catch (e) {}
+        return hasNew;
+    } catch (e) {
+        return false;
+    }
 }
 
+// ───── Consolidate polling — one interval only ─────
 function startChatPolling() {
-    if (chatPollInterval) clearInterval(chatPollInterval);
+    if (chatPollInterval) return; // already running
     fetchMessagesFromCloud();
-    chatPollInterval = setInterval(fetchMessagesFromCloud, 4000); // কোটা সুরক্ষায় ইন্টারভাল ৪ সেকেন্ড করা হয়েছে
+    chatPollInterval = setInterval(fetchMessagesFromCloud, 4000);
 }
 
 function startGlobalMessageSync() {
-    if (globalMsgSyncInterval) clearInterval(globalMsgSyncInterval);
-    fetchMessagesFromCloud();
-    globalMsgSyncInterval = setInterval(fetchMessagesFromCloud, 6000); // কোটা সুরক্ষায় গ্লোবাল সিঙ্ক ৬ সেকেন্ড করা হয়েছে
+    startChatPolling();
 }
 
 document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) {
-        fetchMessagesFromCloud();
-    }
+    if (!document.hidden) fetchMessagesFromCloud();
 });
 
+// ───── Send text ─────
 async function sendTextMessage() {
     if (!window.currentActiveRecipient) {
         if (typeof showToast === 'function') showToast("Select a contact first!", true);
@@ -157,8 +172,11 @@ async function sendTextMessage() {
     const me = normPhone(getActiveProfile().phone);
     if (!localMessageStore[key]) localMessageStore[key] = [];
 
-    const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    const msg = { id: msgId, phone_number: me, message_text: text, media_url: '', type: 'text', status: 'sending', timestamp: Date.now() };
+    const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const msg = {
+        id: msgId, phone_number: me, message_text: text,
+        media_url: '', type: 'text', status: 'sending', timestamp: Date.now()
+    };
     localMessageStore[key].push(msg);
     loadMessages();
     persistMessages();
@@ -168,13 +186,9 @@ async function sendTextMessage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                id: msgId,
-                sender_phone: me,
-                receiver_phone: key,
-                message_text: text,
-                media_url: '',
-                message_type: 'text',
-                timestamp: msg.timestamp
+                id: msgId, sender_phone: me, receiver_phone: key,
+                message_text: text, media_url: '',
+                message_type: 'text', timestamp: msg.timestamp
             })
         });
         if (res.ok) {
@@ -185,6 +199,7 @@ async function sendTextMessage() {
     } catch (e) {}
 }
 
+// ───── Voice recording ─────
 async function toggleVoiceRecording() {
     if (!window.currentActiveRecipient) {
         if (typeof showToast === 'function') showToast("Select a contact first!", true);
@@ -223,7 +238,7 @@ async function toggleVoiceRecording() {
                 const me = normPhone(getActiveProfile().phone);
                 const key = normPhone(window.currentActiveRecipient.phone);
                 if (!localMessageStore[key]) localMessageStore[key] = [];
-                const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+                const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
                 const msg = {
                     id: msgId,
                     phone_number: me,
@@ -242,13 +257,9 @@ async function toggleVoiceRecording() {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            id: msgId,
-                            sender_phone: me,
-                            receiver_phone: key,
-                            message_text: msg.message_text,
-                            media_url: base64Audio,
-                            message_type: 'audio',
-                            timestamp: msg.timestamp
+                            id: msgId, sender_phone: me, receiver_phone: key,
+                            message_text: msg.message_text, media_url: base64Audio,
+                            message_type: 'audio', timestamp: msg.timestamp
                         })
                     });
                     if (res.ok) {
@@ -279,6 +290,7 @@ async function toggleVoiceRecording() {
     }
 }
 
+// ───── Compress helpers ─────
 function compressVideoToCompactKB(file) {
     return new Promise((resolve, reject) => {
         const video = document.createElement('video');
@@ -353,15 +365,11 @@ async function handleUniversalFileUpload(fileInputElem) {
             const me = normPhone(getActiveProfile().phone);
             const key = normPhone(window.currentActiveRecipient.phone);
             if (!localMessageStore[key]) localMessageStore[key] = [];
-            const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
             const msg = {
-                id: msgId,
-                phone_number: me,
-                message_text: file.name,
-                media_url: finalDataUrl,
-                type: fileType,
-                status: 'sending',
-                timestamp: Date.now()
+                id: msgId, phone_number: me,
+                message_text: file.name, media_url: finalDataUrl,
+                type: fileType, status: 'sending', timestamp: Date.now()
             };
             localMessageStore[key].push(msg);
             loadMessages();
@@ -371,13 +379,9 @@ async function handleUniversalFileUpload(fileInputElem) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    id: msgId,
-                    sender_phone: me,
-                    receiver_phone: key,
-                    message_text: file.name,
-                    media_url: finalDataUrl,
-                    message_type: fileType,
-                    timestamp: msg.timestamp
+                    id: msgId, sender_phone: me, receiver_phone: key,
+                    message_text: file.name, media_url: finalDataUrl,
+                    message_type: fileType, timestamp: msg.timestamp
                 })
             });
             if (res.ok) {
@@ -393,6 +397,7 @@ async function handleUniversalFileUpload(fileInputElem) {
     fileInputElem.value = '';
 }
 
+// ───── Lightbox ─────
 function openMediaLightbox(msgId) {
     if (!window.currentActiveRecipient) return;
     const key = normPhone(window.currentActiveRecipient.phone);
@@ -437,14 +442,16 @@ function openMediaLightbox(msgId) {
     document.body.appendChild(modal);
 }
 
+// ───── Long-press — skip on media (fix) ─────
 let longPressTimer = null;
-function handleMsgTouchStart(msgId) {
+function handleMsgTouchStart(msgId, ev) {
+    if (ev && ev.target && ev.target.closest('img, video, audio, a, iframe, button')) return;
     longPressTimer = setTimeout(() => {
         showSingleDeleteAction(msgId);
     }, 550);
 }
 function handleMsgTouchEnd() {
-    if (longPressTimer) clearTimeout(longPressTimer);
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
 }
 
 function showSingleDeleteAction(msgId) {
@@ -507,7 +514,7 @@ function deleteAllChatMessages() {
         <div class="theme-card rounded-3xl p-5 w-full max-w-xs text-center space-y-4">
             <i class="fa-solid fa-trash-can text-2xl text-red-500"></i>
             <h4 class="text-sm font-bold text-white">Delete All Messages?</h4>
-            <p class="text-[11px] text-gray-400">All chat history will be permanently removed.</p>
+            <p class="text-[11px] text-gray-400">All chat history will be permanently removed for both sides.</p>
             <div class="flex space-x-2 pt-1">
                 <button onclick="document.getElementById('allDeleteConfirmModal').remove()" class="flex-1 py-2.5 rounded-2xl bg-white/10 text-gray-300 text-xs font-semibold cursor-pointer">Cancel</button>
                 <button onclick="confirmDeleteAllChat()" class="flex-1 py-2.5 rounded-2xl bg-red-600 text-white text-xs font-bold cursor-pointer">Delete All</button>
@@ -517,27 +524,46 @@ function deleteAllChatMessages() {
     document.body.appendChild(modal);
 }
 
+// ───── Delete All — now also server-side ─────
 async function confirmDeleteAllChat() {
     document.getElementById('allDeleteConfirmModal')?.remove();
     if (!window.currentActiveRecipient) return;
     const key = normPhone(window.currentActiveRecipient.phone);
-    const msgsToDelete = [...(localMessageStore[key] || [])];
+    const msgs = [...(localMessageStore[key] || [])];
 
-    msgsToDelete.forEach(m => {
+    // Local — instant
+    msgs.forEach(m => {
         if (!deletedMessageIds.includes(String(m.id))) deletedMessageIds.push(String(m.id));
     });
     localStorage.setItem('message_deleted_ids_v18', JSON.stringify(deletedMessageIds));
     localMessageStore[key] = [];
     persistMessages();
     loadMessages();
-    if (typeof showToast === 'function') showToast("All messages deleted");
+    if (typeof showToast === 'function') showToast("Deleting from cloud…");
+
+    // Server — parallel (also removes for other device)
+    try {
+        await Promise.allSettled(msgs.map(m =>
+            fetch('/api/chat?action=delete_message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message_id: m.id })
+            }).catch(() => {})
+        ));
+        if (typeof showToast === 'function') showToast("All messages deleted");
+    } catch (e) {
+        if (typeof showToast === 'function') showToast("Deleted locally (cloud sync failed)", true);
+    }
 }
 
+// ───── Chat list ─────
 function renderChatHistoryList() {
     const listContainer = document.getElementById('sidebarContentList');
     if (!listContainer) return;
 
-    let localContacts = Array.isArray(window.GLOBAL_CLOUD_USERS) ? window.GLOBAL_CLOUD_USERS : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+    let localContacts = Array.isArray(window.GLOBAL_CLOUD_USERS)
+        ? window.GLOBAL_CLOUD_USERS
+        : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
     let chatKeys = Object.keys(localMessageStore).filter(k => (localMessageStore[k] || []).length > 0);
     let chatsHtml = '';
 
@@ -547,8 +573,10 @@ function renderChatHistoryList() {
         chatsHtml = chatKeys.map(key => {
             const msgs = localMessageStore[key] || [];
             const lastMsg = msgs[msgs.length - 1] || {};
-            const lastTime = lastMsg.timestamp ? new Date(lastMsg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-            
+            const lastTime = lastMsg.timestamp
+                ? new Date(lastMsg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '';
+
             let contact = localContacts.find(c => normPhone(c.phone) === normPhone(key)) || { name: key, phone: key, avatar: '' };
             const safeName = (contact.name || key).replace(/'/g, "\\'");
             const avatarUrl = contact.avatar || '';
@@ -558,7 +586,11 @@ function renderChatHistoryList() {
                 ? `<img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover shrink-0 border border-amber-400/20">`
                 : `<div class="w-10 h-10 rounded-full gold-btn flex items-center justify-center font-extrabold text-[#030305] shrink-0">${initial}</div>`;
 
-            let previewText = lastMsg.type === 'image' ? 'Photo' : lastMsg.type === 'video' ? 'Video' : lastMsg.type === 'audio' ? 'Voice Note' : lastMsg.type === 'pdf' ? 'PDF Document' : lastMsg.message_text;
+            let previewText = lastMsg.type === 'image' ? 'Photo'
+                : lastMsg.type === 'video' ? 'Video'
+                : lastMsg.type === 'audio' ? 'Voice Note'
+                : lastMsg.type === 'pdf' ? 'PDF Document'
+                : lastMsg.message_text;
 
             return `
             <div class="flex justify-between items-center px-4 py-3 my-1.5 hover:bg-white/5 rounded-2xl theme-card cursor-pointer" onclick="openChat('${contact.phone}', '${safeName}', '${avatarUrl}')">
@@ -579,6 +611,7 @@ function renderChatHistoryList() {
     listContainer.innerHTML = `<div class="p-3 space-y-3 pb-20"><h3 class="text-xs font-bold gold-gradient-text uppercase tracking-wider">Recent Chats</h3>${chatsHtml}</div>`;
 }
 
+// ───── Load messages ─────
 function loadMessages() {
     const container = document.getElementById('chatMessages');
     if (!container || !window.currentActiveRecipient) return;
@@ -593,24 +626,19 @@ function loadMessages() {
     container.innerHTML = msgs.map(m => {
         const isMe = normPhone(m.phone_number) === normPhone(getActiveProfile().phone);
         const timeStr = new Date(m.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const tickHtml = isMe ? (m.status === 'delivered' ? `<span class="text-[10px] text-amber-300 font-bold">✓✓</span>` : `<span class="text-[10px] text-gray-400">✓</span>`) : '';
+        const tickHtml = isMe
+            ? (m.status === 'delivered'
+                ? `<span class="text-[10px] text-amber-300 font-bold">✓✓</span>`
+                : `<span class="text-[10px] text-gray-400">✓</span>`)
+            : '';
         let contentHtml = `<p class="text-xs text-white break-words leading-relaxed">${escapeHtml(m.message_text || '')}</p>`;
 
         if (m.media_url && m.type === 'image') {
-            contentHtml = `
-                <div class="space-y-1">
-                    <img src="${m.media_url}" onclick="openMediaLightbox('${m.id}')" class="rounded-xl w-full max-w-[240px] max-h-64 object-cover cursor-pointer shadow-md">
-                </div>`;
+            contentHtml = `<div class="space-y-1"><img src="${m.media_url}" onclick="openMediaLightbox('${m.id}')" class="rounded-xl w-full max-w-[240px] max-h-64 object-cover cursor-pointer shadow-md"></div>`;
         } else if (m.media_url && m.type === 'video') {
-            contentHtml = `
-                <div class="space-y-1">
-                    <video src="${m.media_url}" controls playsinline preload="metadata" class="rounded-xl w-full max-w-[260px] max-h-64 bg-black shadow-md"></video>
-                </div>`;
+            contentHtml = `<div class="space-y-1"><video src="${m.media_url}" controls playsinline preload="metadata" class="rounded-xl w-full max-w-[260px] max-h-64 bg-black shadow-md"></video></div>`;
         } else if (m.media_url && m.type === 'audio') {
-            contentHtml = `
-                <div class="space-y-1 min-w-[210px]">
-                    <audio src="${m.media_url}" controls class="w-full h-9"></audio>
-                </div>`;
+            contentHtml = `<div class="space-y-1 min-w-[210px]"><audio src="${m.media_url}" controls class="w-full h-9"></audio></div>`;
         } else if (m.media_url && m.type === 'pdf') {
             contentHtml = `
                 <div onclick="openMediaLightbox('${m.id}')" class="flex items-center space-x-3 p-3 rounded-2xl bg-black/40 border border-amber-400/20 cursor-pointer hover:bg-black/60 transition min-w-[210px]">
@@ -624,8 +652,8 @@ function loadMessages() {
 
         return `
         <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1.5 px-1 select-none"
-             ontouchstart="handleMsgTouchStart('${m.id}')" ontouchend="handleMsgTouchEnd()"
-             onmousedown="handleMsgTouchStart('${m.id}')" onmouseup="handleMsgTouchEnd()" onmouseleave="handleMsgTouchEnd()">
+             ontouchstart="handleMsgTouchStart('${m.id}', event)" ontouchend="handleMsgTouchEnd()"
+             onmousedown="handleMsgTouchStart('${m.id}', event)" onmouseup="handleMsgTouchEnd()" onmouseleave="handleMsgTouchEnd()">
             <div class="max-w-[82%] px-3 py-2 rounded-2xl ${isMe ? 'chat-bubble-me' : 'chat-bubble-them'} relative group shadow-sm">
                 ${contentHtml}
                 <div class="flex items-center justify-end space-x-1.5 mt-1">
