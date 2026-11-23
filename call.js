@@ -1,4 +1,4 @@
-// call.js - Fixed Full-Duplex WebRTC Audio/Video Streaming & Multi-Call State Reset
+// call.js - Soft ringing, Wake Lock, signal pruning, immediate poll
 let currentCallType = 'audio', activeCallPeer = null, isCallActive = false;
 let callRingInterval = null, activeAudioCtx = null, callPollInterval = null;
 let callTimerInterval = null, callSeconds = 0;
@@ -8,6 +8,7 @@ let handledSignalIds = new Set();
 let isVideoSwapped = false;
 let currentFacingMode = 'user';
 let pendingIceCandidates = [];
+let _wakeLock = null;
 
 const DEFAULT_RTC_CONFIG = {
     iceServers: [
@@ -22,33 +23,67 @@ async function getDynamicRTCConfig() {
         const res = await fetch('/api/call-credentials');
         const data = await res.json();
         if (data.success && data.iceServers) {
-            return Array.isArray(data.iceServers) ? { iceServers: data.iceServers } : { iceServers: data.iceServers.iceServers || DEFAULT_RTC_CONFIG.iceServers };
+            return Array.isArray(data.iceServers)
+                ? { iceServers: data.iceServers }
+                : { iceServers: data.iceServers.iceServers || DEFAULT_RTC_CONFIG.iceServers };
         }
     } catch (e) {}
     return DEFAULT_RTC_CONFIG;
 }
 
+// ───── Wake Lock (screen stays on during call) ─────
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator && !_wakeLock) {
+            _wakeLock = await navigator.wakeLock.request('screen');
+            _wakeLock.addEventListener('release', () => { _wakeLock = null; });
+        }
+    } catch (e) {}
+}
+function releaseWakeLock() {
+    if (_wakeLock) { try { _wakeLock.release(); } catch (e) {} _wakeLock = null; }
+}
+
+// ───── Soft WhatsApp-like ringing ─────
 function startContinuousRinging() {
     stopContinuousRinging();
     const playTone = () => {
         try {
             if (!activeAudioCtx) activeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (activeAudioCtx.state === 'suspended') activeAudioCtx.resume();
-            const osc = activeAudioCtx.createOscillator();
-            const gain = activeAudioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(520, activeAudioCtx.currentTime);
-            osc.frequency.setValueAtTime(660, activeAudioCtx.currentTime + 0.25);
-            gain.gain.setValueAtTime(0.25, activeAudioCtx.currentTime);
-            osc.connect(gain);
-            gain.connect(activeAudioCtx.destination);
-            osc.start();
-            osc.stop(activeAudioCtx.currentTime + 0.55);
-            if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
+            if (activeAudioCtx.state === 'suspended') activeAudioCtx.resume().catch(() => {});
+
+            const now = activeAudioCtx.currentTime;
+            const playSoftTone = (freq, delay, duration, level) => {
+                const osc = activeAudioCtx.createOscillator();
+                const gain = activeAudioCtx.createGain();
+                const filter = activeAudioCtx.createBiquadFilter();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + delay);
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1200, now + delay);
+
+                gain.gain.setValueAtTime(0, now + delay);
+                gain.gain.linearRampToValueAtTime(level, now + delay + 0.05);
+                gain.gain.setValueAtTime(level, now + delay + duration - 0.1);
+                gain.gain.linearRampToValueAtTime(0, now + delay + duration);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(activeAudioCtx.destination);
+                osc.start(now + delay);
+                osc.stop(now + delay + duration + 0.02);
+            };
+
+            // Dual soft tone — gentle, not harsh
+            playSoftTone(440, 0, 0.32, 0.06);
+            playSoftTone(554, 0.38, 0.32, 0.06);
+
+            if (navigator.vibrate) { try { navigator.vibrate([200, 150, 200]); } catch (e) {} }
         } catch (e) {}
     };
     playTone();
-    callRingInterval = setInterval(playTone, 1800);
+    callRingInterval = setInterval(playTone, 2200);
 }
 
 function stopContinuousRinging() {
@@ -71,13 +106,19 @@ function stopCallDurationTimer() {
     if (callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval = null; }
 }
 
+// Prune old signal IDs to avoid memory growth
+function pruneHandledSignals() {
+    if (handledSignalIds.size > 500) handledSignalIds.clear();
+}
+
 function startIncomingCallPolling() {
     if (callPollInterval) clearInterval(callPollInterval);
+    checkIncomingCallSignals(); // immediate — important for push-accepted calls
     callPollInterval = setInterval(checkIncomingCallSignals, 3000);
 }
 
 async function checkIncomingCallSignals() {
-    if (document.hidden) return;
+    pruneHandledSignals();
 
     const myPhone = normPhone(getActiveProfile().phone);
     if (!myPhone) return;
@@ -96,17 +137,22 @@ async function checkIncomingCallSignals() {
             const callerPhone = normPhone(sig.caller_phone);
             if (!callerPhone || callerPhone === myPhone) continue;
 
-            const sigTime = sig.timestamp ? Number(sig.timestamp) : (sig.created_at ? new Date(sig.created_at).getTime() : Date.now());
+            const sigTime = sig.timestamp ? Number(sig.timestamp)
+                : (sig.created_at ? new Date(sig.created_at).getTime() : Date.now());
             if (Date.now() - sigTime > 25000) {
                 handledSignalIds.add(sigId);
                 continue;
             }
 
             if (sig.status === 'ringing') {
+                // Only show ringing UI when app is visible — background uses push
+                if (document.hidden) continue;
                 handledSignalIds.add(sigId);
                 if (isCallActive) continue;
 
-                let localContacts = Array.isArray(window.GLOBAL_CLOUD_USERS) ? window.GLOBAL_CLOUD_USERS : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+                let localContacts = Array.isArray(window.GLOBAL_CLOUD_USERS)
+                    ? window.GLOBAL_CLOUD_USERS
+                    : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
                 const found = localContacts.find(c => normPhone(c.phone) === callerPhone);
                 activeCallPeer = {
                     phone: callerPhone,
@@ -145,18 +191,14 @@ async function checkIncomingCallSignals() {
                 }
             } else if (sig.status === 'ended') {
                 handledSignalIds.add(sigId);
-                if (isCallActive) {
-                    cleanupCallLocalState("Call Ended");
-                }
+                if (isCallActive) cleanupCallLocalState("Call Ended");
             }
         }
     } catch (e) {}
 }
 
 document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) {
-        checkIncomingCallSignals();
-    }
+    if (!document.hidden) checkIncomingCallSignals();
 });
 
 async function setupLocalMedia(mode) {
@@ -167,7 +209,9 @@ async function setupLocalMedia(mode) {
         }
         localStream = await navigator.mediaDevices.getUserMedia({
             audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-            video: mode === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: currentFacingMode } : false
+            video: mode === 'video'
+                ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: currentFacingMode }
+                : false
         });
         applyVideoStreamsToDom();
         return localStream;
@@ -219,9 +263,7 @@ async function flipVideoCamera() {
 
 async function createPeerConnection(peerPhone) {
     if (peerConnection) {
-        try {
-            peerConnection.close();
-        } catch (e) {}
+        try { peerConnection.close(); } catch (e) {}
         peerConnection = null;
     }
     const rtcConfig = await getDynamicRTCConfig();
@@ -230,6 +272,17 @@ async function createPeerConnection(peerPhone) {
     if (localStream) {
         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
     }
+
+    // Audio bitrate cap for clearer voice + lower bandwidth
+    try {
+        const audioSender = peerConnection.getSenders().find(s => s.track?.kind === 'audio');
+        if (audioSender) {
+            const params = audioSender.getParameters();
+            if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
+            params.encodings[0].maxBitrate = 40000;
+            await audioSender.setParameters(params).catch(() => {});
+        }
+    } catch (e) {}
 
     peerConnection.onicecandidate = async (event) => {
         if (event.candidate) {
@@ -289,6 +342,8 @@ async function startWhatsAppCall(mode) {
     isVideoSwapped = false;
     pendingIceCandidates = [];
 
+    requestWakeLock(); // keep screen awake
+
     renderCallModal(activeCallPeer.name, activeCallPeer.avatar, 'Calling...', mode, false);
     startContinuousRinging();
     saveCallHistoryLog(activeCallPeer.name, peerPhone, mode, 'Outgoing');
@@ -316,10 +371,11 @@ async function startWhatsAppCall(mode) {
 
 async function acceptWhatsAppCall() {
     if (!activeCallPeer) return;
-    
-    stopContinuousRinging(); // রিসিভ করার সাথে সাথে রিংটোন বন্ধ করা নিশ্চিত করা হলো
+
+    stopContinuousRinging();
     isCallActive = true;
     startCallDurationTimer();
+    requestWakeLock();
 
     const myPhone = normPhone(getActiveProfile().phone);
     const peerPhone = normPhone(activeCallPeer.phone);
@@ -357,6 +413,7 @@ async function acceptWhatsAppCall() {
 function cleanupCallLocalState(toastMsg) {
     stopContinuousRinging();
     stopCallDurationTimer();
+    releaseWakeLock();
     isCallActive = false;
     window.pendingIncomingOffer = null;
     remoteStream = null;
@@ -516,14 +573,16 @@ function renderCallsHistoryView() {
     if (!listContainer) return;
 
     let logs = JSON.parse(localStorage.getItem('message_call_logs_v18') || '[]');
-    let localContacts = Array.isArray(window.GLOBAL_CLOUD_USERS) ? window.GLOBAL_CLOUD_USERS : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
+    let localContacts = Array.isArray(window.GLOBAL_CLOUD_USERS)
+        ? window.GLOBAL_CLOUD_USERS
+        : JSON.parse(localStorage.getItem('message_contacts_v18') || '[]');
 
     const html = logs.length === 0
         ? `<div class="p-8 text-center theme-card rounded-2xl mt-4"><p class="text-xs font-bold gold-gradient-text">No call logs yet</p></div>`
         : logs.map(l => {
             const timeStr = new Date(l.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const safeName = (l.name || l.phone).replace(/'/g, "\\'");
-            
+
             const matchedContact = localContacts.find(c => normPhone(c.phone) === normPhone(l.phone));
             const avatarUrl = matchedContact?.avatar || '';
             const initial = (l.name || 'U').trim().charAt(0).toUpperCase();
